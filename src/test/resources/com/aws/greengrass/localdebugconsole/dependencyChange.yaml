@@ -1,0 +1,10 @@
+lifecycle:
+  posix:
+    run:
+      echo "main" && sleep 1
+  windows:
+    run:
+      powershell -command echo "main"; sleep 1
+dependencies:
+  - blindside
+  - versionCtrl

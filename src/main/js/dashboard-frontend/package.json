@@ -1,0 +1,59 @@
+{
+  "name": "dashboard-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@awsui/components-react": "^3.0.0",
+    "@awsui/design-tokens": "^3.0.0",
+    "@awsui/global-styles": "^1.0.0",
+    "ace-builds": "^1.4.12",
+    "dagre-d3": "^0.6.4",
+    "mutationobserver-shim": "^0.3.7",
+    "node-sass": "^4.14.1",
+    "react": "^16.13.1",
+    "react-ace": "^9.1.1",
+    "react-dom": "^16.13.1",
+    "react-router-dom": "^5.2.0",
+    "react-scripts": "^3.4.1",
+    "react-virtualized": "^9.21.2",
+    "typescript": "^3.7.5"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^4.2.4",
+    "@testing-library/react": "^9.5.0",
+    "@testing-library/user-event": "^7.2.1",
+    "@types/d3": "^5.7.2",
+    "@types/dagre-d3": "^0.4.39",
+    "@types/jest": "^24.9.1",
+    "@types/node": "^12.12.47",
+    "@types/react": "^16.9.36",
+    "@types/react-dom": "^16.9.8",
+    "@types/react-router-dom": "^5.1.5",
+    "@types/react-virtualized": "^9.21.10",
+    "@types/ws": "^7.2.6",
+    "ws": "^7.3.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "prebuild": "rm -rf ../../resources/node; mkdir -p ../../resources/node; npm i",
+    "build": "react-scripts build",
+    "postbuild": "cp -r ./build ./dashboard-frontend; mv ./dashboard-frontend ../../resources/node",
+    "test": "react-scripts test --transformIgnorePatterns \"node_modules/(?!(@awsui/|entity-decode/))\"",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

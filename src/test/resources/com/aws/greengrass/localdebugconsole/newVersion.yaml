@@ -1,0 +1,6 @@
+---
+dependencies:
+  - blindside
+lifecycle:
+  run: echo installed
+version: "1.0.1"

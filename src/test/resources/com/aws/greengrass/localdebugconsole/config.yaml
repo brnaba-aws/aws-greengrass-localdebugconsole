@@ -1,0 +1,70 @@
+---
+services:
+  aws.greengrass.Nucleus:
+    configuration:
+      runWithDefault:
+        posixUser: nobody
+  jdk11:
+    dependencies:
+        macos:
+           - homebrew
+    lifecycle:
+      install:
+        debian: sudo apt-get install openjdk11
+        macos:
+          skipif: java -version 2>&1|egrep -i '(java|jdk|jre) *(version)?[ "]*(1.8|8|9|1[0-9])\.'
+          script: brew cask install corretto
+
+  homebrew:
+    lifecycle:
+      install:
+        macos:
+            skipif: onpath brew
+            script: /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+      startup: echo Brew
+#launchers:
+  docker:
+    lifecycle:
+      startup:
+        macos: open /Applications/Docker.app; sleep 5
+      install:
+        skipif: onpath docker
+        debian: |-
+          sudo apt-get install docker.io
+          sudo systemctl start docker
+          sudo systemctl enable docker
+        fedora: sudo dnf install docker
+        macos:
+            skipif: exists /Applications/Docker.app
+            script: |-
+              brew cask install docker
+    dependencies:
+        macos:
+           - homebrew
+
+  hello-docker:
+      dependencies:
+        - docker
+      lifecycle:
+        run: docker run hello-world; sleep 5
+        shutdown: (docker stop hello-world; docker rm hello-world)2>&1;exit 0
+
+  uptime:
+    lifecycle:
+      run: uptime
+    periodic: 10s
+
+  main:
+    lifecycle:
+      install:
+        all: echo All installed
+#      run: |-
+#        echo $PATH
+#        while true; do
+#        date;echo MAIN IS RUNNING;sleep 5
+#        done
+    dependencies:
+        - aws.greengrass.LocalDebugConsole
+        - jdk11
+        - hello-docker
+        - uptime

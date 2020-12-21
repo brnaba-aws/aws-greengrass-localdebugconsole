@@ -1,0 +1,4 @@
+dependencies: []
+lifecycle:
+  run:
+    echo "Now this works!"

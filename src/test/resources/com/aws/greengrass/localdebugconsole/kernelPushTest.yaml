@@ -1,0 +1,25 @@
+services:
+  aws.greengrass.Nucleus:
+    configuration:
+      runWithDefault:
+        posixUser: nobody
+  main:
+    lifecycle:
+      posix:
+        run:
+          echo "main" && sleep 1
+      windows:
+        run:
+          powershell -command echo "main"; sleep 1
+    dependencies:
+      - versionCtrl
+  versionCtrl:
+    lifecycle:
+      run: echo installed
+    version: "1.0.0"
+    dependencies:
+      - blindside
+  blindside:
+    lifecycle:
+      run:
+        echo "bet you didn't expect this"

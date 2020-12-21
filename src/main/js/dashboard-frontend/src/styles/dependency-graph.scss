@@ -1,0 +1,44 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+@import '~@awsui/design-tokens/index.scss';
+
+.holder {
+  overflow-x: scroll;
+}
+
+g.positive > rect {
+  fill: $color-background-status-success;
+  stroke: $color-border-status-success;
+}
+
+g.negative > rect {
+  fill: $color-background-status-error;
+  stroke: $color-border-status-error;
+}
+
+g.in-progress > rect {
+  fill: $color-background-container-content;
+}
+
+g.pending > rect {
+  fill: $color-background-status-info;
+  stroke: $color-border-status-info;
+}
+
+.node rect {
+  stroke: $color-text-input-disabled;
+  fill: $color-background-container-content;
+  stroke-width: 2px;
+}
+
+.edgePath path {
+  stroke: $color-text-interactive-default;
+  stroke-width: 1.5px;
+}
+
+.graphLink {
+  color: $color-text-link-default;
+}

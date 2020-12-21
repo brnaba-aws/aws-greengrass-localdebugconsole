@@ -1,0 +1,30 @@
+services:
+  aws.greengrass.Nucleus:
+    configuration:
+      runWithDefault:
+        posixUser: nobody
+  main:
+    lifecycle:
+      run:
+          echo "Main ran"
+    dependencies:
+      - testList
+      - testComponent
+      - whileTrue
+      - definitelyBroken
+  testList:
+    lifecycle:
+      run:
+        echo "List test ran"
+  testComponent:
+    lifecycle:
+      run:
+        echo "Component test ran"
+  whileTrue:
+    lifecycle:
+      run:
+        echo "running big loop" && sleep 1000
+  definitelyBroken:
+    lifecycle:
+      run:
+        java Nope

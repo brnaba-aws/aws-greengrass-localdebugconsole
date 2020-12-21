@@ -1,0 +1,21 @@
+/target/
+/nbproject/
+.DS_Store
+*.log
+.idea/
+*.iml
+/src/main/resources/node/
+
+#node ignores
+/src/main/js/dashboard-frontend/coverage
+/src/main/js/dashboard-frontend/build
+package-lock.json
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+node_modules/
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
