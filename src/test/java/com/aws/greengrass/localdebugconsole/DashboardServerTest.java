@@ -5,12 +5,12 @@
 
 package com.aws.greengrass.localdebugconsole;
 
+import com.aws.greengrass.lifecyclemanager.Kernel;
 import com.aws.greengrass.localdebugconsole.dashboardtestmocks.DashboardClientMock;
 import com.aws.greengrass.localdebugconsole.messageutils.ComponentItem;
 import com.aws.greengrass.localdebugconsole.messageutils.DepGraphNode;
 import com.aws.greengrass.localdebugconsole.messageutils.Dependency;
 import com.aws.greengrass.localdebugconsole.messageutils.PackedRequest;
-import com.aws.greengrass.lifecyclemanager.Kernel;
 import com.aws.greengrass.logging.impl.GreengrassLogMessage;
 import com.aws.greengrass.logging.impl.LogManager;
 import com.aws.greengrass.testcommons.testutilities.GGExtension;
@@ -37,8 +37,6 @@ import static com.aws.greengrass.localdebugconsole.DashboardServer.SERVER_START_
 import static com.aws.greengrass.logging.impl.Slf4jLogAdapter.addGlobalListener;
 import static com.aws.greengrass.logging.impl.Slf4jLogAdapter.removeGlobalListener;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -78,7 +76,7 @@ class DashboardServerTest {
 
         addGlobalListener(listener);
         ds = new DashboardServer(new InetSocketAddress("localhost", dashboardServerPort),
-                LogManager.getLogger(Kernel.class), kc, authenticator);
+                LogManager.getLogger(Kernel.class), kc, authenticator, null);
         ds.startup();
         assertTrue(startupLatch.await(5, TimeUnit.SECONDS));
         dashboardServerPort = ds.getPort();

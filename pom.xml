@@ -42,7 +42,12 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-codec-http</artifactId>
-            <version>4.1.46.Final</version>
+            <version>4.1.59.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk15on</artifactId>
+            <version>1.68</version>
         </dependency>
         <dependency>
             <groupId>org.java-websocket</groupId>
@@ -195,6 +200,10 @@
                                 <relocation>
                                     <pattern>org.java_websocket</pattern>
                                     <shadedPattern>com.aws.greengrass.localdebugconsole.lib.org.java_websocket</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.bouncycastle</pattern>
+                                    <shadedPattern>com.aws.greengrass.localdebugconsole.lib.org.bouncycastle</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>

@@ -40,8 +40,9 @@ export default class ServerEndpoint {
     this.timeout = timeout;
 
     // declare connections
+    const proto = window.location.protocol === "https:" ? "wss" : "ws";
     this.conn = new WebSocket(
-      `ws://${window.location.hostname}:${this.portno}`
+      `${proto}://${window.location.hostname}:${this.portno}`
     );
     this.conn.onmessage = this.messageHandler;
 

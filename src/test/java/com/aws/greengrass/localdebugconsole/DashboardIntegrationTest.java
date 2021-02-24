@@ -6,22 +6,29 @@
 package com.aws.greengrass.localdebugconsole;
 
 import com.aws.greengrass.dependency.State;
-import com.aws.greengrass.localdebugconsole.dashboardtestmocks.DashboardClientMock;
 import com.aws.greengrass.lifecyclemanager.GlobalStateChangeListener;
 import com.aws.greengrass.lifecyclemanager.GreengrassService;
 import com.aws.greengrass.lifecyclemanager.Kernel;
+import com.aws.greengrass.localdebugconsole.dashboardtestmocks.DashboardClientMock;
 import com.aws.greengrass.localdebugconsole.messageutils.PackedRequest;
 import com.aws.greengrass.logging.api.Logger;
 import com.aws.greengrass.logging.impl.GreengrassLogMessage;
 import com.aws.greengrass.logging.impl.LogManager;
 import com.aws.greengrass.testcommons.testutilities.GGExtension;
 import com.aws.greengrass.testcommons.testutilities.NoOpPathOwnershipHandler;
+import com.aws.greengrass.util.Coerce;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.reactivestreams.Subscriber;
+import software.amazon.awssdk.http.SdkHttpMethod;
+import software.amazon.awssdk.http.SdkHttpRequest;
+import software.amazon.awssdk.http.async.AsyncExecuteRequest;
+import software.amazon.awssdk.http.async.SdkHttpContentPublisher;
+import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -30,20 +37,33 @@ import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import static com.aws.greengrass.localdebugconsole.DashboardServer.SERVER_START_MESSAGE;
+import static com.aws.greengrass.localdebugconsole.SimpleHttpServer.AWS_GREENGRASS_DEBUG_SERVER;
+import static com.aws.greengrass.localdebugconsole.SimpleHttpServer.CERT_FINGERPRINT_NAMESPACE;
+import static com.aws.greengrass.localdebugconsole.SimpleHttpServer.fingerprintCert;
 import static com.aws.greengrass.localdebugconsole.dashboardtestmocks.RequestIDGenerator.reqId;
 import static com.aws.greengrass.logging.impl.Slf4jLogAdapter.addGlobalListener;
 import static com.aws.greengrass.logging.impl.Slf4jLogAdapter.removeGlobalListener;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -55,6 +75,7 @@ class DashboardIntegrationTest {
 
     private static final CountDownLatch brokenCountdown = new CountDownLatch(1);
     private static final CountDownLatch finishedCountdown = new CountDownLatch(1);
+    private static final CountDownLatch consoleRunningCountdown = new CountDownLatch(1);
 
     @TempDir
     static Path rootDir;
@@ -66,6 +87,7 @@ class DashboardIntegrationTest {
         NoOpPathOwnershipHandler.register(kernel);
         kernel.parseArgs("-i", KernelCommunicatorTest.class.getResource("dashboardIntegTest.yaml").toString());
         kernel.getContext().addGlobalStateChangeListener(countdownDefinitelyBroken);
+        kernel.getContext().addGlobalStateChangeListener(consoleRunning);
         kernel.launch();
         Logger logger = LogManager.getLogger(Kernel.class);
 
@@ -77,12 +99,12 @@ class DashboardIntegrationTest {
         };
         addGlobalListener(listener);
         dashboardServer = new DashboardServer(new InetSocketAddress("localhost", 0), logger, kernel,
-                null, (a) -> true);
+                null, (a) -> true, null);
 
         dashboardServer.startup();
         // wait for steady state
-        Thread.sleep(1500);
-        assertTrue(startupLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(startupLatch.await(10, TimeUnit.SECONDS));
+        assertTrue(consoleRunningCountdown.await(10, TimeUnit.SECONDS));
         URI address = new URI("ws://localhost:" + dashboardServer.getPort());
         dm = new DashboardClientMock(address, LogManager.getLogger(Kernel.class));
         dm.init().get(2, TimeUnit.SECONDS);
@@ -212,6 +234,54 @@ class DashboardIntegrationTest {
         assertTrue(finishedCountdown.await(10, TimeUnit.SECONDS));
     }
 
+    @Test
+    void GIVEN_running_server_THEN_we_can_connect_using_TLS()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        assertNotNull(Coerce.toString(kernel.getConfig().find(CERT_FINGERPRINT_NAMESPACE)));
+
+        CompletableFuture<Void> cf = new CompletableFuture<>();
+        NettyNioAsyncHttpClient.builder()
+                .tlsTrustManagersProvider(() -> new TrustManager[] {
+                        new X509TrustManager() {
+                            @Override
+                            public void checkClientTrusted(X509Certificate[] chain, String authType) {
+                            }
+
+                            @Override
+                            public void checkServerTrusted(X509Certificate[] chain, String authType)
+                                    throws CertificateException {
+                                try {
+                                    assertEquals(Coerce.toString(kernel.getConfig().find(CERT_FINGERPRINT_NAMESPACE)), fingerprintCert(chain[0]));
+                                    cf.complete(null);
+                                } catch (NoSuchAlgorithmException ignored) {
+                                }
+                            }
+
+                            @Override
+                            public X509Certificate[] getAcceptedIssuers() {
+                                return new X509Certificate[0];
+                            }
+                        }
+                })
+                .build()
+                .execute(AsyncExecuteRequest.builder().requestContentPublisher(new SdkHttpContentPublisher() {
+                    @Override
+                    public Optional<Long> contentLength() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public void subscribe(Subscriber<? super ByteBuffer> subscriber) {
+
+                    }
+                }).request(
+                        SdkHttpRequest.builder()
+                                .method(SdkHttpMethod.GET)
+                                .uri(URI.create("https://localhost:" + kernel.getContext().get(SimpleHttpServer.class).port)).build())
+                        .build());
+        cf.get(2, TimeUnit.SECONDS);
+    }
+
     static GlobalStateChangeListener countdownDefinitelyBroken = (GreengrassService service, State oldState,
                                                                   State newState) -> {
         if ("definitelyBroken".equals(service.getName())) {
@@ -219,6 +289,15 @@ class DashboardIntegrationTest {
                 brokenCountdown.countDown();
             } else if (State.FINISHED.equals(newState)) {
                 finishedCountdown.countDown();
+            }
+        }
+    };
+
+    static GlobalStateChangeListener consoleRunning = (GreengrassService service, State oldState,
+                                                                  State newState) -> {
+        if (AWS_GREENGRASS_DEBUG_SERVER.equals(service.getName())) {
+            if (State.RUNNING.equals(newState)) {
+                consoleRunningCountdown.countDown();
             }
         }
     };

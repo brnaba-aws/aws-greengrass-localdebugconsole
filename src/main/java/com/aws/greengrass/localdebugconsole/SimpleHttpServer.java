@@ -12,7 +12,6 @@ import com.aws.greengrass.config.Topics;
 import com.aws.greengrass.dependency.ImplementsService;
 import com.aws.greengrass.dependency.State;
 import com.aws.greengrass.deployment.DeviceConfiguration;
-import com.aws.greengrass.lifecyclemanager.GreengrassService;
 import com.aws.greengrass.lifecyclemanager.Kernel;
 import com.aws.greengrass.lifecyclemanager.PluginService;
 import com.aws.greengrass.logging.api.Logger;
@@ -21,6 +20,7 @@ import com.aws.greengrass.util.Pair;
 import com.aws.greengrass.util.Utils;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -40,26 +40,50 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.BasicConstraints;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.Security;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.net.ssl.SSLEngine;
 
 import static com.aws.greengrass.componentmanager.KernelConfigResolver.CONFIGURATION_CONFIG_KEY;
 import static com.aws.greengrass.util.Utils.isEmpty;
@@ -73,6 +97,7 @@ import static io.netty.buffer.Unpooled.copiedBuffer;
 @ImplementsService(name = SimpleHttpServer.AWS_GREENGRASS_DEBUG_SERVER, autostart = true)
 public class SimpleHttpServer extends PluginService implements Authenticator {
     public static final String AWS_GREENGRASS_DEBUG_SERVER = "aws.greengrass.LocalDebugConsole";
+    protected static final String CERT_FINGERPRINT_NAMESPACE = "_certificateFingerprint";
     protected static final String DEBUG_PASSWORD_NAMESPACE = "_debugPassword";
     protected static final String EXPIRATION_NAMESPACE = "expiration";
     private ChannelFuture channel;
@@ -80,14 +105,16 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
     private final EventLoopGroup secondaryGroup = new NioEventLoopGroup();
     private static final int DEFAULT_HTTP_PORT = 1441;
     private static final int DEFAULT_WEBSOCKET_PORT = 1442;
-    private int port = DEFAULT_HTTP_PORT;
+    private static final boolean DEFAULT_HTTPS_ENABLED = true;
+    int port = DEFAULT_HTTP_PORT;
 
     private final Kernel kernel;
     private final DeviceConfiguration deviceConfig;
 
     private DashboardServer dashboardServer;
-    private int websocketPort = DEFAULT_WEBSOCKET_PORT;
+    int websocketPort = DEFAULT_WEBSOCKET_PORT;
     private String bindHostname = "localhost";
+    private boolean httpsEnabled = DEFAULT_HTTPS_ENABLED;
 
     @Inject
     public SimpleHttpServer(Topics t, Kernel kernel, DeviceConfiguration deviceConfiguration) {
@@ -100,35 +127,72 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
     public void postInject() {
         super.postInject();
         config.lookup(CONFIGURATION_CONFIG_KEY, "port").dflt(port).subscribe((w, n) -> {
+            int oldPort = port;
             port = Coerce.toInt(n);
-            if (port < 1000) {
+            if (port < 1024) {
                 logger.atWarn().kv("port", port).kv("defaultPort", DEFAULT_HTTP_PORT)
-                        .log("Port number should not be smaller than 1000. Using default.");
+                        .log("Port number should not be smaller than 1024. Using default.");
                 port = DEFAULT_HTTP_PORT;
             }
-            // TODO: should restart server on new port
+            if (oldPort != port) {
+                requestRestart();
+            }
+        });
+        config.lookup(CONFIGURATION_CONFIG_KEY, "httpsEnabled").dflt(DEFAULT_HTTPS_ENABLED).subscribe((w, n) -> {
+            boolean oldEnabled = httpsEnabled;
+            httpsEnabled = Coerce.toBoolean(n);
+            if (oldEnabled != httpsEnabled) {
+                requestRestart();
+            }
         });
         config.lookup(CONFIGURATION_CONFIG_KEY, "websocketPort").dflt(websocketPort).subscribe((w, n) -> {
+            int oldPort = websocketPort;
             websocketPort = Coerce.toInt(n);
-            if (port < 1000) {
-                logger.atWarn().kv("websocketPort", port).kv("defaultWebsocketPort", DEFAULT_WEBSOCKET_PORT)
-                        .log("Websocket port number should not be smaller than 1000. Using default.");
+            if (websocketPort < 1024) {
+                logger.atWarn().kv("websocketPort", websocketPort).kv("defaultWebsocketPort", DEFAULT_WEBSOCKET_PORT)
+                        .log("Websocket port number should not be smaller than 1024. Using default.");
                 websocketPort = DEFAULT_WEBSOCKET_PORT;
             }
-            // TODO: should restart server on new port
+            if (oldPort != websocketPort) {
+                requestRestart();
+            }
         });
         config.lookup(CONFIGURATION_CONFIG_KEY, "bindHostname").dflt(bindHostname).subscribe((w, n) -> {
+            String oldName = bindHostname;
             bindHostname = Coerce.toString(n);
+            if (!Objects.equals(oldName, bindHostname)) {
+                requestRestart();
+            }
         });
-        context.addGlobalStateChangeListener((s, w, n) -> addTimelineEntry(s, w));
     }
 
     @SuppressWarnings("UseSpecificCatch")
     @Override
     public void startup() throws InterruptedException {
+        SslContext context = null;
+        Provider<SSLEngine> engineProvider = null;
+        if (httpsEnabled) {
+            try {
+                KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+                keyGen.initialize(4096, new SecureRandom());
+                KeyPair keyPair = keyGen.generateKeyPair();
+                X509Certificate cert = selfSign(keyPair, bindHostname);
+                context = SslContextBuilder.forServer(keyPair.getPrivate(), cert).build();
+                SslContext finalContext = context;
+                engineProvider = () -> finalContext.newEngine(ByteBufAllocator.DEFAULT);
+
+                // Save certificate fingerprint as space separated hex bytes
+                String fingerprint = fingerprintCert(cert);
+                config.getRoot().lookup(CERT_FINGERPRINT_NAMESPACE).withValue(fingerprint);
+            } catch (CertificateException | NoSuchAlgorithmException | OperatorCreationException | IOException e) {
+                serviceErrored(e);
+                return;
+            }
+        }
+
         logger.atInfo().log("Starting local dashboard server");
         dashboardServer = new DashboardServer(new InetSocketAddress(bindHostname, websocketPort), logger,
-                kernel, deviceConfig, this);
+                kernel, deviceConfig, this, engineProvider);
         dashboardServer.startup();
         try {
             // We need to wait for the server to startup before grabbing the port because it starts in a separate thread
@@ -138,11 +202,11 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
         }
         websocketPort = dashboardServer.getPort();
         logger.atInfo().addKeyValue("port", websocketPort).log("Finished starting websocket server");
-
         try {
             final ServerBootstrap bootstrap =
                     new ServerBootstrap().group(primaryGroup, secondaryGroup).channel(NioServerSocketChannel.class)
-                            .childHandler(new ChannelInitializerImpl()).option(ChannelOption.SO_BACKLOG, 128)
+                            .childHandler(new ChannelInitializerImpl(context)).option(ChannelOption.SO_BACKLOG,
+                            128)
                             .childOption(ChannelOption.SO_KEEPALIVE, true);
             channel = bootstrap.bind(new InetSocketAddress(bindHostname, port)).sync();
         } catch (InterruptedException e) {
@@ -154,15 +218,55 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
         reportState(State.RUNNING);
     }
 
+    static String fingerprintCert(X509Certificate cert)
+            throws NoSuchAlgorithmException, CertificateEncodingException {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : MessageDigest.getInstance("SHA-256").digest(cert.getEncoded())) {
+            sb.append(String.format("%02X ", b));
+        }
+        return sb.toString().trim();
+    }
+
+    private static X509Certificate selfSign(KeyPair keyPair, String subjectDN) throws OperatorCreationException,
+            CertificateException,
+            IOException
+    {
+        java.security.Provider bcProvider = new BouncyCastleProvider();
+        Security.addProvider(bcProvider);
+
+        long now = System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(60);
+        Date startDate = new Date(now);
+
+        X500Name dnName = new X500Name("cn=" + subjectDN);
+        BigInteger certSerialNumber = new BigInteger(Long.toString(now)); // Using the current timestamp as the certificate serial number
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(startDate);
+        calendar.add(Calendar.YEAR, 10); // 10 year validity period
+        Date endDate = calendar.getTime();
+
+        String signatureAlgorithm = "SHA256WithRSA";
+        ContentSigner contentSigner = new JcaContentSignerBuilder(signatureAlgorithm).build(keyPair.getPrivate());
+        JcaX509v3CertificateBuilder
+                certBuilder = new JcaX509v3CertificateBuilder(dnName, certSerialNumber, startDate,
+                endDate, dnName, keyPair.getPublic());
+        BasicConstraints basicConstraints = new BasicConstraints(false);
+        // Required basic constraints OID. Must be present to be recognized as a proper certificate by browsers
+        certBuilder.addExtension(new ASN1ObjectIdentifier("2.5.29.19"), true, basicConstraints);
+
+        return new JcaX509CertificateConverter().setProvider(bcProvider).getCertificate(certBuilder.build(contentSigner));
+    }
+
     @Override
     public void shutdown() throws InterruptedException {
         logger.atInfo().log("Shutting down httpd");
         secondaryGroup.shutdownGracefully();
         primaryGroup.shutdownGracefully();
         try {
-            dashboardServer.stop();
+            if (dashboardServer != null) {
+                dashboardServer.stop();
+            }
         } catch (Exception e) {
-            logger.atError().setCause(e).log("Error shutting down local dashboard server");
             serviceErrored(e);
         }
 
@@ -171,74 +275,24 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
         }
     }
 
-    // TODO break the timeline out to its own class
-    private void addTimelineEntry(GreengrassService s, State w) {
-        Queue<stateTimelineEntry> stl = timeline.computeIfAbsent(s, s2 -> new ConcurrentLinkedDeque<>());
-        stl.add(new stateTimelineEntry(s, w));
-    }
-
-    private final ConcurrentHashMap<GreengrassService, Queue<stateTimelineEntry>> timeline = new ConcurrentHashMap<>();
-
-    public void forEachTransition(GreengrassService s, long min, long max, consumeTimelineEntry func) {
-        Queue<stateTimelineEntry> q = timeline.get(s);
-        if (q != null) {
-            AtomicReference<stateTimelineEntry> preroll = new AtomicReference<>();
-            q.forEach(tle -> {
-                if (tle.T < max) {
-                    if (tle.T >= min) {
-                        if (preroll.get() != null) {
-                            func.preroll(preroll.get());
-                            preroll.set(null);
-                        }
-                        func.accept(tle);
-                    } else {
-                        preroll.set(tle);
-                    }
-                }
-            });
-            if (preroll.get() != null) {
-                func.preroll(preroll.get());
-            }
-            func.done();
-        }
-    }
-
-    public static class stateTimelineEntry {
-
-        public final State was;
-        public final State is;
-        public final GreengrassService s;
-        public final long T;
-        private static long prevT;
-
-        stateTimelineEntry(GreengrassService s, State was) {
-            this.was = was;
-            this.s = s;
-            is = s.getState();
-            T = Math.max(System.currentTimeMillis(), prevT + 1);
-            prevT = T;
-        }
-    }
-
-    public interface consumeTimelineEntry {
-
-        public void preroll(stateTimelineEntry tle);
-
-        public void accept(stateTimelineEntry tle);
-
-        public void done();
-    }
-
     private class ChannelInitializerImpl extends ChannelInitializer<SocketChannel> {
+        private final SslContext sslContext;
+
+        public ChannelInitializerImpl(SslContext sslContext) {
+            this.sslContext = sslContext;
+        }
+
         @Override
         public void initChannel(final SocketChannel ch) throws Exception {
+            if (sslContext != null) {
+                ch.pipeline().addFirst("ssl", sslContext.newHandler(ch.alloc()));
+            }
             ch.pipeline().addLast("codec", new HttpServerCodec());
             ch.pipeline().addLast("aggregator", new HttpObjectAggregator(512 * 1024));
             ch.pipeline().addLast("request", new PageHandler());
         }
     }
 
-    static final ConcurrentHashMap<String, byte[]> bcache = new ConcurrentHashMap<>();
     static final byte[] missing = {1, 2, 3};
 
     @SuppressWarnings("UseSpecificCatch")
@@ -316,7 +370,8 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
                     }
 
                     FullHttpResponse response =
-                            new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND, null);
+                            new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND,
+                                    copiedBuffer("Not Found".getBytes(StandardCharsets.UTF_8)));
                     if (HttpUtil.isKeepAlive(request)) {
                         response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
                     }
@@ -339,10 +394,6 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
 
         public Logger getLogger() {
             return logger;
-        }
-
-        public String getRequestBody() {
-            return request.content().toString(StandardCharsets.UTF_8);
         }
 
         @Override
@@ -468,7 +519,7 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
             String k = p.group(1);
             String v = p.group(3);
             m.put(k, v == null ? "" : v);
-            assert p.end() > p.regionStart();  // cannot loop infinely
+            assert p.end() > p.regionStart();  // cannot loop infinitely
             p.region(p.end(), p.regionEnd());
         }
         return m.isEmpty() ? Collections.emptyMap() : m;

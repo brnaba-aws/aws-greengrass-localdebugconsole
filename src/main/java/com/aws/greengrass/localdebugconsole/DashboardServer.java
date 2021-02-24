@@ -6,12 +6,12 @@
 package com.aws.greengrass.localdebugconsole;
 
 import com.aws.greengrass.deployment.DeviceConfiguration;
+import com.aws.greengrass.lifecyclemanager.Kernel;
 import com.aws.greengrass.localdebugconsole.messageutils.DeviceDetails;
 import com.aws.greengrass.localdebugconsole.messageutils.Message;
 import com.aws.greengrass.localdebugconsole.messageutils.MessageType;
 import com.aws.greengrass.localdebugconsole.messageutils.PackedRequest;
 import com.aws.greengrass.localdebugconsole.messageutils.Request;
-import com.aws.greengrass.lifecyclemanager.Kernel;
 import com.aws.greengrass.logging.api.Logger;
 import com.aws.greengrass.util.DefaultConcurrentHashMap;
 import com.aws.greengrass.util.Pair;
@@ -30,7 +30,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
+import javax.inject.Provider;
 import javax.inject.Singleton;
+import javax.net.ssl.SSLEngine;
 
 @Singleton
 public class DashboardServer extends WebSocketServer implements KernelMessagePusher {
@@ -50,13 +52,19 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
     private final Authenticator authenticator;
 
     public DashboardServer(InetSocketAddress address, Logger logger, Kernel root, DeviceConfiguration deviceConfig,
-                           Authenticator authenticator) {
-        this(address, logger, new KernelCommunicator(root, logger, deviceConfig), authenticator);
+                           Authenticator authenticator, Provider<SSLEngine> engineProvider) {
+        this(address, logger, new KernelCommunicator(root, logger, deviceConfig), authenticator, engineProvider);
     }
 
     // constructor for unit testing
-    DashboardServer(InetSocketAddress address, Logger logger, DashboardAPI dashboardAPI, Authenticator authenticator) {
+    DashboardServer(InetSocketAddress address, Logger logger, DashboardAPI dashboardAPI, Authenticator authenticator,
+                    Provider<SSLEngine> engineProvider) {
         super(address);
+        setReuseAddr(true);
+        setTcpNoDelay(true);
+        if (engineProvider != null) {
+            setWebSocketFactory(new GGSSLWebSocketServerFactory(engineProvider));
+        }
         this.logger = logger;
         this.dashboardAPI = dashboardAPI;
         this.authenticator = authenticator;
@@ -223,7 +231,8 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
 
     @Override
     public void onError(WebSocket conn, Exception ex) {
-        logger.atError().setCause(ex).log("an error occurred on connection {}", conn.getRemoteSocketAddress());
+        logger.atError().setCause(ex).log("an error occurred on connection {}",
+                conn == null ? null : conn.getRemoteSocketAddress());
     }
 
     @Override

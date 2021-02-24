@@ -9,6 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: wagoid/commitlint-github-action@v2
       - name: Set up Node 12
         uses: actions/setup-node@v1
         with:
@@ -19,6 +22,8 @@ jobs:
           java-version: 1.8
       - name: Build with Maven
         run: mvn -ntp -U clean verify
+        env:
+          AWS_REGION: us-west-2
       - name: Upload Failed Test Report
         uses: actions/upload-artifact@v1.0.0
         if: failure()

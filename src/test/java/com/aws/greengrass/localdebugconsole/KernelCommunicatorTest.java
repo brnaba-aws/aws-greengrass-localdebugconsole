@@ -6,6 +6,9 @@
 package com.aws.greengrass.localdebugconsole;
 
 import com.aws.greengrass.config.Topic;
+import com.aws.greengrass.dependency.State;
+import com.aws.greengrass.lifecyclemanager.GlobalStateChangeListener;
+import com.aws.greengrass.lifecyclemanager.GreengrassService;
 import com.aws.greengrass.lifecyclemanager.Kernel;
 import com.aws.greengrass.lifecyclemanager.exceptions.ServiceLoadException;
 import com.aws.greengrass.localdebugconsole.messageutils.ConfigMessage;
@@ -35,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.aws.greengrass.componentmanager.KernelConfigResolver.VERSION_CONFIG_KEY;
+import static com.aws.greengrass.localdebugconsole.SimpleHttpServer.AWS_GREENGRASS_DEBUG_SERVER;
 import static com.aws.greengrass.testcommons.testutilities.ExceptionLogProtector.ignoreExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -58,11 +62,22 @@ class KernelCommunicatorTest {
     @TempDir
     static Path rootDir;
 
+    private static final CountDownLatch consoleRunningCountdown = new CountDownLatch(1);
+    static GlobalStateChangeListener consoleRunning = (GreengrassService service, State oldState,
+                                                       State newState) -> {
+        if (AWS_GREENGRASS_DEBUG_SERVER.equals(service.getName())) {
+            if (State.RUNNING.equals(newState)) {
+                consoleRunningCountdown.countDown();
+            }
+        }
+    };
+
     @BeforeAll
-    static void setup() {
+    static void setup() throws InterruptedException {
         ds = mock(DashboardServer.class);
         System.setProperty("root", rootDir.toAbsolutePath().toString());
         kernel = new Kernel();
+        kernel.getContext().addGlobalStateChangeListener(consoleRunning);
         NoOpPathOwnershipHandler.register(kernel);
         kernel.parseArgs("-i", KernelCommunicatorTest.class.getResource("kernelPushTest.yaml").toString());
         kernel.launch();
@@ -71,6 +86,7 @@ class KernelCommunicatorTest {
         kc = Mockito.spy(temp);
         kc.linkWithPusher(ds);
         kc.linkWithKernel();
+        assertTrue(consoleRunningCountdown.await(10, TimeUnit.SECONDS));
     }
 
     @AfterAll
@@ -141,8 +157,7 @@ class KernelCommunicatorTest {
         String newConfig = readFromFile("dependencyChange.yaml");
         kc.updateConfig("main", newConfig);
         assertTrue(countDownLatch.await(1, TimeUnit.SECONDS));
-        kernel.getContext().runOnPublishQueueAndWait(() -> {
-        });
+        kernel.getContext().waitForPublishQueueToClear();
 
         DepGraphNode[] expected = {
                 new DepGraphNode("blindside", new Dependency[0]), new DepGraphNode("main",
