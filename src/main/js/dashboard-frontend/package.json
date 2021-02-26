@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@awsui/components-react": "^3.0.0",
+    "@awsui/components-react": "3.0.58",
     "@awsui/design-tokens": "^3.0.0",
     "@awsui/global-styles": "^1.0.0",
     "ace-builds": "^1.4.12",
@@ -14,7 +14,7 @@
     "react-ace": "^9.1.1",
     "react-dom": "^16.13.1",
     "react-router-dom": "^5.2.0",
-    "react-scripts": "^3.4.1",
+    "react-scripts": "^4.0.3",
     "react-virtualized": "^9.21.2",
     "typescript": "^3.7.5"
   },
