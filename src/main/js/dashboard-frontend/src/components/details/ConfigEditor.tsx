@@ -89,29 +89,32 @@ export class ConfigEditor extends React.Component<
   };
 
   updateFlashbar = (success: boolean, errorMsg?: string) => {
+    const itemID = this.state.flashCnt;
     if (success) {
-      let temp = this.state.flashCnt;
       this.setState({
         flashItems:
           this.state.flashItems.concat([
             {
+              // @ts-ignore
+              num: itemID,
               type: "success",
               content: "Config updated successfully.",
               dismissible: true,
-              onDismiss: () => this.removeItem(temp),
+              onDismiss: () => this.removeItem(itemID),
             },
           ]),
       });
     } else {
-      let temp = this.state.flashCnt;
       this.setState({
         flashItems:
           this.state.flashItems.concat([
             {
+              // @ts-ignore
+              num: itemID,
               type: "error",
               content: `Unable to update config. ${errorMsg}`,
               dismissible: true,
-              onDismiss: () => this.removeItem(temp),
+              onDismiss: () => this.removeItem(itemID),
             },
           ]),
       });

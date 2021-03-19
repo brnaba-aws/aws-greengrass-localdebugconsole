@@ -51,6 +51,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import software.amazon.awssdk.regions.Region;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -432,6 +433,10 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
                             .replace("%WEBSOCKET_PORT%", Integer.toString(websocketPort))
                             .replace("%USERNAME%", usernameAndPassword.getLeft())
                             .replace("%PASSWORD%", usernameAndPassword.getRight())
+                            .replace("%CHINA_PARTITION%",
+                                    String.valueOf("aws-cn"
+                                            .equals(Region.of(Coerce.toString(deviceConfig.getAWSRegion())).metadata()
+                                                    .partition().id())))
                             .getBytes(StandardCharsets.UTF_8);
                 }
             } catch (Throwable t) {
