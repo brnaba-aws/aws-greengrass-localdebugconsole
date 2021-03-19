@@ -57,6 +57,8 @@ import javax.net.ssl.X509TrustManager;
 import static com.aws.greengrass.localdebugconsole.DashboardServer.SERVER_START_MESSAGE;
 import static com.aws.greengrass.localdebugconsole.SimpleHttpServer.AWS_GREENGRASS_DEBUG_SERVER;
 import static com.aws.greengrass.localdebugconsole.SimpleHttpServer.CERT_FINGERPRINT_NAMESPACE;
+import static com.aws.greengrass.localdebugconsole.SimpleHttpServer.SHA_1_ALGORITHM;
+import static com.aws.greengrass.localdebugconsole.SimpleHttpServer.SHA_256_ALGORITHM;
 import static com.aws.greengrass.localdebugconsole.SimpleHttpServer.fingerprintCert;
 import static com.aws.greengrass.localdebugconsole.dashboardtestmocks.RequestIDGenerator.reqId;
 import static com.aws.greengrass.logging.impl.Slf4jLogAdapter.addGlobalListener;
@@ -237,7 +239,8 @@ class DashboardIntegrationTest {
     @Test
     void GIVEN_running_server_THEN_we_can_connect_using_TLS()
             throws ExecutionException, InterruptedException, TimeoutException {
-        assertNotNull(Coerce.toString(kernel.getConfig().find(CERT_FINGERPRINT_NAMESPACE)));
+        assertNotNull(Coerce.toString(kernel.getConfig().find(CERT_FINGERPRINT_NAMESPACE, SHA_1_ALGORITHM)));
+        assertNotNull(Coerce.toString(kernel.getConfig().find(CERT_FINGERPRINT_NAMESPACE, SHA_256_ALGORITHM)));
 
         CompletableFuture<Void> cf = new CompletableFuture<>();
         NettyNioAsyncHttpClient.builder()
@@ -251,7 +254,12 @@ class DashboardIntegrationTest {
                             public void checkServerTrusted(X509Certificate[] chain, String authType)
                                     throws CertificateException {
                                 try {
-                                    assertEquals(Coerce.toString(kernel.getConfig().find(CERT_FINGERPRINT_NAMESPACE)), fingerprintCert(chain[0]));
+                                    assertEquals(Coerce.toString(
+                                            kernel.getConfig().find(CERT_FINGERPRINT_NAMESPACE, SHA_1_ALGORITHM)),
+                                            fingerprintCert(chain[0], SHA_1_ALGORITHM));
+                                    assertEquals(Coerce.toString(
+                                            kernel.getConfig().find(CERT_FINGERPRINT_NAMESPACE, SHA_256_ALGORITHM)),
+                                            fingerprintCert(chain[0], SHA_256_ALGORITHM));
                                     cf.complete(null);
                                 } catch (NoSuchAlgorithmException ignored) {
                                 }

@@ -100,6 +100,8 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
     protected static final String CERT_FINGERPRINT_NAMESPACE = "_certificateFingerprint";
     protected static final String DEBUG_PASSWORD_NAMESPACE = "_debugPassword";
     protected static final String EXPIRATION_NAMESPACE = "expiration";
+    protected static final String SHA_1_ALGORITHM = "SHA-1";
+    protected static final String SHA_256_ALGORITHM = "SHA-256";
     private ChannelFuture channel;
     private final EventLoopGroup primaryGroup = new NioEventLoopGroup();
     private final EventLoopGroup secondaryGroup = new NioEventLoopGroup();
@@ -182,8 +184,10 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
                 engineProvider = () -> finalContext.newEngine(ByteBufAllocator.DEFAULT);
 
                 // Save certificate fingerprint as space separated hex bytes
-                String fingerprint = fingerprintCert(cert);
-                config.getRoot().lookup(CERT_FINGERPRINT_NAMESPACE).withValue(fingerprint);
+                String fingerprint = fingerprintCert(cert, SHA_1_ALGORITHM);
+                config.getRoot().lookup(CERT_FINGERPRINT_NAMESPACE, SHA_1_ALGORITHM).withValue(fingerprint);
+                fingerprint = fingerprintCert(cert, SHA_256_ALGORITHM);
+                config.getRoot().lookup(CERT_FINGERPRINT_NAMESPACE, SHA_256_ALGORITHM).withValue(fingerprint);
             } catch (CertificateException | NoSuchAlgorithmException | OperatorCreationException | IOException e) {
                 serviceErrored(e);
                 return;
@@ -218,10 +222,10 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
         reportState(State.RUNNING);
     }
 
-    static String fingerprintCert(X509Certificate cert)
+    static String fingerprintCert(X509Certificate cert, String algorithm)
             throws NoSuchAlgorithmException, CertificateEncodingException {
         StringBuilder sb = new StringBuilder();
-        for (byte b : MessageDigest.getInstance("SHA-256").digest(cert.getEncoded())) {
+        for (byte b : MessageDigest.getInstance(algorithm).digest(cert.getEncoded())) {
             sb.append(String.format("%02X ", b));
         }
         return sb.toString().trim();
