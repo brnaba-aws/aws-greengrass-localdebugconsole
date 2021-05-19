@@ -11,19 +11,18 @@ import com.aws.greengrass.config.ChildChanged;
 import com.aws.greengrass.config.Node;
 import com.aws.greengrass.config.Subscriber;
 import com.aws.greengrass.config.Topic;
-import com.aws.greengrass.config.Topics;
 import com.aws.greengrass.config.UpdateBehaviorTree;
 import com.aws.greengrass.config.WhatHappened;
 import com.aws.greengrass.dependency.State;
 import com.aws.greengrass.deployment.DeviceConfiguration;
+import com.aws.greengrass.lifecyclemanager.GreengrassService;
+import com.aws.greengrass.lifecyclemanager.Kernel;
+import com.aws.greengrass.lifecyclemanager.exceptions.ServiceLoadException;
 import com.aws.greengrass.localdebugconsole.messageutils.ComponentItem;
 import com.aws.greengrass.localdebugconsole.messageutils.ConfigMessage;
 import com.aws.greengrass.localdebugconsole.messageutils.DepGraphNode;
 import com.aws.greengrass.localdebugconsole.messageutils.Dependency;
 import com.aws.greengrass.localdebugconsole.messageutils.DeviceDetails;
-import com.aws.greengrass.lifecyclemanager.GreengrassService;
-import com.aws.greengrass.lifecyclemanager.Kernel;
-import com.aws.greengrass.lifecyclemanager.exceptions.ServiceLoadException;
 import com.aws.greengrass.logging.api.Logger;
 import com.aws.greengrass.logging.impl.config.LogConfig;
 import com.aws.greengrass.logging.impl.config.LogStore;
@@ -41,8 +40,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Singleton;
 
-import static com.aws.greengrass.lifecyclemanager.GreengrassService.PRIVATE_STORE_NAMESPACE_TOPIC;
 import static com.aws.greengrass.componentmanager.KernelConfigResolver.VERSION_CONFIG_KEY;
+import static com.aws.greengrass.lifecyclemanager.GreengrassService.PRIVATE_STORE_NAMESPACE_TOPIC;
 
 /**
  * Manages data fetches and streams from the kernel.
@@ -74,8 +73,7 @@ public class KernelCommunicator implements DashboardAPI {
         root.getContext().addGlobalStateChangeListener(this::onStateChange);
         KernelHook hook = new KernelHook();
         updateNodes(root.getMain(), hook);
-        Topics temp = root.getConfig().findTopics(GreengrassService.SERVICES_NAMESPACE_TOPIC);
-        temp.subscribe(hook);
+        root.getConfig().lookupTopics(GreengrassService.SERVICES_NAMESPACE_TOPIC).subscribe(hook);
         updateServicesList();
     }
 
@@ -83,8 +81,8 @@ public class KernelCommunicator implements DashboardAPI {
     public DeviceDetails getDeviceDetails() {
         String thingName = Coerce.toString(deviceConfig.getThingName());
         String storeName =
-                (LogConfig.getInstance().getStore() == LogStore.CONSOLE) ? LogStore.CONSOLE.toString()
-                        : LogConfig.getInstance().getStoreName();
+                (LogConfig.getRootLogConfig().getStore() == LogStore.CONSOLE) ? LogStore.CONSOLE.toString()
+                        : LogConfig.getRootLogConfig().getStoreName();
         return new DeviceDetails(System.getProperty("os.name"), System.getProperty("os.version"),
                 System.getProperty("os.arch"), root.getNucleusPaths().rootPath().toAbsolutePath().toString(), storeName,
                 (thingName != null && !thingName.isEmpty()), thingName);

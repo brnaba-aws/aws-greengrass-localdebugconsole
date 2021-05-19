@@ -5,4 +5,4 @@
 
 import ServerEndpoint from "../communication/ServerEndpoint";
 
-export var SERVER = new ServerEndpoint(8887, "", "", 5);
+export var SERVER = new ServerEndpoint(8887, "", "", 5, (a) => {});

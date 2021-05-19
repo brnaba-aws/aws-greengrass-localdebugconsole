@@ -22,7 +22,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.aws.greengrass</groupId>
     <artifactId>localdebugconsole</artifactId>
-    <version>2.1.0-SNAPSHOT</version>
+    <version>2.2.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <repositories>
         <repository>
@@ -57,13 +57,13 @@
         <dependency>
             <groupId>com.aws.greengrass</groupId>
             <artifactId>nucleus</artifactId>
-            <version>2.1.0-SNAPSHOT</version>
+            <version>2.2.0-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.aws.greengrass</groupId>
             <artifactId>nucleus</artifactId>
-            <version>2.1.0-SNAPSHOT</version>
+            <version>2.2.0-SNAPSHOT</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>

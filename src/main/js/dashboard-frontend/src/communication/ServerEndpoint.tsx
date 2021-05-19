@@ -16,7 +16,8 @@ import {
   Request,
   RequestID,
 } from "../util/CommUtils";
-import { ComponentItem } from "../util/ComponentItem";
+import {ComponentItem} from "../util/ComponentItem";
+import React, {ReactNode} from "react";
 
 export default class ServerEndpoint {
   portno: number;
@@ -35,7 +36,7 @@ export default class ServerEndpoint {
   cachedComponentList: ComponentItem[] = [];
   cachedDependencyGraph: Map<string, Dependency[]> = new Map();
 
-  constructor(portno: number, username: string, password: string, timeout: number) {
+  constructor(portno: number, username: string, password: string, timeout: number, onError: (m: ReactNode) => void) {
     this.portno = portno;
     this.timeout = timeout;
 
@@ -44,10 +45,49 @@ export default class ServerEndpoint {
     this.conn = new WebSocket(
       `${proto}://${window.location.hostname}:${this.portno}`
     );
-    this.conn.onmessage = this.messageHandler;
 
     // initialize connections
     this._connectionPromise = this.deferPromise(() => {});
+
+    this.conn.onmessage = this.messageHandler;
+    this.conn.onclose = (event) => {
+      let reason: ReactNode = "Unknown reason";
+      if (event.code === 1002) {
+        reason = "An endpoint is terminating the connection due to a protocol error";
+      } else if (event.code === 1003) {
+        reason = "An endpoint is terminating the connection because it has received a type of data it cannot accept.";
+      } else if (event.code === 1005) {
+        reason = "No status code was actually present.";
+      } else if (event.code === 1006) {
+        reason = "The connection was closed abnormally.";
+      } else if (event.code === 1007) {
+        reason = "An endpoint is terminating the connection because it has received data within a message that was not consistent with the type of the message.";
+      } else if (event.code === 1008) {
+        reason = "An endpoint is terminating the connection because it has received a message that violates its policy.";
+      } else if (event.code === 1009) {
+        reason = "An endpoint is terminating the connection because it has received a message that is too big for it to process.";
+      } else if (event.code === 1010) {
+        // Note that this status code is not used by the server, because it can fail the WebSocket handshake instead.
+        reason = "An endpoint (client) is terminating the connection because it has expected the server to negotiate" +
+            " one or more extension, but the server didn't return them in the response message of the WebSocket handshake. Specifically, the extensions that are needed are: " + event.reason;
+      } else if (event.code === 1011) {
+        reason = "A server is terminating the connection because it encountered an unexpected condition that prevented it from fulfilling the request.";
+      } else if (event.code === 1015) {
+        reason = (<>{'The connection was closed due to a failure to perform a TLS handshake'}<br/>Try opening <a
+            href={`${window.location.protocol}//${window.location.hostname}:${this.portno}`} target={'_blank'}
+            rel={'noreferrer'}>
+          {/* eslint-disable-next-line */}
+          {window.location.protocol}//{window.location.hostname}:{this.portno}</a> and
+          bypass any warnings, then reload this page.
+          The WebSocket connection uses the same certificate as this page.</>);
+      }
+
+      // Lower codes are normal events which we want to ignore
+      if (event.code >= 1002) {
+        this._connectionPromise.reject(reason);
+        onError(reason);
+      }
+    }
 
     this.conn.onopen = () => {
       this.conn.send(

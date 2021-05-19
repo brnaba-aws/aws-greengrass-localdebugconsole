@@ -23,12 +23,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.reactivestreams.Subscriber;
+import software.amazon.awssdk.http.HttpExecuteRequest;
 import software.amazon.awssdk.http.SdkHttpMethod;
 import software.amazon.awssdk.http.SdkHttpRequest;
-import software.amazon.awssdk.http.async.AsyncExecuteRequest;
-import software.amazon.awssdk.http.async.SdkHttpContentPublisher;
-import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -37,13 +35,11 @@ import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -238,55 +234,37 @@ class DashboardIntegrationTest {
 
     @Test
     void GIVEN_running_server_THEN_we_can_connect_using_TLS()
-            throws ExecutionException, InterruptedException, TimeoutException {
+            throws ExecutionException, InterruptedException, TimeoutException, IOException {
         assertNotNull(Coerce.toString(kernel.getConfig().find(CERT_FINGERPRINT_NAMESPACE, SHA_1_ALGORITHM)));
         assertNotNull(Coerce.toString(kernel.getConfig().find(CERT_FINGERPRINT_NAMESPACE, SHA_256_ALGORITHM)));
 
         CompletableFuture<Void> cf = new CompletableFuture<>();
-        NettyNioAsyncHttpClient.builder()
-                .tlsTrustManagersProvider(() -> new TrustManager[] {
-                        new X509TrustManager() {
-                            @Override
-                            public void checkClientTrusted(X509Certificate[] chain, String authType) {
-                            }
+        ApacheHttpClient.builder().tlsTrustManagersProvider(() -> new TrustManager[]{new X509TrustManager() {
+            @Override
+            public void checkClientTrusted(X509Certificate[] chain, String authType) {
+            }
 
-                            @Override
-                            public void checkServerTrusted(X509Certificate[] chain, String authType)
-                                    throws CertificateException {
-                                try {
-                                    assertEquals(Coerce.toString(
-                                            kernel.getConfig().find(CERT_FINGERPRINT_NAMESPACE, SHA_1_ALGORITHM)),
-                                            fingerprintCert(chain[0], SHA_1_ALGORITHM));
-                                    assertEquals(Coerce.toString(
-                                            kernel.getConfig().find(CERT_FINGERPRINT_NAMESPACE, SHA_256_ALGORITHM)),
-                                            fingerprintCert(chain[0], SHA_256_ALGORITHM));
-                                    cf.complete(null);
-                                } catch (NoSuchAlgorithmException ignored) {
-                                }
-                            }
+            @Override
+            public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                try {
+                    assertEquals(Coerce.toString(kernel.getConfig().find(CERT_FINGERPRINT_NAMESPACE, SHA_1_ALGORITHM)),
+                            fingerprintCert(chain[0], SHA_1_ALGORITHM));
+                    assertEquals(
+                            Coerce.toString(kernel.getConfig().find(CERT_FINGERPRINT_NAMESPACE, SHA_256_ALGORITHM)),
+                            fingerprintCert(chain[0], SHA_256_ALGORITHM));
+                    cf.complete(null);
+                } catch (NoSuchAlgorithmException ignored) {
+                }
+            }
 
-                            @Override
-                            public X509Certificate[] getAcceptedIssuers() {
-                                return new X509Certificate[0];
-                            }
-                        }
-                })
-                .build()
-                .execute(AsyncExecuteRequest.builder().requestContentPublisher(new SdkHttpContentPublisher() {
-                    @Override
-                    public Optional<Long> contentLength() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public void subscribe(Subscriber<? super ByteBuffer> subscriber) {
-
-                    }
-                }).request(
-                        SdkHttpRequest.builder()
-                                .method(SdkHttpMethod.GET)
-                                .uri(URI.create("https://localhost:" + kernel.getContext().get(SimpleHttpServer.class).port)).build())
-                        .build());
+            @Override
+            public X509Certificate[] getAcceptedIssuers() {
+                return new X509Certificate[0];
+            }
+        }}).build().prepareRequest(HttpExecuteRequest.builder().request(
+                SdkHttpRequest.builder().method(SdkHttpMethod.GET)
+                        .uri(URI.create("https://localhost:" + kernel.getContext().get(SimpleHttpServer.class).port))
+                        .build()).build()).call();
         cf.get(2, TimeUnit.SECONDS);
     }
 
