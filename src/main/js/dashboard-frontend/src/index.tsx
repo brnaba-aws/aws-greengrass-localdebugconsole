@@ -37,10 +37,14 @@ class App extends Component<any, AppState> {
   addFlashbarItem = (item: FlashbarProps.MessageDefinition) => {
       item.dismissible = true;
       item.onDismiss = () => {
-          this.setState({ flashItems: this.state.flashItems.filter(i => i !== item) });
-      }
-      this.state.flashItems.push(item);
-      this.setState({flashItems: this.state.flashItems});
+          this.setState(prevState => ({
+              flashItems: prevState.flashItems.filter(i => i !== item)
+          }));
+      };
+      this.setState(prevState => {
+          prevState.flashItems.push(item);
+          return {flashItems: prevState.flashItems}
+      });
   }
 
   websocketError = (m: ReactNode) => {

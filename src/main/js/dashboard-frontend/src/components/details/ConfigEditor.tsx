@@ -80,20 +80,20 @@ export class ConfigEditor extends React.Component<
       });
   };
   removeItem = (id: number) => {
-    this.setState({
-      flashItems: this.state.flashItems.filter((item) => {
+    this.setState(prevState => ({
+      flashItems: prevState.flashItems.filter((item) => {
         //@ts-ignore
         return item.num !== id;
-      }),
-    });
+      })
+    }));
   };
 
   updateFlashbar = (success: boolean, errorMsg?: string) => {
     const itemID = this.state.flashCnt;
     if (success) {
-      this.setState({
+      this.setState(prevState => ({
         flashItems:
-          this.state.flashItems.concat([
+          prevState.flashItems.concat([
             {
               // @ts-ignore
               num: itemID,
@@ -103,11 +103,11 @@ export class ConfigEditor extends React.Component<
               onDismiss: () => this.removeItem(itemID),
             },
           ]),
-      });
+      }));
     } else {
-      this.setState({
+      this.setState(prevState => ({
         flashItems:
-          this.state.flashItems.concat([
+          prevState.flashItems.concat([
             {
               // @ts-ignore
               num: itemID,
@@ -117,9 +117,9 @@ export class ConfigEditor extends React.Component<
               onDismiss: () => this.removeItem(itemID),
             },
           ]),
-      });
+      }));
     }
-    this.setState({ flashCnt: this.state.flashCnt + 1 });
+    this.setState(prevState => ({ flashCnt: prevState.flashCnt + 1 }));
   };
 
   async componentDidUpdate(

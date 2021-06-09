@@ -31,7 +31,6 @@ interface ServiceTableProps {
 
 interface ServiceTableState {
   items: ComponentItem[];
-  filteringText: string;
   selectedItems: ComponentItem[];
   onlyShowUserComponents: boolean;
   tempShowUserComponents: boolean;
@@ -47,7 +46,6 @@ class ComponentTable extends Component<any & ServiceTableProps,
   ServiceTableState> {
   state: ServiceTableState = {
     items: [],
-    filteringText: "",
     selectedItems: [],
     onlyShowUserComponents: true,
     tempShowUserComponents: true,
@@ -141,16 +139,16 @@ class ComponentTable extends Component<any & ServiceTableProps,
     this.setState({tempShowUserComponents: e.detail.checked});
   };
   onConfirm = () => {
-    this.setState({
-      onlyShowUserComponents: this.state.tempShowUserComponents,
+    this.setState(prevState => ({
+      onlyShowUserComponents: prevState.tempShowUserComponents,
       preferencePaneVisible: false,
-    });
+    }));
   };
   onCancel = () => {
-    this.setState({
-      tempShowUserComponents: this.state.onlyShowUserComponents,
+    this.setState(prevState => ({
+      tempShowUserComponents: prevState.onlyShowUserComponents,
       preferencePaneVisible: false,
-    });
+    }));
   };
 
   render() {
