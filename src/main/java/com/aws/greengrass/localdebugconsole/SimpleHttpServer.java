@@ -56,16 +56,24 @@ import software.amazon.awssdk.regions.Region;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -85,6 +93,7 @@ import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLException;
 
 import static com.aws.greengrass.componentmanager.KernelConfigResolver.CONFIGURATION_CONFIG_KEY;
 import static com.aws.greengrass.util.Utils.isEmpty;
@@ -103,6 +112,8 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
     protected static final String EXPIRATION_NAMESPACE = "expiration";
     protected static final String SHA_1_ALGORITHM = "SHA-1";
     protected static final String SHA_256_ALGORITHM = "SHA-256";
+    protected static final String CERT_NAME = "cert";
+    protected static final String PRIVATE_KEY_NAME = "private";
     private ChannelFuture channel;
     private final EventLoopGroup primaryGroup = new NioEventLoopGroup();
     private final EventLoopGroup secondaryGroup = new NioEventLoopGroup();
@@ -175,12 +186,54 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
         SslContext context = null;
         Provider<SSLEngine> engineProvider = null;
         if (httpsEnabled) {
+            Path workPath;
+            KeyStore ks;
             try {
-                KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-                keyGen.initialize(4096, new SecureRandom());
-                KeyPair keyPair = keyGen.generateKeyPair();
-                X509Certificate cert = selfSign(keyPair, bindHostname);
-                context = SslContextBuilder.forServer(keyPair.getPrivate(), cert).build();
+                workPath = kernel.getNucleusPaths().workPath(getServiceName());
+                ks = KeyStore.getInstance("JKS");
+            } catch (IOException | KeyStoreException e) {
+                serviceErrored(e);
+                return;
+            }
+
+            // Get passphrase or generate a new one to use for the keystore password
+            char[] passphrase = Coerce.toString(getRuntimeConfig().lookup("keystorePassphrase")
+                    .dflt(Utils.generateRandomString(24))).toCharArray();
+
+            // Either load cert/key from keystore or create and then save to keystore for later
+            Path keyStorePath = workPath.resolve("keystore.jks");
+            try {
+                if (Files.exists(keyStorePath)) {
+                    try (InputStream is = Files.newInputStream(keyStorePath)) {
+                        ks.load(is, passphrase);
+                    }
+                } else {
+                    // Initialize keystore as empty
+                    ks.load(null, passphrase);
+
+                    // Generate keys and certificate
+                    KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+                    keyGen.initialize(4096, new SecureRandom());
+                    KeyPair keyPair = keyGen.generateKeyPair();
+                    X509Certificate cert = selfSign(keyPair, bindHostname);
+
+                    ks.setCertificateEntry(CERT_NAME, cert);
+                    ks.setKeyEntry(PRIVATE_KEY_NAME, keyPair.getPrivate(), new char[0], new Certificate[]{cert});
+                    try (OutputStream os = Files.newOutputStream(keyStorePath)) {
+                        ks.store(os, passphrase);
+                    }
+                }
+            } catch (IOException | NoSuchAlgorithmException | CertificateException
+                    | KeyStoreException | OperatorCreationException e) {
+                serviceErrored(e);
+                return;
+            }
+
+            try {
+                // Grab key and cert for SSL setup
+                PrivateKey privateKey = (PrivateKey) ks.getKey(PRIVATE_KEY_NAME, new char[0]);
+                X509Certificate cert = (X509Certificate) ks.getCertificate(CERT_NAME);
+                context = SslContextBuilder.forServer(privateKey, cert).build();
                 SslContext finalContext = context;
                 engineProvider = () -> finalContext.newEngine(ByteBufAllocator.DEFAULT);
 
@@ -189,7 +242,8 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
                 config.getRoot().lookup(CERT_FINGERPRINT_NAMESPACE, SHA_1_ALGORITHM).withValue(fingerprint);
                 fingerprint = fingerprintCert(cert, SHA_256_ALGORITHM);
                 config.getRoot().lookup(CERT_FINGERPRINT_NAMESPACE, SHA_256_ALGORITHM).withValue(fingerprint);
-            } catch (CertificateException | NoSuchAlgorithmException | OperatorCreationException | IOException e) {
+            } catch (NoSuchAlgorithmException | CertificateEncodingException
+                    | KeyStoreException | UnrecoverableKeyException | SSLException e) {
                 serviceErrored(e);
                 return;
             }
