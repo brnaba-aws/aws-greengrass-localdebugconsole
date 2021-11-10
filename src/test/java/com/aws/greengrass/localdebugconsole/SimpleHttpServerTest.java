@@ -60,6 +60,12 @@ class SimpleHttpServerTest {
         abExpiration.withValue(0);
         assertFalse(http.isUsernameAndPasswordValid(new Pair<>("a", "b")));
         assertNull(kernel.getConfig().findTopics(DEBUG_PASSWORD_NAMESPACE, "a", "b"));
+
+        // Verify that if the password to the keystore is lost we can still initialize https properly
+        assertTrue(http.initializeHttps());
+        http.getRuntimeConfig().remove(); // remove runtime config so that the password is lost
+        kernel.getContext().waitForPublishQueueToClear();
+        assertTrue(http.initializeHttps());
     }
 
     @Test

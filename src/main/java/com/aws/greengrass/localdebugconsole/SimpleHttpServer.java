@@ -129,6 +129,8 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
     int websocketPort = DEFAULT_WEBSOCKET_PORT;
     private String bindHostname = "localhost";
     private boolean httpsEnabled = DEFAULT_HTTPS_ENABLED;
+    private SslContext context;
+    private Provider<SSLEngine> engineProvider;
 
     @Inject
     public SimpleHttpServer(Topics t, Kernel kernel, DeviceConfiguration deviceConfiguration) {
@@ -183,68 +185,10 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
     @SuppressWarnings("UseSpecificCatch")
     @Override
     public void startup() throws InterruptedException {
-        SslContext context = null;
-        Provider<SSLEngine> engineProvider = null;
+        context = null;
+        engineProvider = null;
         if (httpsEnabled) {
-            Path workPath;
-            KeyStore ks;
-            try {
-                workPath = kernel.getNucleusPaths().workPath(getServiceName());
-                ks = KeyStore.getInstance("JKS");
-            } catch (IOException | KeyStoreException e) {
-                serviceErrored(e);
-                return;
-            }
-
-            // Get passphrase or generate a new one to use for the keystore password
-            char[] passphrase = Coerce.toString(getRuntimeConfig().lookup("keystorePassphrase")
-                    .dflt(Utils.generateRandomString(24))).toCharArray();
-
-            // Either load cert/key from keystore or create and then save to keystore for later
-            Path keyStorePath = workPath.resolve("keystore.jks");
-            try {
-                if (Files.exists(keyStorePath)) {
-                    try (InputStream is = Files.newInputStream(keyStorePath)) {
-                        ks.load(is, passphrase);
-                    }
-                } else {
-                    // Initialize keystore as empty
-                    ks.load(null, passphrase);
-
-                    // Generate keys and certificate
-                    KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-                    keyGen.initialize(4096, new SecureRandom());
-                    KeyPair keyPair = keyGen.generateKeyPair();
-                    X509Certificate cert = selfSign(keyPair, bindHostname);
-
-                    ks.setCertificateEntry(CERT_NAME, cert);
-                    ks.setKeyEntry(PRIVATE_KEY_NAME, keyPair.getPrivate(), new char[0], new Certificate[]{cert});
-                    try (OutputStream os = Files.newOutputStream(keyStorePath)) {
-                        ks.store(os, passphrase);
-                    }
-                }
-            } catch (IOException | NoSuchAlgorithmException | CertificateException
-                    | KeyStoreException | OperatorCreationException e) {
-                serviceErrored(e);
-                return;
-            }
-
-            try {
-                // Grab key and cert for SSL setup
-                PrivateKey privateKey = (PrivateKey) ks.getKey(PRIVATE_KEY_NAME, new char[0]);
-                X509Certificate cert = (X509Certificate) ks.getCertificate(CERT_NAME);
-                context = SslContextBuilder.forServer(privateKey, cert).build();
-                SslContext finalContext = context;
-                engineProvider = () -> finalContext.newEngine(ByteBufAllocator.DEFAULT);
-
-                // Save certificate fingerprint as space separated hex bytes
-                String fingerprint = fingerprintCert(cert, SHA_1_ALGORITHM);
-                config.getRoot().lookup(CERT_FINGERPRINT_NAMESPACE, SHA_1_ALGORITHM).withValue(fingerprint);
-                fingerprint = fingerprintCert(cert, SHA_256_ALGORITHM);
-                config.getRoot().lookup(CERT_FINGERPRINT_NAMESPACE, SHA_256_ALGORITHM).withValue(fingerprint);
-            } catch (NoSuchAlgorithmException | CertificateEncodingException
-                    | KeyStoreException | UnrecoverableKeyException | SSLException e) {
-                serviceErrored(e);
+            if (!initializeHttps()) {
                 return;
             }
         }
@@ -275,6 +219,86 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
         logger.atInfo().addKeyValue("port", port).log("Finished starting httpd");
 
         reportState(State.RUNNING);
+    }
+
+    boolean initializeHttps() {
+        Path workPath;
+        KeyStore ks;
+        try {
+            workPath = kernel.getNucleusPaths().workPath(getServiceName());
+            ks = KeyStore.getInstance("JKS");
+        } catch (IOException | KeyStoreException e) {
+            serviceErrored(e);
+            return true;
+        }
+
+        // Get passphrase or generate a new one to use for the keystore password
+        char[] passphrase = Coerce.toString(getRuntimeConfig().lookup("keystorePassphrase")
+                .dflt(Utils.generateRandomString(24))).toCharArray();
+
+        // Either load cert/key from keystore or create and then save to keystore for later
+        Path keyStorePath = workPath.resolve("keystore.jks");
+        try {
+            if (Files.exists(keyStorePath)) {
+                try (InputStream is = Files.newInputStream(keyStorePath)) {
+                    ks.load(is, passphrase);
+                } catch (IOException e) {
+                    // If the password is wrong for whatever reason, delete the existing keystore and
+                    // reinitialize it
+                    if (e.getCause() instanceof UnrecoverableKeyException) {
+                        Files.deleteIfExists(keyStorePath);
+                        initializeKeyStore(ks, passphrase, keyStorePath);
+                    } else {
+                        throw e;
+                    }
+                }
+            } else {
+                initializeKeyStore(ks, passphrase, keyStorePath);
+            }
+        } catch (IOException | NoSuchAlgorithmException | CertificateException
+                | KeyStoreException | OperatorCreationException e) {
+            serviceErrored(e);
+            return false;
+        }
+
+        try {
+            // Grab key and cert for SSL setup
+            PrivateKey privateKey = (PrivateKey) ks.getKey(PRIVATE_KEY_NAME, new char[0]);
+            X509Certificate cert = (X509Certificate) ks.getCertificate(CERT_NAME);
+            context = SslContextBuilder.forServer(privateKey, cert).build();
+            SslContext finalContext = context;
+            engineProvider = () -> finalContext.newEngine(ByteBufAllocator.DEFAULT);
+
+            // Save certificate fingerprint as space separated hex bytes
+            String fingerprint = fingerprintCert(cert, SHA_1_ALGORITHM);
+            config.getRoot().lookup(CERT_FINGERPRINT_NAMESPACE, SHA_1_ALGORITHM).withValue(fingerprint);
+            fingerprint = fingerprintCert(cert, SHA_256_ALGORITHM);
+            config.getRoot().lookup(CERT_FINGERPRINT_NAMESPACE, SHA_256_ALGORITHM).withValue(fingerprint);
+        } catch (NoSuchAlgorithmException | CertificateEncodingException
+                | KeyStoreException | UnrecoverableKeyException | SSLException e) {
+            serviceErrored(e);
+            return false;
+        }
+        return true;
+    }
+
+    private void initializeKeyStore(KeyStore ks, char[] passphrase, Path keyStorePath)
+            throws IOException, NoSuchAlgorithmException, CertificateException, OperatorCreationException,
+            KeyStoreException {
+        // Initialize keystore as empty
+        ks.load(null, passphrase);
+
+        // Generate keys and certificate
+        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+        keyGen.initialize(4096, new SecureRandom());
+        KeyPair keyPair = keyGen.generateKeyPair();
+        X509Certificate cert = selfSign(keyPair, bindHostname);
+
+        ks.setCertificateEntry(CERT_NAME, cert);
+        ks.setKeyEntry(PRIVATE_KEY_NAME, keyPair.getPrivate(), new char[0], new Certificate[]{cert});
+        try (OutputStream os = Files.newOutputStream(keyStorePath)) {
+            ks.store(os, passphrase);
+        }
     }
 
     static String fingerprintCert(X509Certificate cert, String algorithm)
