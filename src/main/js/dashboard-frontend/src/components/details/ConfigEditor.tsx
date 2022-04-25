@@ -9,10 +9,8 @@ import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-yaml";
 import "ace-builds/src-noconflict/theme-solarized_dark";
 import "ace-builds/src-noconflict/theme-iplastic";
-import {ComponentItem} from "../../util/ComponentItem";
 import {SERVER} from "../../index";
 import {APICall, ConfigMessage} from "../../util/CommUtils";
-import {USER_CREATED} from "../../util/constNames";
 import {
   Button,
   Container,
@@ -20,7 +18,6 @@ import {
   FlashbarProps,
   Header,
   Spinner,
-  StatusIndicatorProps,
 } from "@awsui/components-react";
 
 interface ConfigEditorProps {
@@ -28,7 +25,6 @@ interface ConfigEditorProps {
   service: string;
 }
 interface ConfigEditorState {
-  service: ComponentItem | null;
   allowEdit: boolean;
   saving: boolean;
   value: string;
@@ -40,15 +36,6 @@ export class ConfigEditor extends React.Component<
   ConfigEditorState
 > {
   state = {
-    service: {
-      name: "-",
-      version: "-",
-      status: "-",
-      statusIcon: "loading" as StatusIndicatorProps.Type,
-      origin: "User",
-      canStart: false,
-      canStop: false,
-    },
     allowEdit: false,
     saving: false,
     value: "",
@@ -133,10 +120,6 @@ export class ConfigEditor extends React.Component<
         call: APICall.getComponent,
         args: [this.props.service],
       })
-        .then((component) => {
-          this.setState({ service: component });
-          return component;
-        })
         .then((component) =>
           SERVER.sendRequest({
             call: APICall.getConfig,
@@ -162,19 +145,13 @@ export class ConfigEditor extends React.Component<
       call: APICall.getComponent,
       args: [this.props.service],
     })
-      .then((component) => {
-        this.setState({ service: component });
-        return component;
-      })
       .then((component) =>
         SERVER.sendRequest({ call: APICall.getConfig, args: [component.name] })
       )
       .then((config) => {
         if (config.successful) {
           this.setState({ value: config.yaml });
-          if (this.state.service.origin === USER_CREATED) {
-            this.setState({ allowEdit: true });
-          }
+          this.setState({ allowEdit: true });
         } else {
           this.updateFlashbar(false, config.errorMsg);
         }
