@@ -115,8 +115,8 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
     protected static final String CERT_NAME = "cert";
     protected static final String PRIVATE_KEY_NAME = "private";
     private ChannelFuture channel;
-    private final EventLoopGroup primaryGroup = new NioEventLoopGroup();
-    private final EventLoopGroup secondaryGroup = new NioEventLoopGroup();
+    private EventLoopGroup primaryGroup;
+    private EventLoopGroup secondaryGroup;
     private static final int DEFAULT_HTTP_PORT = 1441;
     private static final int DEFAULT_WEBSOCKET_PORT = 1442;
     private static final boolean DEFAULT_HTTPS_ENABLED = true;
@@ -205,6 +205,8 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
         }
         websocketPort = dashboardServer.getPort();
         logger.atInfo().addKeyValue("port", websocketPort).log("Finished starting websocket server");
+        primaryGroup = new NioEventLoopGroup();
+        secondaryGroup = new NioEventLoopGroup();
         try {
             final ServerBootstrap bootstrap =
                     new ServerBootstrap().group(primaryGroup, secondaryGroup).channel(NioServerSocketChannel.class)
