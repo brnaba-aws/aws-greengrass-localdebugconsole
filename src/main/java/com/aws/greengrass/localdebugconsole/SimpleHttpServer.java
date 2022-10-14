@@ -245,14 +245,11 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
                 try (InputStream is = Files.newInputStream(keyStorePath)) {
                     ks.load(is, passphrase);
                 } catch (IOException e) {
-                    // If the password is wrong for whatever reason, delete the existing keystore and
-                    // reinitialize it
-                    if (e.getCause() instanceof UnrecoverableKeyException) {
-                        Files.deleteIfExists(keyStorePath);
-                        initializeKeyStore(ks, passphrase, keyStorePath);
-                    } else {
-                        throw e;
-                    }
+                    logger.warn(
+                            "Failed to load self-signed certificate keystore. Reinitializing keystore automatically",
+                            e);
+                    Files.deleteIfExists(keyStorePath);
+                    initializeKeyStore(ks, passphrase, keyStorePath);
                 }
             } else {
                 initializeKeyStore(ks, passphrase, keyStorePath);
