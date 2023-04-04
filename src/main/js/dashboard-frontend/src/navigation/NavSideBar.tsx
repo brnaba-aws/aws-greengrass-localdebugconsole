@@ -6,7 +6,7 @@
 import React from "react";
 import { withRouter, useHistory } from "react-router-dom";
 
-import {SideNavigation, SideNavigationProps} from "@awsui/components-react";
+import {SideNavigation, SideNavigationProps} from "@cloudscape-design/components";
 import { routes } from "./constRoutes";
 import { PROJECT_NAME } from "../util/constNames";
 

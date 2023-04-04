@@ -9,11 +9,11 @@ import {
   ColumnLayout,
   Container,
   Popover, SpaceBetween, StatusIndicator, StatusIndicatorProps
-} from "@awsui/components-react";
+} from "@cloudscape-design/components";
 import { ComponentItem } from "../../util/ComponentItem";
 import { SERVER } from "../../index";
 import { APICall } from "../../util/CommUtils";
-import {BoxProps} from "@awsui/components-react/box/interfaces";
+import {BoxProps} from "@cloudscape-design/components/box/interfaces";
 
 interface DetailBodyProps {
   service: string;

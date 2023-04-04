@@ -6,7 +6,7 @@
 import React, { Component } from "react";
 import { SERVER } from "../../index";
 import { APICall } from "../../util/CommUtils";
-import {Button, Header, SpaceBetween, StatusIndicatorProps} from "@awsui/components-react";
+import {Button, Header, SpaceBetween, StatusIndicatorProps} from "@cloudscape-design/components";
 import { ComponentItem } from "../../util/ComponentItem";
 
 interface DetailHeaderProps {
@@ -96,23 +96,24 @@ export default class DetailHeader extends Component<
   render() {
     return (
       <Header
+        variant={"h1"}
         actions={
           <SpaceBetween direction={"horizontal"} size={"xs"}>
             <Button
-              className="start"
               disabled={!this.state.service.canStart}
               onClick={this.onStartClick}
+              data-testid={"start-button"}
             >
               Start
             </Button>
             <Button
-              className="stop"
               disabled={!this.state.service.canStop}
               onClick={this.onStopClick}
+              data-testid={"stop-button"}
             >
               Stop
             </Button>
-            <Button className="reinstall" onClick={this.onReinstallClick}>
+            <Button onClick={this.onReinstallClick} data-testid={"reinstall-button"}>
               Reinstall
             </Button>
           </SpaceBetween>

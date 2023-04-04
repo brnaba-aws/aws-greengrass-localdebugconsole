@@ -18,7 +18,7 @@ import {
   FlashbarProps,
   Header,
   Spinner,
-} from "@awsui/components-react";
+} from "@cloudscape-design/components";
 
 interface ConfigEditorProps {
   dark: boolean;

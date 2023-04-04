@@ -6,7 +6,7 @@
 import React, { Component, createRef } from "react";
 import { withRouter } from "react-router-dom";
 
-import { Container, Header } from "@awsui/components-react";
+import { Container, Header } from "@cloudscape-design/components";
 import * as d3 from "d3";
 import dagreD3 from "dagre-d3";
 import { ComponentItem } from "../../util/ComponentItem";

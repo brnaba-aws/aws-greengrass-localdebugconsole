@@ -6,9 +6,9 @@
 import React from "react";
 import { useLocation } from "react-router-dom";
 import { routes } from "./constRoutes";
-import { BreadcrumbGroup } from "@awsui/components-react";
+import { BreadcrumbGroup } from "@cloudscape-design/components";
 import { PROJECT_NAME, SERVICE_ROUTE_HREF_PREFIX } from "../util/constNames";
-import {BreadcrumbGroupProps} from "@awsui/components-react/breadcrumb-group/interfaces";
+import {BreadcrumbGroupProps} from "@cloudscape-design/components/breadcrumb-group/interfaces";
 
 export function findTitle(href: string) {
   if (href.startsWith(SERVICE_ROUTE_HREF_PREFIX))

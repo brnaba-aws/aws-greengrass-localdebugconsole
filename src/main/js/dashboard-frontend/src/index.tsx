@@ -11,8 +11,8 @@ import { HashRouter, Route, Switch, Redirect } from "react-router-dom";
 import { routes } from "./navigation/constRoutes";
 import NavSideBar from "./navigation/NavSideBar";
 
-import '@awsui/global-styles/index.css';
-import {AppLayout, Flashbar, FlashbarProps} from "@awsui/components-react";
+import "@cloudscape-design/global-styles/index.css"
+import {AppLayout, Flashbar, FlashbarProps} from "@cloudscape-design/components";
 import ServerEndpoint from "./communication/ServerEndpoint";
 import Breadcrumbs from "./navigation/Breadcrumbs";
 import { SERVICE_ROUTE_HREF_PREFIX } from "./util/constNames";
@@ -21,6 +21,7 @@ export var SERVER: ServerEndpoint;
 
 interface AppState {
     flashItems: FlashbarProps.MessageDefinition[];
+    navigationOpen: boolean;
 }
 
 class App extends Component<any, AppState> {
@@ -30,7 +31,8 @@ class App extends Component<any, AppState> {
     SERVER = new ServerEndpoint(window.WEBSOCKET_PORT, window.USERNAME, window.PASSWORD, 5, this.websocketError);
 
     this.state = {
-        flashItems: []
+        flashItems: [],
+        navigationOpen: true,
     };
   }
 
@@ -59,11 +61,11 @@ class App extends Component<any, AppState> {
     return (
       <HashRouter>
         <AppLayout
-          className="app"
           navigation={<NavSideBar />}
           breadcrumbs={<Breadcrumbs />}
           notifications={<Flashbar items={this.state.flashItems} />}
-          navigationOpen={true}
+          navigationOpen={this.state.navigationOpen}
+          onNavigationChange={(e) => this.setState({navigationOpen: e.detail.open})}
           toolsHide={true}
           contentType="default"
           content={

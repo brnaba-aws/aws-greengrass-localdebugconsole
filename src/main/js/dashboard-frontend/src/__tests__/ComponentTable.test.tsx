@@ -14,7 +14,7 @@ import React from "react";
 
 import wrapper, {
   ElementWrapper,
-} from "@awsui/components-react/test-utils/dom";
+} from "@cloudscape-design/components/test-utils/dom";
 
 import 'mutationobserver-shim';
 import { render } from "@testing-library/react";

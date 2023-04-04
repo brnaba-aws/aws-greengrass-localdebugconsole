@@ -16,14 +16,14 @@ import {
   SpaceBetween,
   StatusIndicator,
   Table
-} from "@awsui/components-react";
+} from "@cloudscape-design/components";
 
 import {ComponentItem} from "../util/ComponentItem";
 import {SERVER} from "../index";
 import {APICall} from "../util/CommUtils";
 import {SERVICE_ROUTE_HREF_PREFIX, USER_CREATED} from "../util/constNames";
-import {BoxProps} from "@awsui/components-react/box/interfaces";
-import {TableProps} from "@awsui/components-react/table";
+import {BoxProps} from "@cloudscape-design/components/box/interfaces";
+import {TableProps} from "@cloudscape-design/components/table";
 
 interface ServiceTableProps {
   title: string;

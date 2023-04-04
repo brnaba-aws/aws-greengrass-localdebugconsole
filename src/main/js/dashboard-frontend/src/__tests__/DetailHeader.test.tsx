@@ -6,7 +6,7 @@
 import ServerEndpoint from "../communication/ServerEndpoint";
 import React from "react";
 
-import wrapper, {ElementWrapper,} from "@awsui/components-react/test-utils/dom";
+import wrapper, {ElementWrapper,} from "@cloudscape-design/components/test-utils/dom";
 
 import {render} from "@testing-library/react";
 import 'mutationobserver-shim';
@@ -32,31 +32,31 @@ test("Buttons are enabled based on service status", () => {
   SERVER.pushComponentUpdate(0);
   expect(
     // @ts-ignore
-    detailHeader.findButton(".start").getElement()
+    detailHeader.findButton("[data-testid=\"start-button\"]").getElement()
   ).not.toBeDisabled();
   expect(
     // @ts-ignore
-    detailHeader.findButton(".stop").getElement()
+    detailHeader.findButton("[data-testid=\"stop-button\"]").getElement()
   ).not.toBeDisabled();
 
   SERVER.pushComponentUpdate(1);
   expect(
     // @ts-ignore
-    detailHeader.findButton(".start").getElement()
+    detailHeader.findButton("[data-testid=\"start-button\"]").getElement()
   ).toBeDisabled();
   expect(
       // @ts-ignore
-    detailHeader.findButton(".stop").getElement()
+    detailHeader.findButton("[data-testid=\"stop-button\"]").getElement()
   ).not.toBeDisabled();
 
   SERVER.pushComponentUpdate(2);
   expect(
       // @ts-ignore
-    detailHeader.findButton(".start").getElement()
+    detailHeader.findButton("[data-testid=\"start-button\"]").getElement()
   ).not.toBeDisabled();
   expect(
     // @ts-ignore
-    detailHeader.findButton(".stop").getElement()
+    detailHeader.findButton("[data-testid=\"stop-button\"]").getElement()
   ).toBeDisabled();
 });
 
@@ -64,11 +64,11 @@ test("Buttons function properly", (done) => {
   SERVER.pushComponentUpdate(0);
   const reqSpy = jest.spyOn(ServerEndpoint.prototype, "sendRequest");
   // @ts-ignore
-  detailHeader.findButton(".start").click();
+  detailHeader.findButton("[data-testid=\"start-button\"]").click();
   // @ts-ignore
-  detailHeader.findButton(".stop").click();
+  detailHeader.findButton("[data-testid=\"stop-button\"]").click();
   // @ts-ignore
-  detailHeader.findButton(".reinstall").click();
+  detailHeader.findButton("[data-testid=\"reinstall-button\"]").click();
   setTimeout(() => {
     expect(reqSpy).toHaveBeenNthCalledWith(1, {
       call: APICall.startComponent,

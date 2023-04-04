@@ -10,6 +10,7 @@ import { useHistory, withRouter } from "react-router-dom";
 import { SERVICE_ROUTE_HREF_PREFIX } from "../../util/constNames";
 import DetailHeader from "./DetailHeader";
 import DetailBody from "./DetailBody";
+import {Grid, SpaceBetween} from "@cloudscape-design/components";
 
 function ComponentDetail() {
   let service = useHistory().location.pathname.substring(
@@ -17,22 +18,17 @@ function ComponentDetail() {
   );
 
   return (
-    <>
-      <DetailHeader service={service} />
-      <div className="awsui-grid">
-        <div className="awsui-row">
-          <div className="col-12 col-l-12 col-xl-12">
-            <DetailBody service={service} />
-          </div>
-          <div className="col-12 col-l-6 col-xl-6">
-            <ConfigEditor dark={false} service={service} />
-          </div>
-          <div className="col-12 col-l-6 col-xl-6">
-            <DependencyGraph rootComponent={service} />
-          </div>
-        </div>
-      </div>
-    </>
+    <SpaceBetween size={"m"}>
+      <DetailHeader service={service}/>
+      <Grid gridDefinition={[{colspan: {default: 12, l: 12, xl: 12}},
+        {colspan: {default: 12, l: 6, xl: 6}}, {
+          colspan: {default: 12, l: 6, xl: 6}
+        }]}>
+          <DetailBody service={service} />
+          <ConfigEditor dark={false} service={service} />
+          <DependencyGraph rootComponent={service} />
+      </Grid>
+    </SpaceBetween>
   );
 }
 
