@@ -11,15 +11,18 @@ import wrapper, {ElementWrapper,} from "@cloudscape-design/components/test-utils
 import {render} from "@testing-library/react";
 import 'mutationobserver-shim';
 
-import {SERVER} from "../index";
+import {SERVER as mockServer} from "../index";
 import {multipleComponentUpdates} from "../communication/__mocks__/mockedData";
+import {default as ServerEndpointMock} from "../communication/__mocks__/ServerEndpoint";
 import DetailHeader from "../components/details/DetailHeader";
 import {APICall} from "../util/CommUtils";
 
 jest.mock("../communication/ServerEndpoint");
 jest.mock("../index");
 
-let detailHeader: ElementWrapper;
+const SERVER = mockServer as unknown as ServerEndpointMock;
+
+let detailHeader: ElementWrapper<Element>;
 
 beforeEach(async () => {
   let { container } = render(
@@ -31,44 +34,35 @@ beforeEach(async () => {
 test("Buttons are enabled based on service status", () => {
   SERVER.pushComponentUpdate(0);
   expect(
-    // @ts-ignore
-    detailHeader.findButton("[data-testid=\"start-button\"]").getElement()
+    detailHeader.findButton("[data-testid=\"start-button\"]")!.getElement()
   ).not.toBeDisabled();
   expect(
-    // @ts-ignore
-    detailHeader.findButton("[data-testid=\"stop-button\"]").getElement()
+    detailHeader.findButton("[data-testid=\"stop-button\"]")!.getElement()
   ).not.toBeDisabled();
 
   SERVER.pushComponentUpdate(1);
   expect(
-    // @ts-ignore
-    detailHeader.findButton("[data-testid=\"start-button\"]").getElement()
+    detailHeader.findButton("[data-testid=\"start-button\"]")!.getElement()
   ).toBeDisabled();
   expect(
-      // @ts-ignore
-    detailHeader.findButton("[data-testid=\"stop-button\"]").getElement()
+    detailHeader.findButton("[data-testid=\"stop-button\"]")!.getElement()
   ).not.toBeDisabled();
 
   SERVER.pushComponentUpdate(2);
   expect(
-      // @ts-ignore
-    detailHeader.findButton("[data-testid=\"start-button\"]").getElement()
+    detailHeader.findButton("[data-testid=\"start-button\"]")!.getElement()
   ).not.toBeDisabled();
   expect(
-    // @ts-ignore
-    detailHeader.findButton("[data-testid=\"stop-button\"]").getElement()
+    detailHeader.findButton("[data-testid=\"stop-button\"]")!.getElement()
   ).toBeDisabled();
 });
 
 test("Buttons function properly", (done) => {
   SERVER.pushComponentUpdate(0);
   const reqSpy = jest.spyOn(ServerEndpoint.prototype, "sendRequest");
-  // @ts-ignore
-  detailHeader.findButton("[data-testid=\"start-button\"]").click();
-  // @ts-ignore
-  detailHeader.findButton("[data-testid=\"stop-button\"]").click();
-  // @ts-ignore
-  detailHeader.findButton("[data-testid=\"reinstall-button\"]").click();
+  detailHeader.findButton("[data-testid=\"start-button\"]")!.click();
+  detailHeader.findButton("[data-testid=\"stop-button\"]")!.click();
+  detailHeader.findButton("[data-testid=\"reinstall-button\"]")!.click();
   setTimeout(() => {
     expect(reqSpy).toHaveBeenNthCalledWith(1, {
       call: APICall.startComponent,

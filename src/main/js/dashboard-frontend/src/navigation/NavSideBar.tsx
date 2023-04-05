@@ -53,5 +53,4 @@ function NavSideBar() {
   );
 }
 
-// @ts-ignore
 export default withRouter(NavSideBar);

@@ -19,6 +19,7 @@ import {
   Header,
   Spinner,
 } from "@cloudscape-design/components";
+import generateUniqueId from "../../util/generateUniqueId";
 
 interface ConfigEditorProps {
   dark: boolean;
@@ -29,7 +30,6 @@ interface ConfigEditorState {
   saving: boolean;
   value: string;
   flashItems: FlashbarProps.MessageDefinition[];
-  flashCnt: number;
 }
 export class ConfigEditor extends React.Component<
   ConfigEditorProps,
@@ -40,7 +40,6 @@ export class ConfigEditor extends React.Component<
     saving: false,
     value: "",
     flashItems: [] as FlashbarProps.MessageDefinition[],
-    flashCnt: 0,
   };
 
   onChange(newValue: string) {
@@ -66,24 +65,22 @@ export class ConfigEditor extends React.Component<
         this.updateFlashbar(false, reason);
       });
   };
-  removeItem = (id: number) => {
+  removeItem = (id: string) => {
     this.setState(prevState => ({
       flashItems: prevState.flashItems.filter((item) => {
-        //@ts-ignore
-        return item.num !== id;
+        return item.id !== id;
       })
     }));
   };
 
   updateFlashbar = (success: boolean, errorMsg?: string) => {
-    const itemID = this.state.flashCnt;
+    const itemID = generateUniqueId();
     if (success) {
       this.setState(prevState => ({
         flashItems:
           prevState.flashItems.concat([
             {
-              // @ts-ignore
-              num: itemID,
+              id: itemID,
               type: "success",
               content: "Config updated successfully.",
               dismissible: true,
@@ -96,8 +93,7 @@ export class ConfigEditor extends React.Component<
         flashItems:
           prevState.flashItems.concat([
             {
-              // @ts-ignore
-              num: itemID,
+              id: itemID,
               type: "error",
               content: `Unable to update config. ${errorMsg}`,
               dismissible: true,
@@ -106,7 +102,6 @@ export class ConfigEditor extends React.Component<
           ]),
       }));
     }
-    this.setState(prevState => ({ flashCnt: prevState.flashCnt + 1 }));
   };
 
   async componentDidUpdate(

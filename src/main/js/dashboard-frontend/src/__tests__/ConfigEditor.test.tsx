@@ -29,19 +29,16 @@ test("If config get is successful then config is editable", (done) => {
   let configEditor = wrapper(container);
   setTimeout(() => {
     expect(
-      // @ts-ignore
-      configEditor.findButton().getElement()
+      configEditor.findButton()!.getElement()
     ).not.toBeDisabled();
     try {
-      // @ts-ignore
-      configEditor.findFlashbar().findItems()[0].findContent().getElement()
+      configEditor.findFlashbar()!.findItems()[0].findContent()!.getElement()
         .innerHTML;
       fail("Flashbar contains items even when config load is successful");
     } catch (e) {}
     expect(
-      // @ts-ignore
       configEditor
-        .find(".ace_text-input")
+        .find(".ace_text-input")!
         .getElement()
         .getAttributeNames()
         .includes("readonly")
@@ -60,18 +57,15 @@ test("If config get is unsuccessful then an error is displayed", (done) => {
   let configEditor = wrapper(container);
   setTimeout(() => {
     expect(
-      // @ts-ignore
-      configEditor.findButton().getElement()
+      configEditor.findButton()!.getElement()
     ).toBeDisabled();
     expect(
-        // @ts-ignore
-      configEditor.findFlashbar().findItems()[0].findContent().getElement()
+      configEditor.findFlashbar()!.findItems()[0].findContent()!.getElement()
         .innerHTML
     ).toContain(mockConfigError);
     expect(
-        // @ts-ignore
       configEditor
-        .find(".ace_text-input")
+        .find(".ace_text-input")!
         .getElement()
         .getAttributeNames()
         .includes("readonly")
@@ -90,12 +84,10 @@ test("If config update is successful then flashbar displays new message", (done)
   let configEditor = wrapper(container);
 
   setTimeout(() => {
-    // @ts-ignore
-    configEditor.findButton().click();
+    configEditor.findButton()!.click();
     setTimeout(() => {
       expect(
-          // @ts-ignore
-          configEditor.findFlashbar().findItems()[0].getElement().innerHTML
+          configEditor.findFlashbar()!.findItems()[0].getElement().innerHTML
       ).toContain("updated successfully");
       done();
     }, 50);
