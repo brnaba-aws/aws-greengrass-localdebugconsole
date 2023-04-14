@@ -18,12 +18,14 @@ import {
 } from "../util/CommUtils";
 import {ComponentItem} from "../util/ComponentItem";
 import React, {ReactNode} from "react";
+import {CommunicationMessage} from "../util/CommunicationMessage";
 
 export default class ServerEndpoint {
   portno: number;
   timeout: number; // in seconds
   initReqID: number = -1024;
   conn: WebSocket;
+  onError: (m: React.ReactNode) => void;
 
   _connectionPromise: DeferredPromise;
 
@@ -36,9 +38,12 @@ export default class ServerEndpoint {
   cachedComponentList: ComponentItem[] = [];
   cachedDependencyGraph: Map<string, Dependency[]> = new Map();
 
+  pubSubTopicsSubscribers: Map<string, Set<Function>> = new Map();
+
   constructor(portno: number, username: string, password: string, timeout: number, onError: (m: ReactNode) => void) {
     this.portno = portno;
     this.timeout = timeout;
+    this.onError = onError;
 
     // declare connections
     const proto = window.location.protocol === "https:" ? "wss" : "ws";
@@ -52,7 +57,9 @@ export default class ServerEndpoint {
     this.conn.onmessage = this.messageHandler;
     this.conn.onclose = (event) => {
       let reason: ReactNode = "Unknown reason";
-      if (event.code === 1002) {
+      if (event.code === 1001) {
+        reason = "Server closed";
+      } else if (event.code === 1002) {
         reason = "An endpoint is terminating the connection due to a protocol error";
       } else if (event.code === 1003) {
         reason = "An endpoint is terminating the connection because it has received a type of data it cannot accept.";
@@ -83,7 +90,7 @@ export default class ServerEndpoint {
       }
 
       // Lower codes are normal events which we want to ignore
-      if (event.code >= 1002) {
+      if (event.code >= 1001) {
         this._connectionPromise.reject(reason);
         onError(reason);
       }
@@ -133,6 +140,10 @@ export default class ServerEndpoint {
         this.logHandler(msg);
         break;
       }
+      case MessageType.PUB_SUB_MSG: {
+        this.pubSubMessageHandler(msg);
+        break;
+      }
     }
   };
 
@@ -165,19 +176,32 @@ export default class ServerEndpoint {
     let set = this.componentLogSubscribers.get(log.name);
     if (set) set.forEach((callback) => callback(log));
   };
+  pubSubMessageHandler = (msg: Message) => {
+    const pubsubMsg : CommunicationMessage = msg.payload;
+    const set = this.pubSubTopicsSubscribers.get(pubsubMsg.subId);
+    if (set) set.forEach((callback) => callback(pubsubMsg));
+  }
 
   /**
    * Sends an API call to the server and returns a promise with the response. See internal http API for a list
    * of available calls.
    * @param request a Request object
+   * @param reqId optional request ID
    */
-  async sendRequest(request: Request): Promise<any> {
-    let reqID = requestID();
+  async sendRequest(request: Request, reqId?: RequestID): Promise<any> {
+    await this.initConnections();
+    if (typeof reqId === "undefined") {
+      reqId = requestID();
+    }
+    if (this.conn.readyState !== this.conn.OPEN) {
+      this.onError("WebSocket not connected");
+      return;
+    }
     let deferredPromise = this.deferRequest({
-      requestID: reqID,
+      requestID: reqId,
       request: request,
     });
-    this.reqList.set(reqID, deferredPromise);
+    this.reqList.set(reqId, deferredPromise);
     return deferredPromise.race;
   }
 
@@ -270,6 +294,37 @@ export default class ServerEndpoint {
           }
         }
         break;
+      }
+      case APICall.subscribeToPubSubTopic: {
+        const subId = request.args[0].subId;
+        const pot = this.pubSubTopicsSubscribers.get(subId);
+        if (pot === undefined || pot.size === 0) {
+          return this.sendRequest({...request, args: [JSON.stringify(request.args[0])]}).then((r) => {
+            // Only store the subscription if the subscribe request succeeds
+            if (r === true) {
+              this.pubSubTopicsSubscribers.set(
+                  subId,
+                  new Set([messageHandler])
+              );
+            }
+            return r;
+          });
+        }
+
+        pot.add(messageHandler);
+        return true;
+      }
+      case APICall.unsubscribeToPubSubTopic: {
+        let pot = this.pubSubTopicsSubscribers.get(request.args[0]);
+        if (pot === undefined) {
+          break;
+        }
+        pot.delete(messageHandler);
+        if (pot.size === 0) {
+          return this.sendRequest(request);
+        }
+
+        return true;
       }
     }
     return this.sendRequest(request);

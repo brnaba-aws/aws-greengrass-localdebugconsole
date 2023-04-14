@@ -76,6 +76,8 @@ class KernelCommunicatorTest {
     static void setup() throws InterruptedException {
         ds = mock(DashboardServer.class);
         System.setProperty("root", rootDir.toAbsolutePath().toString());
+        // Set this property for kernel to scan its own classpath to find plugins
+        System.setProperty("aws.greengrass.scanSelfClasspath", "true");
         kernel = new Kernel();
         kernel.getContext().addGlobalStateChangeListener(consoleRunning);
         NoOpPathOwnershipHandler.register(kernel);

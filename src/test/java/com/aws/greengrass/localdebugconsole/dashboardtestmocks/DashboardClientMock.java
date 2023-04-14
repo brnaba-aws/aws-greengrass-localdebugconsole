@@ -124,6 +124,9 @@ public class DashboardClientMock extends WebSocketClient {
                 logPushes.add(parsed.getPayload());
                 logLatch.countDown();
             }
+            case MessageType.PUB_SUB_MSG: {
+                // TODO
+            }
         }
     }
 

@@ -4,7 +4,7 @@
  */
 
 import React, { Component } from "react";
-import {Box, ColumnLayout, Container, Header, SpaceBetween} from "@cloudscape-design/components";
+import {Box, ColumnLayout, Container, ContentLayout, Header, SpaceBetween} from "@cloudscape-design/components";
 import { SERVER } from "../index";
 import { APICall } from "../util/CommUtils";
 
@@ -72,8 +72,8 @@ class Arch extends Component {
     ];
 
     return (
-        <Box padding={{top: "m"}}>
-          <Container header={<Header variant={"h2"}>Device Details</Header>}>
+        <ContentLayout header={<Header variant={"h2"}>Device Details</Header>}>
+          <Container>
             <ColumnLayout columns={4} variant="text-grid">
               {items.map((group, index) => (
                   <SpaceBetween size="xs" key={index}>
@@ -87,7 +87,7 @@ class Arch extends Component {
               ))}
             </ColumnLayout>
           </Container>
-        </Box>
+        </ContentLayout>
     );
   }
 }

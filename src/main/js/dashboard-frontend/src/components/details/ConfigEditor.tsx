@@ -7,7 +7,7 @@ import React from "react";
 import AceEditor from "react-ace";
 
 import "ace-builds/src-noconflict/mode-yaml";
-import "ace-builds/src-noconflict/theme-solarized_dark";
+import "ace-builds/src-noconflict/theme-twilight";
 import "ace-builds/src-noconflict/theme-iplastic";
 import {SERVER} from "../../index";
 import {APICall, ConfigMessage} from "../../util/CommUtils";
@@ -189,7 +189,7 @@ export class ConfigEditor extends React.Component<
         <Flashbar items={this.state.flashItems} />
         <AceEditor
           mode="yaml"
-          theme={this.props.dark ? "solarized_dark" : "iplastic"}
+          theme={this.props.dark ? "twilight" : "iplastic"}
           value={this.state.value}
           onChange={this.onChange.bind(this)}
           fontSize={14}
