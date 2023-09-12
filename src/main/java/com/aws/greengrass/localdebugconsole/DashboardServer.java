@@ -421,7 +421,8 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
                                         Long.parseLong(req.args[4]))));
             }
             else{
-                logger.atError().log("readMessages requires 5 arguments");
+                logger.atError().log("StreamManagerReadMessages requires 5 arguments");
+                sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, "StreamManagerReadMessages requires 5 arguments"));
             }
         }
         catch (Exception e){

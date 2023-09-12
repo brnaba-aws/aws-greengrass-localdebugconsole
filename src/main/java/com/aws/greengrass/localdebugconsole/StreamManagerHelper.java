@@ -51,7 +51,7 @@ public class StreamManagerHelper {
                 // Trying to reconnect in case it didn't work at first.
                 this.connect();
             }catch (Exception e){
-                logger.error("StreamManagerHelper.listStreams: {}", e);
+                logger.error("StreamManagerHelper.listStreams:", e);
             }
         }
         if (this.isConnected){
@@ -59,7 +59,7 @@ public class StreamManagerHelper {
                 return this.client.listStreams();
             }
             catch (Exception e){
-                logger.error("StreamManagerHelper.listStreams: {}", e);
+                logger.error("StreamManagerHelper.listStreams:", e);
             }
         }
         return Collections.emptyList();
@@ -70,7 +70,7 @@ public class StreamManagerHelper {
                 // Trying to reconnect in case it didn't work at first.
                 this.connect();
             }catch (Exception e){
-                logger.error("StreamManagerHelper.describeStream: {}", e);
+                logger.error("Unable to connect to Stream Manager:", e);
             }
         }
         if (this.isConnected){
@@ -78,7 +78,7 @@ public class StreamManagerHelper {
                 return this.client.describeMessageStream(streamName);
             }
             catch (Exception e){
-                logger.error("StreamManagerHelper.describeStream: {}", e);
+                logger.error("Unable to describe stream:", e);
             }
         }
         return new MessageStreamInfo();
@@ -90,7 +90,7 @@ public class StreamManagerHelper {
                 // Trying to reconnect in case it didn't work at first.
                 this.connect();
             }catch (Exception e){
-                logger.error("StreamManagerHelper.describeStream: {}", e);
+                logger.error("Unable to connect to Stream Manager:", e);
             }
         }
         if (this.isConnected){
@@ -98,7 +98,7 @@ public class StreamManagerHelper {
                 this.client.deleteMessageStream(streamName);
             }
             catch (Exception e){
-                logger.error("StreamManagerHelper.deleteMessageStream: {}", e);
+                logger.error("Unable to delete stream:", e);
             }
         }
     }
@@ -109,7 +109,7 @@ public class StreamManagerHelper {
                 // Trying to reconnect in case it didn't work at first.
                 this.connect();
             }catch (Exception e){
-                logger.error("StreamManagerHelper.describeStream: {}", e);
+                logger.error("Unable to connect to Stream Manager:", e);
             }
         }
         if (this.isConnected){
@@ -117,7 +117,7 @@ public class StreamManagerHelper {
                 return this.client.readMessages(streamName, new ReadMessagesOptions( desiredStartSequenceNumber, minMessageCount, maxMessageCount, readTimeoutMillis));
             }
             catch (Exception e){
-                logger.error("StreamManagerHelper.deleteMessageStream: {}", e);
+                logger.error("Unable to read messages:", e);
             }
         }
         return Collections.emptyList();
