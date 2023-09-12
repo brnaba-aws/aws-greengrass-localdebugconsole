@@ -220,7 +220,7 @@ function StreamManager() {
     }
 
     function describeStream(streamName:string, index:number){
-        SERVER.sendRequest({ call: APICall.describeStream, args: [streamName] }).then(
+        SERVER.sendRequest({ call: APICall.streamManagerDescribeStream, args: [streamName] }).then(
             (response) => {
                 if (response) {
                     const item:Stream = response;
@@ -251,7 +251,7 @@ function StreamManager() {
     function listStreams() {
         setStreamManagerStreamsList([]);
         setRequestStreamsListInProgress(true);
-        SERVER.sendRequest({ call: APICall.getStreamManagerStreamsList, args: [] }).then(
+        SERVER.sendRequest({ call: APICall.streamManagerListStreams, args: [] }).then(
             (response) => {
                 if (response){
                     response.forEach( (item:string, index:number) => {

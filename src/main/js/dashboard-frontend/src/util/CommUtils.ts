@@ -35,10 +35,10 @@ export enum APICall {
   subscribeToPubSubTopic = "subscribeToPubSubTopic",
   publishToPubSubTopic = "publishToPubSubTopic",
   unsubscribeToPubSubTopic = "unsubscribeToPubSubTopic",
-  getStreamManagerStreamsList = "getStreamManagerStreamsList",
-  describeStream = "describeStream",
-  deleteMessageStream = "deleteMessageStream",
-  readMessages = "readMessages",
+  streamManagerListStreams = "streamManagerListStreams",
+  streamManagerDescribeStream = "streamManagerDescribeStream",
+  streamManagerDeleteMessageStream = "streamManagerDeleteMessageStream",
+  streamManagerReadMessages = "streamManagerReadMessages",
 }
 export enum InternalAPICall {
   init = "init",

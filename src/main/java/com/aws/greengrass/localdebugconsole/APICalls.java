@@ -100,20 +100,20 @@ public enum APICalls {
     /**
      * Returns the current Stream Manager streams list
      */
-    getStreamManagerStreamsList,
+    streamManagerListStreams,
 
     /**
      * Describes a message stream to get metadata including the stream’s definition, size, and exporter statuses.
      */
-    describeStream,
+    streamManagerDescribeStream,
 
     /**
      * Deletes a message stream based on its name.
      */
-    deleteMessageStream,
+    streamManagerDeleteMessageStream,
 
     /**
      * Read message(s) from a chosen stream with options. If no options are specified it will try to read 1 message from the stream.
      */
-    readMessages,
+    streamManagerReadMessages,
 }
