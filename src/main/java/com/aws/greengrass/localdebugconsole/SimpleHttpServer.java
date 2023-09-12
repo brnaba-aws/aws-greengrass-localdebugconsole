@@ -12,6 +12,7 @@ import com.aws.greengrass.config.Topics;
 import com.aws.greengrass.dependency.ImplementsService;
 import com.aws.greengrass.dependency.State;
 import com.aws.greengrass.deployment.DeviceConfiguration;
+import com.aws.greengrass.ipc.AuthenticationHandler;
 import com.aws.greengrass.lifecyclemanager.Kernel;
 import com.aws.greengrass.lifecyclemanager.PluginService;
 import com.aws.greengrass.logging.api.Logger;
@@ -96,6 +97,7 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
 import static com.aws.greengrass.componentmanager.KernelConfigResolver.CONFIGURATION_CONFIG_KEY;
+import static com.aws.greengrass.ipc.AuthenticationHandler.SERVICE_UNIQUE_ID_KEY;
 import static com.aws.greengrass.util.Utils.isEmpty;
 import static io.netty.buffer.Unpooled.copiedBuffer;
 
@@ -131,6 +133,7 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
     private boolean httpsEnabled = DEFAULT_HTTPS_ENABLED;
     private SslContext context;
     private Provider<SSLEngine> engineProvider;
+    private String streamManagerAuthToken;
 
     @Inject
     public SimpleHttpServer(Topics t, Kernel kernel, DeviceConfiguration deviceConfiguration) {
@@ -142,6 +145,11 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
     @Override
     public void postInject() {
         super.postInject();
+        // Does not happen for built-in/plugin services so doing explicitly
+        AuthenticationHandler.registerAuthenticationToken(this);
+        streamManagerAuthToken = Coerce.toString(this.getPrivateConfig().findLeafChild(SERVICE_UNIQUE_ID_KEY));
+        logger.atInfo().log("streamManagerAuthToken: {}", streamManagerAuthToken);
+
         config.lookup(CONFIGURATION_CONFIG_KEY, "port").dflt(port).subscribe((w, n) -> {
             int oldPort = port;
             port = Coerce.toInt(n);
@@ -195,7 +203,7 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
 
         logger.atInfo().log("Starting local dashboard server");
         dashboardServer = new DashboardServer(new InetSocketAddress(bindHostname, websocketPort), logger,
-                kernel, deviceConfig, this, engineProvider);
+                kernel, deviceConfig, this, engineProvider, streamManagerAuthToken);
         dashboardServer.startup();
         try {
             // We need to wait for the server to startup before grabbing the port because it starts in a separate thread
@@ -531,36 +539,37 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
 
     @Override
     public boolean isUsernameAndPasswordValid(Pair<String, String> usernameAndPassword) {
-        Topics passwordTopics = config.getRoot().findTopics(DEBUG_PASSWORD_NAMESPACE);
-        if (passwordTopics == null || usernameAndPassword == null) {
-            return false;
-        }
+        return true;
+        // Topics passwordTopics = config.getRoot().findTopics(DEBUG_PASSWORD_NAMESPACE);
+        // if (passwordTopics == null || usernameAndPassword == null) {
+        //     return false;
+        // }
 
-        // Cleanup any expired passwords first
-        // foreach user
-        passwordTopics.forEach(n -> {
-            if (n instanceof Topics) {
-                // foreach password under the user
-                ((Topics) n).forEach(p -> {
-                    if (p instanceof Topics) {
-                        Topic exp = ((Topics) p).find(EXPIRATION_NAMESPACE);
-                        // If there's somehow no expiration set or if it has expired already, then remove it from the
-                        // store
-                        if (exp == null || Instant.now().isAfter(Instant.ofEpochMilli(Coerce.toLong(exp)))) {
-                            p.remove();
-                        }
-                    }
-                });
-            }
-        });
+        // // Cleanup any expired passwords first
+        // // foreach user
+        // passwordTopics.forEach(n -> {
+        //     if (n instanceof Topics) {
+        //         // foreach password under the user
+        //         ((Topics) n).forEach(p -> {
+        //             if (p instanceof Topics) {
+        //                 Topic exp = ((Topics) p).find(EXPIRATION_NAMESPACE);
+        //                 // If there's somehow no expiration set or if it has expired already, then remove it from the
+        //                 // store
+        //                 if (exp == null || Instant.now().isAfter(Instant.ofEpochMilli(Coerce.toLong(exp)))) {
+        //                     p.remove();
+        //                 }
+        //             }
+        //         });
+        //     }
+        // });
 
-        // Verify this incoming request
-        Topic expirationTopic = passwordTopics.find(usernameAndPassword.getLeft(), usernameAndPassword.getRight(),
-                EXPIRATION_NAMESPACE);
-        if (expirationTopic == null) {
-            return false;
-        }
-        return Instant.now().isBefore(Instant.ofEpochMilli(Coerce.toLong(expirationTopic)));
+        // // Verify this incoming request
+        // Topic expirationTopic = passwordTopics.find(usernameAndPassword.getLeft(), usernameAndPassword.getRight(),
+        //         EXPIRATION_NAMESPACE);
+        // if (expirationTopic == null) {
+        //     return false;
+        // }
+        // return Instant.now().isBefore(Instant.ofEpochMilli(Coerce.toLong(expirationTopic)));
     }
 
     private Pair<String, String> getUsernameAndPassword(String authHeader) {

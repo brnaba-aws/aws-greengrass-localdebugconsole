@@ -99,7 +99,7 @@ class DashboardIntegrationTest {
         };
         addGlobalListener(listener);
         dashboardServer = new DashboardServer(new InetSocketAddress("localhost", 0), logger, kernel,
-                null, (a) -> true, null);
+                null, (a) -> true, null, null);
 
         dashboardServer.startup();
         // wait for steady state

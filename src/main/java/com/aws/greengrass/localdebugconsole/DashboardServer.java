@@ -16,6 +16,7 @@ import com.aws.greengrass.localdebugconsole.messageutils.Message;
 import com.aws.greengrass.localdebugconsole.messageutils.MessageType;
 import com.aws.greengrass.localdebugconsole.messageutils.PackedRequest;
 import com.aws.greengrass.localdebugconsole.messageutils.Request;
+import com.aws.greengrass.localdebugconsole.StreamManagerHelper;
 import com.aws.greengrass.logging.api.Logger;
 import com.aws.greengrass.mqttclient.MqttClient;
 import com.aws.greengrass.mqttclient.MqttRequestException;
@@ -36,9 +37,7 @@ import org.java_websocket.server.WebSocketServer;
 import software.amazon.awssdk.aws.greengrass.model.ReceiveMode;
 
 import java.net.InetSocketAddress;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -71,20 +70,23 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
     private final Authenticator authenticator;
     private final MqttClient mqttClient;
 
+    private final StreamManagerHelper streamManagerHelper;
+
     PubSubIPCEventStreamAgent pubSubIPCAgent;
     private final String SERVICE_NAME = "LocalDebugConsole";
 
     public DashboardServer(InetSocketAddress address, Logger logger, Kernel root, DeviceConfiguration deviceConfig,
-                           Authenticator authenticator, Provider<SSLEngine> engineProvider) {
+                           Authenticator authenticator, Provider<SSLEngine> engineProvider, String streamManagerAuthToken) {
         this(address, logger, new KernelCommunicator(root, logger, deviceConfig), authenticator, engineProvider,
                 root.getContext().get(PubSubIPCEventStreamAgent.class),
-                root.getContext().get(MqttClient.class));
+                root.getContext().get(MqttClient.class),
+                 new StreamManagerHelper(streamManagerAuthToken, logger));
     }
 
     // constructor for unit testing
     DashboardServer(InetSocketAddress address, Logger logger, DashboardAPI dashboardAPI, Authenticator authenticator,
                     Provider<SSLEngine> engineProvider, PubSubIPCEventStreamAgent pubSubIPCAgent,
-                    MqttClient mqttClient) {
+                    MqttClient mqttClient, StreamManagerHelper streamManagerHelper) {
         super(address);
         setReuseAddr(true);
         setTcpNoDelay(true);
@@ -97,6 +99,7 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
         this.logger.atInfo().log("Starting dashboard server on address: {}", address);
         this.pubSubIPCAgent = pubSubIPCAgent;
         this.mqttClient = mqttClient;
+        this.streamManagerHelper = streamManagerHelper;
     }
 
     // links the API impl and starts the socket server
@@ -106,6 +109,13 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
             ((KernelCommunicator) dashboardAPI).linkWithKernel();
         }
         start();
+
+        if (this.streamManagerHelper.start()){
+            logger.atInfo().log("Stream Manager client connected");
+        }
+        else{
+            logger.atInfo().log("Stream Manager client not connected");
+        }
     }
 
     // for use in testing only
@@ -251,6 +261,23 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
                     unsubscribeFromPubSubTopic(conn, packedRequest, req);
                     break;
                 }
+                case getStreamManagerStreamsList: {
+                    getStreamManagerStreamsList(conn, packedRequest, req);
+                    break;
+                }
+                case describeStream: {
+                    describeStream(conn, packedRequest, req);
+                    break;
+                }
+
+                case deleteMessageStream: {
+                    deleteMessageStream(conn, packedRequest, req);
+                }
+
+                case readMessages: {
+                    readMessages(conn, packedRequest, req);
+                }
+
                 default: { // echo
                     sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, req.call));
                     break;
@@ -351,6 +378,61 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
             }
             sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, true));
         } catch (Exception e) {
+            sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, e.getMessage()));
+        }
+    }
+
+    private void getStreamManagerStreamsList(WebSocket conn, PackedRequest packedRequest, Request req) {
+        try {
+            List<String> streamsList = this.streamManagerHelper.listStreams();
+            sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, streamsList));
+        }
+        catch (Exception e){
+            logger.error(e.getMessage());
+            sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, e.getMessage()));
+        }
+    }
+
+    private void describeStream(WebSocket conn, PackedRequest packedRequest, Request req) {
+        try {
+            sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, this.streamManagerHelper.describeStream(req.args[0])));
+        }
+        catch (Exception e){
+            logger.error(e.getMessage());
+            sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, e.getMessage()));
+        }
+    }
+
+    private void deleteMessageStream(WebSocket conn, PackedRequest packedRequest, Request req) {
+        try {
+            this.streamManagerHelper.deleteMessageStream(req.args[0]);
+        }
+        catch (Exception e){
+            logger.error(e.getMessage());
+            sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, e.getMessage()));
+        }
+    }
+
+    private void readMessages(WebSocket conn, PackedRequest packedRequest, Request req) {
+        try {
+            if (req.args.length == 5) {
+                sendIfOpen(conn,
+                        new Message(
+                                MessageType.RESPONSE,
+                                packedRequest.requestID,
+                                this.streamManagerHelper.readMessages(
+                                        req.args[0],
+                                        Long.parseLong(req.args[1]),
+                                        Long.parseLong(req.args[2]),
+                                        Long.parseLong(req.args[3]),
+                                        Long.parseLong(req.args[4]))));
+            }
+            else{
+                logger.atError().log("readMessages requires 5 arguments");
+            }
+        }
+        catch (Exception e){
+            logger.error(e.getMessage());
             sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, e.getMessage()));
         }
     }
