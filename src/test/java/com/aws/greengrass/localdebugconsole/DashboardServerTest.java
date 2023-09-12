@@ -76,7 +76,7 @@ class DashboardServerTest {
 
         addGlobalListener(listener);
         ds = new DashboardServer(new InetSocketAddress("localhost", dashboardServerPort),
-                LogManager.getLogger(Kernel.class), kc, authenticator, null, null, null);
+                LogManager.getLogger(Kernel.class), kc, authenticator, null, null, null, null);
         ds.startup();
         assertTrue(startupLatch.await(5, TimeUnit.SECONDS));
         dashboardServerPort = ds.getPort();
