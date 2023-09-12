@@ -1,8 +1,8 @@
 package com.aws.greengrass.localdebugconsole;
 
 import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.List;
-import java.util.ArrayList;
 
 import com.amazonaws.greengrass.streammanager.client.StreamManagerClientFactory;
 import com.amazonaws.greengrass.streammanager.client.config.StreamManagerAuthInfo;
@@ -12,6 +12,7 @@ import com.amazonaws.greengrass.streammanager.model.MessageStreamInfo;
 import com.amazonaws.greengrass.streammanager.client.StreamManagerClient;
 import com.amazonaws.greengrass.streammanager.model.ReadMessagesOptions;
 import com.aws.greengrass.logging.api.Logger;
+import com.aws.greengrass.logging.impl.LogManager;
 
 public class StreamManagerHelper {
 
@@ -21,13 +22,13 @@ public class StreamManagerHelper {
 
     private Boolean isConnected;
 
-    public StreamManagerHelper(String authToken, Logger logger) {
-        this.logger = logger;
+    public StreamManagerHelper(String authToken) {
+        this.logger = LogManager.getLogger(StreamManagerHelper.class);
         this.streamManagerAuthToken = authToken;
         this.isConnected = false;
     }
 
-    private Boolean connect(){
+    private void connect(){
         try {
             StreamManagerClientConfig config = StreamManagerClientConfig.builder().build();
             StreamManagerAuthInfo authInfo = config.getAuthInfo();
@@ -42,18 +43,8 @@ public class StreamManagerHelper {
             logger.error("StreamManagerHelper.connect:", e);
             this.isConnected = false;
         }
-        return this.isConnected;
     }
 
-    public Boolean start(){
-        try{
-            return this.connect();
-        }
-        catch (Exception e){
-            logger.error("StreamManagerHelper.start: {}", e);
-            return false;
-        }
-    }
     public List<String> listStreams() {
         if (!this.isConnected) {
             try {
@@ -71,7 +62,7 @@ public class StreamManagerHelper {
                 logger.error("StreamManagerHelper.listStreams: {}", e);
             }
         }
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
     public MessageStreamInfo describeStream(String streamName) {
         if (!this.isConnected) {
@@ -129,6 +120,6 @@ public class StreamManagerHelper {
                 logger.error("StreamManagerHelper.deleteMessageStream: {}", e);
             }
         }
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
 }

@@ -148,7 +148,6 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
         // Does not happen for built-in/plugin services so doing explicitly
         AuthenticationHandler.registerAuthenticationToken(this);
         streamManagerAuthToken = Coerce.toString(this.getPrivateConfig().findLeafChild(SERVICE_UNIQUE_ID_KEY));
-        logger.atInfo().log("streamManagerAuthToken: {}", streamManagerAuthToken);
 
         config.lookup(CONFIGURATION_CONFIG_KEY, "port").dflt(port).subscribe((w, n) -> {
             int oldPort = port;
@@ -539,37 +538,36 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
 
     @Override
     public boolean isUsernameAndPasswordValid(Pair<String, String> usernameAndPassword) {
-        return true;
-        // Topics passwordTopics = config.getRoot().findTopics(DEBUG_PASSWORD_NAMESPACE);
-        // if (passwordTopics == null || usernameAndPassword == null) {
-        //     return false;
-        // }
+        Topics passwordTopics = config.getRoot().findTopics(DEBUG_PASSWORD_NAMESPACE);
+        if (passwordTopics == null || usernameAndPassword == null) {
+            return false;
+        }
 
-        // // Cleanup any expired passwords first
-        // // foreach user
-        // passwordTopics.forEach(n -> {
-        //     if (n instanceof Topics) {
-        //         // foreach password under the user
-        //         ((Topics) n).forEach(p -> {
-        //             if (p instanceof Topics) {
-        //                 Topic exp = ((Topics) p).find(EXPIRATION_NAMESPACE);
-        //                 // If there's somehow no expiration set or if it has expired already, then remove it from the
-        //                 // store
-        //                 if (exp == null || Instant.now().isAfter(Instant.ofEpochMilli(Coerce.toLong(exp)))) {
-        //                     p.remove();
-        //                 }
-        //             }
-        //         });
-        //     }
-        // });
+        // Cleanup any expired passwords first
+        // foreach user
+        passwordTopics.forEach(n -> {
+            if (n instanceof Topics) {
+                // foreach password under the user
+                ((Topics) n).forEach(p -> {
+                    if (p instanceof Topics) {
+                        Topic exp = ((Topics) p).find(EXPIRATION_NAMESPACE);
+                        // If there's somehow no expiration set or if it has expired already, then remove it from the
+                        // store
+                        if (exp == null || Instant.now().isAfter(Instant.ofEpochMilli(Coerce.toLong(exp)))) {
+                            p.remove();
+                        }
+                    }
+                });
+            }
+        });
 
-        // // Verify this incoming request
-        // Topic expirationTopic = passwordTopics.find(usernameAndPassword.getLeft(), usernameAndPassword.getRight(),
-        //         EXPIRATION_NAMESPACE);
-        // if (expirationTopic == null) {
-        //     return false;
-        // }
-        // return Instant.now().isBefore(Instant.ofEpochMilli(Coerce.toLong(expirationTopic)));
+        // Verify this incoming request
+        Topic expirationTopic = passwordTopics.find(usernameAndPassword.getLeft(), usernameAndPassword.getRight(),
+                EXPIRATION_NAMESPACE);
+        if (expirationTopic == null) {
+            return false;
+        }
+        return Instant.now().isBefore(Instant.ofEpochMilli(Coerce.toLong(expirationTopic)));
     }
 
     private Pair<String, String> getUsernameAndPassword(String authHeader) {

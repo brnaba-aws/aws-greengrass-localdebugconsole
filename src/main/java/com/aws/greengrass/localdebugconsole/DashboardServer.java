@@ -16,7 +16,6 @@ import com.aws.greengrass.localdebugconsole.messageutils.Message;
 import com.aws.greengrass.localdebugconsole.messageutils.MessageType;
 import com.aws.greengrass.localdebugconsole.messageutils.PackedRequest;
 import com.aws.greengrass.localdebugconsole.messageutils.Request;
-import com.aws.greengrass.localdebugconsole.StreamManagerHelper;
 import com.aws.greengrass.logging.api.Logger;
 import com.aws.greengrass.mqttclient.MqttClient;
 import com.aws.greengrass.mqttclient.MqttRequestException;
@@ -80,7 +79,7 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
         this(address, logger, new KernelCommunicator(root, logger, deviceConfig), authenticator, engineProvider,
                 root.getContext().get(PubSubIPCEventStreamAgent.class),
                 root.getContext().get(MqttClient.class),
-                 new StreamManagerHelper(streamManagerAuthToken, logger));
+                 new StreamManagerHelper(streamManagerAuthToken));
     }
 
     // constructor for unit testing
@@ -109,13 +108,6 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
             ((KernelCommunicator) dashboardAPI).linkWithKernel();
         }
         start();
-
-        if (this.streamManagerHelper.start()){
-            logger.atInfo().log("Stream Manager client connected");
-        }
-        else{
-            logger.atInfo().log("Stream Manager client not connected");
-        }
     }
 
     // for use in testing only
@@ -261,21 +253,23 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
                     unsubscribeFromPubSubTopic(conn, packedRequest, req);
                     break;
                 }
-                case getStreamManagerStreamsList: {
-                    getStreamManagerStreamsList(conn, packedRequest, req);
+                case streamManagerListStreams: {
+                    StreamManagerListStreams(conn, packedRequest);
                     break;
                 }
-                case describeStream: {
-                    describeStream(conn, packedRequest, req);
+                case streamManagerDescribeStream: {
+                    StreamManagerDescribeStream(conn, packedRequest, req);
                     break;
                 }
 
-                case deleteMessageStream: {
-                    deleteMessageStream(conn, packedRequest, req);
+                case streamManagerDeleteMessageStream: {
+                    StreamManagerDeleteMessageStream(conn, packedRequest, req);
+                    break;
                 }
 
-                case readMessages: {
-                    readMessages(conn, packedRequest, req);
+                case streamManagerReadMessages: {
+                    StreamManagerReadMessages(conn, packedRequest, req);
+                    break;
                 }
 
                 default: { // echo
@@ -382,38 +376,37 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
         }
     }
 
-    private void getStreamManagerStreamsList(WebSocket conn, PackedRequest packedRequest, Request req) {
+    private void StreamManagerListStreams(WebSocket conn, PackedRequest packedRequest) {
         try {
-            List<String> streamsList = this.streamManagerHelper.listStreams();
-            sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, streamsList));
+            sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, this.streamManagerHelper.listStreams()));
         }
         catch (Exception e){
-            logger.error(e.getMessage());
+            logger.error(e.getMessage()); //TODO: print proper error
             sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, e.getMessage()));
         }
     }
 
-    private void describeStream(WebSocket conn, PackedRequest packedRequest, Request req) {
+    private void StreamManagerDescribeStream(WebSocket conn, PackedRequest packedRequest, Request req) {
         try {
             sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, this.streamManagerHelper.describeStream(req.args[0])));
         }
         catch (Exception e){
-            logger.error(e.getMessage());
+            logger.error(e.getMessage());//TODO: print proper error
             sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, e.getMessage()));
         }
     }
 
-    private void deleteMessageStream(WebSocket conn, PackedRequest packedRequest, Request req) {
+    private void StreamManagerDeleteMessageStream(WebSocket conn, PackedRequest packedRequest, Request req) {
         try {
             this.streamManagerHelper.deleteMessageStream(req.args[0]);
         }
         catch (Exception e){
-            logger.error(e.getMessage());
+            logger.error(e.getMessage());//TODO: print proper error
             sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, e.getMessage()));
         }
     }
 
-    private void readMessages(WebSocket conn, PackedRequest packedRequest, Request req) {
+    private void StreamManagerReadMessages(WebSocket conn, PackedRequest packedRequest, Request req) {
         try {
             if (req.args.length == 5) {
                 sendIfOpen(conn,
@@ -432,7 +425,7 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
             }
         }
         catch (Exception e){
-            logger.error(e.getMessage());
+            logger.error(e.getMessage());//TODO: print proper error
             sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, e.getMessage()));
         }
     }

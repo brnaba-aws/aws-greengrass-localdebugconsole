@@ -1,5 +1,5 @@
 
-import React, { Component, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     Box, 
     ColumnLayout, 
@@ -205,7 +205,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
     ];
 
     async function describeStream(streamName:string, index:number){
-        SERVER.sendRequest({ call: APICall.describeStream, args: [streamName] }).then(
+        SERVER.sendRequest({ call: APICall.streamManagerDescribeStream, args: [streamName] }).then(
             (response) => {
                 if (response) {
                     const item:Stream = response;
@@ -226,7 +226,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
         if (desiredStartSequenceNumber >= 0)
         {
             if (desiredStartSequenceNumber - (preferences.pageSize || 100)*(currentPageIndex-1) >= (preferences.pageSize || 100)){
-                SERVER.sendRequest({ call: APICall.readMessages, args: [streamName, desiredStartSequenceNumber - (preferences.pageSize || 100)*(currentPageIndex) + 1, 1, (preferences.pageSize || 100), 5000] }).then(
+                SERVER.sendRequest({ call: APICall.streamManagerReadMessages, args: [streamName, desiredStartSequenceNumber - (preferences.pageSize || 100)*(currentPageIndex) + 1, 1, (preferences.pageSize || 100), 5000] }).then(
                     (response:Message[]) => {
                         if (response) {
                             const listMessageDescending:any = response;
@@ -240,7 +240,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                 );
             }
             else{
-                SERVER.sendRequest({ call: APICall.readMessages, args: [streamName, 0, 1, desiredStartSequenceNumber - (preferences.pageSize || 100)*(currentPageIndex-1) + 1, 5000] }).then(
+                SERVER.sendRequest({ call: APICall.streamManagerReadMessages, args: [streamName, 0, 1, desiredStartSequenceNumber - (preferences.pageSize || 100)*(currentPageIndex-1) + 1, 5000] }).then(
                     (response) => {
                         if (response) {
                             const listMessageDescending = response.sort((a:any, b:any) => b.sequenceNumber - a.sequenceNumber);
