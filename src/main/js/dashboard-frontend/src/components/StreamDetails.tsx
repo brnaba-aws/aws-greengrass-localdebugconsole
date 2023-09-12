@@ -14,7 +14,7 @@ import {
     Link
 } from "@cloudscape-design/components";
 import { RouteComponentProps, useHistory, withRouter } from "react-router-dom";
-import { Stream, Message } from "../util/StreamManager";
+import { Stream, Message, formatBytes, ExportStatus, getElapsedTime } from "../util/StreamManager";
 import { SERVER } from "../index";
 import { APICall } from "../util/CommUtils";
 import { STREAM_MANAGER_ROUTE_HREF_PREFIX } from "../util/constNames";
@@ -29,8 +29,9 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
     const [streamDetails, setStreamDetails] = useState<Stream>();
     const [messageCount, setMessageCount] = useState(0);
     const [currentPageIndex, setCurrentPageIndex] = useState(1)
+    const [readMessagesRequest, setReadMessagesRequest] = useState(false);
     let streamName = useHistory().location.pathname.substring(STREAM_MANAGER_ROUTE_HREF_PREFIX.length - 1);
-    const columnDefinitions: TableProps.ColumnDefinition<Message>[] = [
+    const columnDefinitionsMessages: TableProps.ColumnDefinition<Message>[] = [
             {
                 id: "key",
                 header: "key",
@@ -59,6 +60,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                     }).format(e.ingestTime||0)
             },
     ];
+    
     const [preferences, setPreferences] = useState<CollectionPreferencesProps.Preferences>({
         pageSize: 100,
         visibleContent: ["sequenceNumber", "payload", "ingestTime"]
@@ -66,36 +68,40 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
     const items = [
         [
             {
-                field: "Stream Segment Size (Bytes)",
-                value: streamDetails?.definition.streamSegmentSize,
+                field: "Stream Segment Size",
+                value: formatBytes(streamDetails?.definition.streamSegmentSize),
             },
             {
                 field: "Max Size",
-                value: streamDetails?.definition.maxSize,
+                value: formatBytes(streamDetails?.definition.maxSize),
             },
             {
                 field: "Total size",
-                value: streamDetails?.storageStatus.totalBytes,
+                value: formatBytes(streamDetails?.storageStatus.totalBytes),
             },
         ],
         [
             {
                 field: "Persistence",
-                value: streamDetails?.definition.persistence
+                value: (streamDetails?.definition.persistence === 0 ? "File":"Memory")
             },
             {
                 field: "Strategy",
-                value: streamDetails?.definition.strategyOnFull,
+                value: (streamDetails?.definition.strategyOnFull === 0 ? "RejectNewData": "OverwriteOldestData"),
             },
             {
                 field: "Flush on write",
-                value: streamDetails?.definition.flushOnWrite,
+                value: (streamDetails?.definition.flushOnWrite?'true':'false'),
             },
         ]
     ];
 
     function OnPageIndexChangedHanlder (pageIndex:number) {
         setCurrentPageIndex(pageIndex);
+    }
+
+    const onClickRefresh = () => {
+        describeStream(streamName, 0);
     }
 
     const tabs: TabsProps.Tab[] = [
@@ -120,7 +126,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     loading={false}
                     loadingText="Loading resources"
                     items={messagesList}
-                    columnDefinitions={columnDefinitions}
+                    columnDefinitions={columnDefinitionsMessages}
                     visibleColumns={preferences.visibleContent}
                     preferences={
                         <CollectionPreferences
@@ -155,20 +161,20 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                             "(" + messageCount  +")"
                         }
 
-                    // actions={            
-                    //     <SpaceBetween direction="horizontal"  size="xs">
-                    //         <Button     
-                    //             onClick = {() => {
-                    //                 onClickRefresh();
-                    //             }}
-                    //             iconName="refresh" 
-                    //             wrapText={false}
-                    //             disabled={requestStreamsListInProgress}
-                    //         >
-                    //             Refresh
-                    //         </Button>
-                    //     </SpaceBetween>
-                    // }
+                    actions={            
+                        <SpaceBetween direction="horizontal"  size="xs">
+                            <Button     
+                                onClick = {() => {
+                                    onClickRefresh();
+                                }}
+                                iconName="refresh" 
+                                wrapText={false}
+                                disabled={readMessagesRequest}
+                            >
+                                Refresh
+                            </Button>
+                        </SpaceBetween>
+                    }
                     >
                         Messages
                     </Header>
@@ -201,6 +207,49 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         ))}
                     </ColumnLayout>
                 ),
+        },
+        {
+            id: "tab3",
+                label: "Export statuses",
+                content: (
+                    <ColumnLayout columns={streamDetails?.exportStatuses.length} variant="text-grid">
+                        {streamDetails?.exportStatuses.map((group, index) => (
+                            <SpaceBetween size="xs" key={index}>
+                                <div key={index}>
+                                    <Box margin={{bottom: "xxxs"}} color="text-label">Identifier</Box>
+                                    <div>{group.exportConfigIdentifier}</div>
+                                </div>
+                                <div key={index}>
+                                    <Box margin={{bottom: "xxxs"}} color="text-label">Exported bytes</Box>
+                                    <div>{formatBytes(group.exportedBytesFromStream)}</div>
+                                </div>
+                                <div key={index}>
+                                    <Box margin={{bottom: "xxxs"}} color="text-label">Exported messages</Box>
+                                    <div>{group.exportedMessagesCount}</div>
+                                </div>
+                                <div key={index}>
+                                    <Box margin={{bottom: "xxxs"}} color="text-label">Last exported sequence number</Box>
+                                    <div>{group.lastExportedSequenceNumber}</div>
+                                </div>
+                                <div key={index}>
+                                    <Box margin={{bottom: "xxxs"}} color="text-label">Last exported time</Box>
+                                    <div>{new Intl.DateTimeFormat("en-US", {
+                                            year: "numeric",
+                                            month: "2-digit",
+                                            day: "2-digit",
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                            second: "2-digit",
+                                        }).format(group.lastExportTime)} - {getElapsedTime(group.lastExportTime)}</div>
+                                </div>
+                                <div key={index}>
+                                    <Box margin={{bottom: "xxxs"}} color="text-label">Error Message</Box>
+                                    <div>{group.errorMessage || 'None'}</div>
+                                </div>
+                            </SpaceBetween>
+                        ))}
+                    </ColumnLayout>
+            ),
         }
     ];
 
@@ -211,7 +260,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     const item:Stream = response;
                     item.key = index;
                     setStreamDetails(item);
-                    console.log(item)
                     setMessageCount(item.storageStatus.newestSequenceNumber-item.storageStatus.oldestSequenceNumber + 1)
                     readMessages(streamName, item.storageStatus.newestSequenceNumber)
                 }
@@ -225,6 +273,8 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
     async function readMessages(streamName:string, desiredStartSequenceNumber:number){
         if (desiredStartSequenceNumber >= 0)
         {
+            setMessagesList([]);
+            setReadMessagesRequest(true);
             if (desiredStartSequenceNumber - (preferences.pageSize || 100)*(currentPageIndex-1) >= (preferences.pageSize || 100)){
                 SERVER.sendRequest({ call: APICall.streamManagerReadMessages, args: [streamName, desiredStartSequenceNumber - (preferences.pageSize || 100)*(currentPageIndex) + 1, 1, (preferences.pageSize || 100), 5000] }).then(
                     (response:Message[]) => {
@@ -233,9 +283,11 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                             listMessageDescending.sort((a:any, b:any) => b.sequenceNumber - a.sequenceNumber);
                             setMessagesList(listMessageDescending);
                         }
+                        setReadMessagesRequest(false);
                     },
                     (reason) => {
-                      console.log("Error in [StreamManager]: " + reason);
+                        setReadMessagesRequest(false);
+                        console.log("Error in [StreamManager]: " + reason);
                     }
                 );
             }
@@ -245,10 +297,12 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         if (response) {
                             const listMessageDescending = response.sort((a:any, b:any) => b.sequenceNumber - a.sequenceNumber);
                             setMessagesList(listMessageDescending);
+                            setReadMessagesRequest(false);
                         }
                     },
                     (reason) => {
-                      console.log("Error in [StreamManager]: " + reason);
+                        setReadMessagesRequest(false);
+                        console.log("Error in [StreamManager]: " + reason);
                     }
                 );
             }
@@ -263,7 +317,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
     }, [currentPageIndex, preferences]);
 
     return (
-        <ContentLayout header={<Header variant={"h1"}>Definition</Header>}>
+        <ContentLayout header={<Header variant={"h1"}>{streamName}</Header>}>
             <Container>
                 <Tabs tabs={tabs}></Tabs>
             </Container>

@@ -34,6 +34,33 @@ export function getExportDefinitionType(exportDefinition: ExportDefinition): str
   return exportTypes.join(' - ');
 }
 
+export const getElapsedTime = (elapsedtimesec:number) => {
+  if (elapsedtimesec > 0) {
+      const elapsedSeconds = Math.floor((Date.now() - elapsedtimesec)/1000);
+      const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+      const elapsedHours = Math.floor(elapsedSeconds / 60 / 60);
+      
+      if (elapsedSeconds < 1) {
+        return `Just now`;
+      }
+      else if (elapsedMinutes < 1) {
+        return `${elapsedSeconds} seconds ago`;
+      } else if (elapsedMinutes < 60) {
+        return `${elapsedMinutes} minute${elapsedMinutes !== 1 ? 's' : ''} ago`;
+      } else if (elapsedHours < 24) {
+        return `${elapsedHours} hour${elapsedHours !== 1 ? 's' : ''} ago`;
+      }
+      else {
+        const elapsedDays = Math.floor(elapsedHours / 24);
+        return `${elapsedDays} day${elapsedDays !== 1 ? 's' : ''} ago`;
+      }
+  }
+  else {
+      return '-'
+  }
+};
+
+
 export enum PersistenceType {
     File,
     Memory
@@ -69,7 +96,7 @@ interface Definition {
     timeToLiveMillis: number;
 }
 
-interface ExportStatus {
+export interface ExportStatus {
     errorMessage: string;
     exportConfigIdentifier: string;
     exportedBytesFromStream: number;
@@ -81,7 +108,7 @@ interface ExportStatus {
 export interface Stream {
     key: number;
     definition: Definition,
-    exportStatuses: ExportStatus,
+    exportStatuses: ExportStatus[],
     storageStatus: StorageStatus
 }
 
