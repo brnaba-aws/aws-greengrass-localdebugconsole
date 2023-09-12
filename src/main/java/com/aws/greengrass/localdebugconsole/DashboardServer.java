@@ -79,7 +79,7 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
         this(address, logger, new KernelCommunicator(root, logger, deviceConfig), authenticator, engineProvider,
                 root.getContext().get(PubSubIPCEventStreamAgent.class),
                 root.getContext().get(MqttClient.class),
-                 new StreamManagerHelper(streamManagerAuthToken));
+                 new StreamManagerHelper(root, streamManagerAuthToken));
     }
 
     // constructor for unit testing
