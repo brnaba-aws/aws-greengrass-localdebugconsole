@@ -6,9 +6,11 @@
 import React, { ReactNode } from "react";
 import Overview from "../components/Overview";
 import Arch from "../components/Arch";
-import { SERVICE_ROUTE_HREF_PREFIX } from "../util/constNames";
+import { SERVICE_ROUTE_HREF_PREFIX, STREAM_MANAGER_ROUTE_HREF_PREFIX } from "../util/constNames";
 import ComponentDetail from "../components/details/ComponentDetail";
 import PubSub from "../components/PubSubDebugger";
+import StreamManager from "../components/StreamManager";
+import StreamDetails from "../components/StreamDetails";
 
 interface RouteType {
   routePath: string; // displayed in the url
@@ -50,5 +52,17 @@ export const routes: RouteType[] = [
     title: "Messaging test client",
     show: true,
     main: () => <PubSub/>,
+  },
+  {
+    routePath: STREAM_MANAGER_ROUTE_HREF_PREFIX.slice(1, -1),
+    title: "Stream Manager",
+    show: true,
+    main: () => <StreamManager/>,
+  },
+  {
+    routePath: STREAM_MANAGER_ROUTE_HREF_PREFIX.substring(1) + ":streamName",
+    title: "Stream Manager",
+    show: false,
+    main: () => <StreamDetails/>,
   },
 ];
