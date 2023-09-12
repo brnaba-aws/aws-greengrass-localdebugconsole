@@ -7,12 +7,14 @@ import React from "react";
 import { useLocation } from "react-router-dom";
 import { routes } from "./constRoutes";
 import { BreadcrumbGroup } from "@cloudscape-design/components";
-import { PROJECT_NAME, SERVICE_ROUTE_HREF_PREFIX } from "../util/constNames";
+import { PROJECT_NAME, SERVICE_ROUTE_HREF_PREFIX, STREAM_MANAGER_ROUTE_HREF_PREFIX } from "../util/constNames";
 import {BreadcrumbGroupProps} from "@cloudscape-design/components/breadcrumb-group/interfaces";
 
 export function findTitle(href: string) {
   if (href.startsWith(SERVICE_ROUTE_HREF_PREFIX))
     return `${href.substring(SERVICE_ROUTE_HREF_PREFIX.length)}`;
+  else if (href.startsWith(STREAM_MANAGER_ROUTE_HREF_PREFIX))
+    return `${href.substring(STREAM_MANAGER_ROUTE_HREF_PREFIX.length)}`;
   let retval = "null";
   const stripped = href.substring(1); // strip leading '#'
   routes.forEach((route) => {
