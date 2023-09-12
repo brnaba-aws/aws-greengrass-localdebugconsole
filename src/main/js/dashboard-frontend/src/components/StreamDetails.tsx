@@ -260,7 +260,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
 
     useEffect(() => {
         describeStream(streamName, 0);
-    }, [currentPageIndex]);
+    }, [currentPageIndex, preferences]);
 
     return (
         <ContentLayout header={<Header variant={"h1"}>Definition</Header>}>
