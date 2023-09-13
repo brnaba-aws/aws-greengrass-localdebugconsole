@@ -143,4 +143,16 @@ public class StreamManagerHelper {
         }
         return Collections.emptyList();
     }
+
+    public void appendMessage(String streamName, byte[] message) throws StreamManagerException {
+        if (!this.isConnected) {
+            this.connect();
+        }
+        if (this.isConnected){
+            this.client.appendMessage(streamName, message);
+        }
+        else {
+            throw new StreamManagerException("Connection to Stream Manager failed!");
+        }
+    }
 }

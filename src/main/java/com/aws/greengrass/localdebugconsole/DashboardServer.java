@@ -267,6 +267,11 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
                     break;
                 }
 
+                case streamManagerAppendMessage:{
+                    StreamManagerAppendMessage(conn, packedRequest, req);
+                    break;
+                }
+
                 default: { // echo
                     sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, req.call));
                     break;
@@ -428,6 +433,20 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
             sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, e.getMessage()));
         }
     }
+
+    private void StreamManagerAppendMessage(WebSocket conn, PackedRequest packedRequest, Request req) {
+        StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage(false,"");
+        try {
+            this.streamManagerHelper.appendMessage(req.args[0], req.args[1].getBytes());
+            responseMessage.successful = true;
+        }
+        catch (Exception e){
+            logger.error("Error while appending message to the stream:", e);
+            responseMessage.errorMsg = e.getMessage();
+        }
+        sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
+    }
+
 
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
