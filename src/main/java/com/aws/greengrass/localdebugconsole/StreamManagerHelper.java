@@ -8,6 +8,7 @@ import com.amazonaws.greengrass.streammanager.client.StreamManagerClientFactory;
 import com.amazonaws.greengrass.streammanager.client.config.StreamManagerAuthInfo;
 import com.amazonaws.greengrass.streammanager.client.config.StreamManagerClientConfig;
 import com.amazonaws.greengrass.streammanager.client.config.StreamManagerServerInfo;
+import com.amazonaws.greengrass.streammanager.client.exception.StreamManagerException;
 import com.amazonaws.greengrass.streammanager.model.Message;
 import com.amazonaws.greengrass.streammanager.model.MessageStreamInfo;
 import com.amazonaws.greengrass.streammanager.client.StreamManagerClient;
@@ -111,22 +112,15 @@ public class StreamManagerHelper {
         return new MessageStreamInfo();
     }
 
-    public void deleteMessageStream(String streamName) {
+    public void deleteMessageStream(String streamName) throws StreamManagerException {
         if (!this.isConnected) {
-            try {
-                // Trying to reconnect in case it didn't work at first.
-                this.connect();
-            }catch (Exception e){
-                logger.error("Unable to connect to Stream Manager:", e);
-            }
+            this.connect();
         }
         if (this.isConnected){
-            try {
-                this.client.deleteMessageStream(streamName);
-            }
-            catch (Exception e){
-                logger.error("Unable to delete stream:", e);
-            }
+            this.client.deleteMessageStream(streamName);
+        }
+        else {
+            throw new StreamManagerException("Connection to Stream Manager failed!");
         }
     }
 

@@ -10,12 +10,7 @@ import com.aws.greengrass.builtin.services.pubsub.PublishEvent;
 import com.aws.greengrass.builtin.services.pubsub.SubscribeRequest;
 import com.aws.greengrass.deployment.DeviceConfiguration;
 import com.aws.greengrass.lifecyclemanager.Kernel;
-import com.aws.greengrass.localdebugconsole.messageutils.CommunicationMessage;
-import com.aws.greengrass.localdebugconsole.messageutils.DeviceDetails;
-import com.aws.greengrass.localdebugconsole.messageutils.Message;
-import com.aws.greengrass.localdebugconsole.messageutils.MessageType;
-import com.aws.greengrass.localdebugconsole.messageutils.PackedRequest;
-import com.aws.greengrass.localdebugconsole.messageutils.Request;
+import com.aws.greengrass.localdebugconsole.messageutils.*;
 import com.aws.greengrass.logging.api.Logger;
 import com.aws.greengrass.mqttclient.MqttClient;
 import com.aws.greengrass.mqttclient.MqttRequestException;
@@ -397,13 +392,16 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
     }
 
     private void StreamManagerDeleteMessageStream(WebSocket conn, PackedRequest packedRequest, Request req) {
+        StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage(false,"");
         try {
             this.streamManagerHelper.deleteMessageStream(req.args[0]);
+            responseMessage.successful = true;
         }
         catch (Exception e){
-            logger.error(e.getMessage());//TODO: print proper error
-            sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, e.getMessage()));
+            logger.error("Error while deleting stream:", e);
+            responseMessage.errorMsg = e.getMessage();
         }
+        sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
     }
 
     private void StreamManagerReadMessages(WebSocket conn, PackedRequest packedRequest, Request req) {
