@@ -118,7 +118,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
 
     const tabs: TabsProps.Tab[] = [
         {
-            id: "tab2",
+            id: "tab1",
                 label: "Details",
                 content: (
                     <ColumnLayout key={"tab2"} columns={4} variant="text-grid">
@@ -136,50 +136,59 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                 ),
         },
         {
-            id: "tab3",
+            id: "tab2",
                 label: "Export statuses",
                 content: (
                     <ColumnLayout columns={streamDetails?.exportStatuses.length} variant="text-grid">
                         {streamDetails?.exportStatuses.map((group, index) => (
-                            <SpaceBetween size="xs" key={group.exportConfigIdentifier}>
+                            <SpaceBetween direction="horizontal" size="xxs" key={group.exportConfigIdentifier}>
                                 <div key={index}>
-                                    <div >
-                                        <Box margin={{bottom: "xxxs"}} color="text-label">Identifier</Box>
-                                        <div>{group.exportConfigIdentifier}</div>
-                                    </div>
-                                    <div >
-                                        <Box margin={{bottom: "xxxs"}} color="text-label">Exported bytes</Box>
-                                        <div>{formatBytes(group.exportedBytesFromStream)}</div>
-                                    </div>
-                                    <div >
-                                        <Box margin={{bottom: "xxxs"}} color="text-label">Exported messages</Box>
-                                        <div>{group.exportedMessagesCount}</div>
-                                    </div>
-                                    <div>
-                                        <Box margin={{bottom: "xxxs"}} color="text-label">Last exported sequence number</Box>
-                                        <div>{group.lastExportedSequenceNumber}</div>
-                                    </div>
-                                    <div >
-                                        <Box margin={{bottom: "xxxs"}} color="text-label">Last exported time</Box>
-                                        <div>{new Intl.DateTimeFormat("en-US", {
-                                                year: "numeric",
-                                                month: "2-digit",
-                                                day: "2-digit",
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                                second: "2-digit",
-                                            }).format(group.lastExportTime)} - {getElapsedTime(group.lastExportTime)}</div>
-                                    </div>
-                                    <div>
-                                        <Box margin={{bottom: "xxxs"}} color="text-label">Error Message</Box>
-                                        <div>{group.errorMessage || 'None'}</div>
-                                    </div>
+                                    <SpaceBetween direction="vertical" size="xs" key={group.exportConfigIdentifier}>
+                                        <div >
+                                            <Box margin={{bottom: "xxxs"}} color="text-label">Identifier</Box>
+                                            <div>{group.exportConfigIdentifier}</div>
+                                        </div>
+                                        <div >
+                                            <Box margin={{bottom: "xxxs"}} color="text-label">Exported bytes</Box>
+                                            <div>{formatBytes(group.exportedBytesFromStream)}</div>
+                                        </div>
+                                        <div >
+                                            <Box margin={{bottom: "xxxs"}} color="text-label">Exported messages</Box>
+                                            <div>{group.exportedMessagesCount}</div>
+                                        </div>
+                                        <div>
+                                            <Box margin={{bottom: "xxxs"}} color="text-label">Last exported sequence number</Box>
+                                            <div>{group.lastExportedSequenceNumber}</div>
+                                        </div>
+                                        <div >
+                                            <Box margin={{bottom: "xxxs"}} color="text-label">Last exported time</Box>
+                                            <div>{new Intl.DateTimeFormat("en-US", {
+                                                    year: "numeric",
+                                                    month: "2-digit",
+                                                    day: "2-digit",
+                                                    hour: "2-digit",
+                                                    minute: "2-digit",
+                                                    second: "2-digit",
+                                                }).format(group.lastExportTime)} - {getElapsedTime(group.lastExportTime)}</div>
+                                        </div>
+                                        <div>
+                                            <Box margin={{bottom: "xxxs"}} color="text-label">Error Message</Box>
+                                            <div>{group.errorMessage || 'None'}</div>
+                                        </div>
+                                    </SpaceBetween>
                                 </div>
                             </SpaceBetween>
                         ))}
                     </ColumnLayout>
             ),
-        }
+        },
+        {
+            id: "tab3",
+            label: "Export definition",
+            content: (
+                <div></div>
+            ),
+        },
     ];
 
     async function describeStream(streamName:string, index:number){
@@ -235,9 +244,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     }
                 );
             }
-        }
-        else {
-            console.log('error')
         }
     }
 
