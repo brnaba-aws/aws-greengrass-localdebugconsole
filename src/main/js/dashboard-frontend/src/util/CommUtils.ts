@@ -39,7 +39,8 @@ export enum APICall {
   streamManagerDescribeStream = "streamManagerDescribeStream",
   streamManagerDeleteMessageStream = "streamManagerDeleteMessageStream",
   streamManagerReadMessages = "streamManagerReadMessages",
-  streamManagerAppendMessage = "streamManagerAppendMessage"
+  streamManagerAppendMessage = "streamManagerAppendMessage",
+  streamManagerCreateMessageStream = "streamManagerCreateMessageStream",
 }
 export enum InternalAPICall {
   init = "init",

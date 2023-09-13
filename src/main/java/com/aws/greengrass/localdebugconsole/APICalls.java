@@ -121,4 +121,9 @@ public enum APICalls {
      * Append a message into the specified message stream.
      */
     streamManagerAppendMessage,
+
+    /**
+     * Create a message stream with a given definition.
+     */
+    streamManagerCreateMessageStream,
 }
