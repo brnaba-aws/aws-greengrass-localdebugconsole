@@ -293,6 +293,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         }
                         trackBy="key"
                         loading={false}
+                        wrapLines={true}
                         loadingText="Loading resources"
                         items={messagesList.filter((m:Message) => atob(m.payload?.toString() || '').includes(filteringText.toLowerCase()))}
                         filter={
@@ -358,6 +359,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                     onClick = {() => {
                                         onClickAppend();
                                     }}
+                                    iconName="add-plus"
                                     wrapText={false}
                                     disabled={appendMessageRequest}
                                 >
