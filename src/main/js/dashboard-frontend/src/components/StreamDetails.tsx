@@ -186,7 +186,231 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
             id: "tab3",
             label: "Export definition",
             content: (
-                <div></div>
+                <Tabs tabs={[
+                    {
+                        id: "tab31",
+                        content:(
+                            <ColumnLayout columns={streamDetails?.exportStatuses.length} variant="text-grid">
+                                {streamDetails?.definition.exportDefinition.kinesis.map((group, index) => (
+                                    <SpaceBetween direction="horizontal" size="xxs" key={group.identifier}>
+                                        <div key={index}>
+                                            <SpaceBetween direction="vertical" size="xs" key={group.identifier}>
+                                                <div >
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Identifier</Box>
+                                                    <div>{group.identifier}</div>
+                                                </div>
+                                                <div >
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Kinesis stream</Box>
+                                                    <div>{group.kinesisStreamName}</div>
+                                                </div>
+                                                <div >
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Batch size</Box>
+                                                    <div>{group.batchSize?group.batchSize:'-'}</div>
+                                                </div>
+                                                <div>
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Batch interval</Box>
+                                                    <div>{group.batchIntervalMillis?group.batchIntervalMillis:'-'}</div>
+                                                </div>
+                                                <div>
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Priority</Box>
+                                                    <div>{group.priority?group.priority:'-'}</div>
+                                                </div>
+                                                <div>
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Status</Box>
+                                                    <div>{group.disabled === true?'true':'false'}</div>
+                                                </div>
+                                                <div>
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Start sequence number</Box>
+                                                    <div>{group.startSequenceNumber ? group.startSequenceNumber:'-'}</div>
+                                                </div>
+                                            </SpaceBetween>
+                                        </div>
+                                    </SpaceBetween>
+                                ))}
+                            </ColumnLayout>
+                        ),
+                        label:"Kinesis"
+                    },
+                    {
+                        id: "tab32",
+                        content:(
+                            <ColumnLayout columns={streamDetails?.exportStatuses.length} variant="text-grid">
+                                {streamDetails?.definition.exportDefinition.IotSitewise.map((group, index) => (
+                                    <SpaceBetween direction="horizontal" size="xxs" key={group.identifier}>
+                                        <div key={index}>
+                                            <SpaceBetween direction="vertical" size="xs" key={group.identifier}>
+                                                <div >
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Identifier</Box>
+                                                    <div>{group.identifier}</div>
+                                                </div>
+                                                <div >
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Batch size</Box>
+                                                    <div>{group.batchSize?group.batchSize:'-'}</div>
+                                                </div>
+                                                <div>
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Batch interval</Box>
+                                                    <div>{group.batchIntervalMillis?group.batchIntervalMillis:'-'}</div>
+                                                </div>
+                                                <div>
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Priority</Box>
+                                                    <div>{group.priority?group.priority:'-'}</div>
+                                                </div>
+                                                <div>
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Status</Box>
+                                                    <div>{group.disabled === true?'true':'false'}</div>
+                                                </div>
+                                                <div>
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Start sequence number</Box>
+                                                    <div>{group.startSequenceNumber ? group.startSequenceNumber:'-'}</div>
+                                                </div>
+                                            </SpaceBetween>
+                                        </div>
+                                    </SpaceBetween>
+                                ))}
+                            </ColumnLayout>
+                        ),
+                        label:"IoT Sitewise"
+                    },
+                    {
+                        id: "tab33",
+                        disabled:(streamDetails?.definition.exportDefinition.iotAnalytics.length?false:true),
+                        content:(
+                            <ColumnLayout columns={streamDetails?.exportStatuses.length} variant="text-grid">
+                                {streamDetails?.definition.exportDefinition.iotAnalytics.map((group, index) => (
+                                    <SpaceBetween direction="horizontal" size="xxs" key={group.identifier}>
+                                        <div key={index}>
+                                            <SpaceBetween direction="vertical" size="xs" key={group.identifier}>
+                                                <div >
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Identifier</Box>
+                                                    <div>{group.identifier}</div>
+                                                </div>
+                                                <div >
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">IoT channel</Box>
+                                                    <div>{group.iotChannel}</div>
+                                                </div>
+                                                <div >
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Id prefix</Box>
+                                                    <div>{group.iotMsgIdPrefix}</div>
+                                                </div>
+                                                <div >
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Batch size</Box>
+                                                    <div>{group.batchSize?group.batchSize:'-'}</div>
+                                                </div>
+                                                <div>
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Batch interval</Box>
+                                                    <div>{group.batchIntervalMillis?group.batchIntervalMillis:'-'}</div>
+                                                </div>
+                                                <div>
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Priority</Box>
+                                                    <div>{group.priority?group.priority:'-'}</div>
+                                                </div>
+                                                <div>
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Status</Box>
+                                                    <div>{group.disabled === true?'true':'false'}</div>
+                                                </div>
+                                                <div>
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Start sequence number</Box>
+                                                    <div>{group.startSequenceNumber ? group.startSequenceNumber:'-'}</div>
+                                                </div>
+                                            </SpaceBetween>
+                                        </div>
+                                    </SpaceBetween>
+                                ))}
+                            </ColumnLayout>
+                        ),
+                        label:"IoT analytics"
+                    },
+                    {
+                        id: "tab34",
+                        disabled:(streamDetails?.definition.exportDefinition.http.length?false:true),
+                        content:(
+                            <ColumnLayout columns={streamDetails?.exportStatuses.length} variant="text-grid">
+                                {streamDetails?.definition.exportDefinition.http.map((group, index) => (
+                                    <SpaceBetween direction="horizontal" size="xxs" key={group.identifier}>
+                                        <div key={index}>
+                                            <SpaceBetween direction="vertical" size="xs" key={group.identifier}>
+                                                <div >
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Identifier</Box>
+                                                    <div>{group.identifier}</div>
+                                                </div>
+                                                <div >
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">URI</Box>
+                                                    <div>{group.uri}</div>
+                                                </div>
+                                                <div>
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Export format</Box>
+                                                    <div>{group.exportFormat?'RAW NOT BATCHED':'JSON_BATCHED'}</div>
+                                                </div>
+                                                <div >
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Batch size</Box>
+                                                    <div>{group.batchSize?group.batchSize:'-'}</div>
+                                                </div>
+                                                <div>
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Batch interval</Box>
+                                                    <div>{group.batchIntervalMillis?group.batchIntervalMillis:'-'}</div>
+                                                </div>
+                                                <div>
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Priority</Box>
+                                                    <div>{group.priority?group.priority:'-'}</div>
+                                                </div>
+                                                <div>
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Status</Box>
+                                                    <div>{group.disabled === true?'true':'false'}</div>
+                                                </div>
+                                                <div>
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Start sequence number</Box>
+                                                    <div>{group.startSequenceNumber ? group.startSequenceNumber:'-'}</div>
+                                                </div>
+                                            </SpaceBetween>
+                                        </div>
+                                    </SpaceBetween>
+                                ))}
+                            </ColumnLayout>
+                        ),
+                        label:"HTTP"
+                    },
+                    {
+                        id: "tab35",
+                        disabled:(streamDetails?.definition.exportDefinition.s3TaskExecutor.length?false:true),
+                        content:(
+                            <ColumnLayout columns={streamDetails?.exportStatuses.length} variant="text-grid">
+                                {streamDetails?.definition.exportDefinition.s3TaskExecutor.map((group, index) => (
+                                    <SpaceBetween direction="horizontal" size="xxs" key={group.identifier}>
+                                        <div key={index}>
+                                            <SpaceBetween direction="vertical" size="xs" key={group.identifier}>
+                                                <div >
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Identifier</Box>
+                                                    <div>{group.identifier}</div>
+                                                </div>
+                                                <div >
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Size threshold multipart Upload</Box>
+                                                    <div>{formatBytes(group.sizeThresholdForMultipartUploadBytes)}</div>
+                                                </div>
+                                                <div>
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Status stream name</Box>
+                                                    <div>{group.statusConfig.statusStreamName}</div>
+                                                </div>
+                                                <div >
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Status level</Box>
+                                                    <div>{group.statusConfig.statusLevel}</div>
+                                                </div>
+                                                <div>
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Priority</Box>
+                                                    <div>{group.priority?group.priority:'-'}</div>
+                                                </div>
+                                                <div>
+                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Status</Box>
+                                                    <div>{group.disabled === true?'true':'false'}</div>
+                                                </div>
+                                            </SpaceBetween>
+                                        </div>
+                                    </SpaceBetween>
+                                ))}
+                            </ColumnLayout>
+                        ),
+                        label:"S3"
+                    }
+                ]}></Tabs>
             ),
         },
     ];
@@ -196,6 +420,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
             (response) => {
                 if (response) {
                     const item:Stream = response;
+                    console.log(item);
                     item.key = index;
                     setStreamDetails(item);
                     setMessageCount(item.storageStatus.newestSequenceNumber-item.storageStatus.oldestSequenceNumber + 1)
