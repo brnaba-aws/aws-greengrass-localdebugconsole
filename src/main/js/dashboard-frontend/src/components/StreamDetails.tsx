@@ -272,9 +272,9 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
     }, [currentPageIndex, preferences]);
 
     return (
-        <ContentLayout header={<Header variant={"h1"}>{streamName}</Header>}>
-            <SpaceBetween direction="vertical"  size="xs">
-                <Container>
+        <ContentLayout key={"streamDetails"} header={<Header variant={"h1"}>{streamName}</Header>}>
+            <SpaceBetween key={"SpaceBetweenStreamDetails"} direction="vertical"  size="xs">
+                <Container key={"Container"}>
                     <Tabs tabs={tabs}></Tabs>
                 </Container>
                 <Table
@@ -334,6 +334,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         }
                     header={
                         <Header
+                            key={"counterHeader"}
                             counter=
                             {
                                 "(" + messageCount  +")"

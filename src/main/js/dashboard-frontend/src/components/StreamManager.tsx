@@ -30,6 +30,7 @@ import { SERVER, DefaultContext } from "../index";
 import { APICall } from "../util/CommUtils";
 import { ComponentItem } from "../util/ComponentItem";
 import { STREAM_MANAGER_ROUTE_HREF_PREFIX } from "../util/constNames";
+import PaginationRendering from "../util/PaginationRendering";
 
 function StreamManager() {
 
@@ -38,6 +39,7 @@ function StreamManager() {
     const [requestStreamsListInProgress, setRequestStreamsListInProgress] = useState(false)
     const [viewConfirmDelete, setViewConfirmDelete] = useState(false);
     const defaultContext = useContext(DefaultContext);
+    const [currentPageIndex, setCurrentPageIndex] = useState(1)
     const [streamManagerComponentConfiguration, setStreamManagerComponentConfiguration] = useState<StreamManagerComponentConfiguration>({
         Version: '-',
         JVM_ARGS: '-',
@@ -164,7 +166,7 @@ function StreamManager() {
     useEffect(() => {   
         getStreamManagerComponentConfiguration();
         listStreams();
-    },[]);
+    },[currentPageIndex, preferences]);
 
 
     function getStreamManagerComponentConfiguration () {
@@ -302,6 +304,10 @@ function StreamManager() {
         }
     }
 
+    function OnPageIndexChangedHanlder (pageIndex:number) {
+        setCurrentPageIndex(pageIndex);
+    }
+
     const tabs: TabsProps.Tab[] = [
         {
             id: "tab1",
@@ -332,7 +338,7 @@ function StreamManager() {
                     loading={requestStreamsListInProgress}
                     selectedItems={selectedStream}
                     loadingText="Loading resources"
-                    items={streamManagerStreamsList.filter((s:Stream) => s.definition.name.toLowerCase().includes(filteringText.toLowerCase()))}
+                    items={streamManagerStreamsList.slice((currentPageIndex-1)*(preferences.pageSize || 10),(currentPageIndex-1)*(preferences.pageSize || 10) + (preferences.pageSize || 10)).filter((s:Stream) => s.definition.name.toLowerCase().includes(filteringText.toLowerCase()))}
                     onSelectionChange={(e: any) => {
                         setSelectedStream(streamManagerStreamsList.filter((s:Stream) => s.definition.name === e.detail.selectedItems[0].definition.name))
                     }}
@@ -421,6 +427,14 @@ function StreamManager() {
                     >
                         Streams
                     </Header>
+                }
+                pagination={
+                    <PaginationRendering 
+                        numberOfItems={streamManagerStreamsList.length}
+                        numberOfItemPerPage={preferences.pageSize || 1}
+                        pageIndex={currentPageIndex}
+                        onPageIndexChanged={ (pageIndex:any) => OnPageIndexChangedHanlder(pageIndex)}
+                    />
                 }
                 />
             ),
