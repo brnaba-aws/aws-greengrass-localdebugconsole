@@ -11,7 +11,7 @@ import {
     CollectionPreferencesProps,
     Button, 
     CollectionPreferences, 
-    Link
+    TextFilter
 } from "@cloudscape-design/components";
 import { RouteComponentProps, useHistory, withRouter } from "react-router-dom";
 import { Stream, Message, formatBytes, ExportStatus, getElapsedTime } from "../util/StreamManager";
@@ -30,6 +30,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
     const [messageCount, setMessageCount] = useState(0);
     const [currentPageIndex, setCurrentPageIndex] = useState(1)
     const [readMessagesRequest, setReadMessagesRequest] = useState(false);
+    const [filteringText, setFilteringText] = useState("");
     let streamName = useHistory().location.pathname.substring(STREAM_MANAGER_ROUTE_HREF_PREFIX.length - 1);
     const columnDefinitionsMessages: TableProps.ColumnDefinition<Message>[] = [
             {
@@ -105,91 +106,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
     }
 
     const tabs: TabsProps.Tab[] = [
-        {
-            id: "tab1",
-            label: "Messages",
-            content: (
-                <Table
-                    empty={
-                        <Box textAlign="center" color="inherit">
-                            <b>No resources</b>
-                            <Box
-                                padding={{ bottom: "s" }}
-                                variant="p"
-                                color="inherit"
-                            >
-                                No resources to display.
-                            </Box>
-                        </Box>
-                    }
-                    trackBy="key"
-                    loading={false}
-                    loadingText="Loading resources"
-                    items={messagesList}
-                    columnDefinitions={columnDefinitionsMessages}
-                    visibleColumns={preferences.visibleContent}
-                    preferences={
-                        <CollectionPreferences
-                            visibleContentPreference={{
-                                title: "Visible columns",
-                                options: [{
-                                    label: "", options: [
-                                        {editable: false, label: "sequenceNumber", id: "sequenceNumber"},
-                                        {editable: true, label: "payload", id: "payload"},
-                                        {editable: true, label: "ingestTime", id: "ingestTime"},
-                                    ]
-                                }]
-                            }}
-                            pageSizePreference={{
-                                title: "Page size",
-                                options: [
-                                    {value: 10, label: "10"},
-                                    {value: 50, label: "50"},
-                                    {value: 100, label: "100"}]
-                            }}
-                            title={"Preferences"}
-                            confirmLabel={"Ok"}
-                            cancelLabel={"Cancel"}
-                            preferences={preferences}
-                            onConfirm={({detail}) => setPreferences(detail)}
-                        />
-                    }
-                header={
-                    <Header
-                        counter=
-                        {
-                            "(" + messageCount  +")"
-                        }
-
-                    actions={            
-                        <SpaceBetween direction="horizontal"  size="xs">
-                            <Button     
-                                onClick = {() => {
-                                    onClickRefresh();
-                                }}
-                                iconName="refresh" 
-                                wrapText={false}
-                                disabled={readMessagesRequest}
-                            >
-                                Refresh
-                            </Button>
-                        </SpaceBetween>
-                    }
-                    >
-                        Messages
-                    </Header>
-                }
-                pagination={
-                    <PaginationRendering 
-                        numberOfItems={(streamDetails?.storageStatus.newestSequenceNumber || 0) - (streamDetails?.storageStatus.oldestSequenceNumber || 0) + 1}
-                        numberOfItemPerPage={preferences.pageSize || 1}
-                        pageIndex={currentPageIndex}
-                        onPageIndexChanged={ (pageIndex:any) => OnPageIndexChangedHanlder(pageIndex)}
-                    />
-                }
-                />
-            ),
-        },
         {
             id: "tab2",
                 label: "Details",
@@ -318,9 +234,97 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
 
     return (
         <ContentLayout header={<Header variant={"h1"}>{streamName}</Header>}>
-            <Container>
-                <Tabs tabs={tabs}></Tabs>
-            </Container>
+            <SpaceBetween direction="vertical"  size="xs">
+                <Container>
+                    <Tabs tabs={tabs}></Tabs>
+                </Container>
+                <Table
+                        empty={
+                            <Box textAlign="center" color="inherit">
+                                <b>No resources</b>
+                                <Box
+                                    padding={{ bottom: "s" }}
+                                    variant="p"
+                                    color="inherit"
+                                >
+                                    No resources to display.
+                                </Box>
+                            </Box>
+                        }
+                        trackBy="key"
+                        loading={false}
+                        loadingText="Loading resources"
+                        items={messagesList.filter((m:Message) => atob(m.payload?.toString() || '').includes(filteringText.toLowerCase()))}
+                        filter={
+                            <TextFilter
+                                filteringPlaceholder="Find message(s)"
+                                filteringText={filteringText}
+                                onChange={({detail}) =>setFilteringText(detail.filteringText)}
+                            />
+                        }
+                        columnDefinitions={columnDefinitionsMessages}
+                        visibleColumns={preferences.visibleContent}
+                        preferences={
+                            <CollectionPreferences
+                                visibleContentPreference={{
+                                    title: "Visible columns",
+                                    options: [{
+                                        label: "", options: [
+                                            {editable: false, label: "sequenceNumber", id: "sequenceNumber"},
+                                            {editable: true, label: "payload", id: "payload"},
+                                            {editable: true, label: "ingestTime", id: "ingestTime"},
+                                        ]
+                                    }]
+                                }}
+                                pageSizePreference={{
+                                    title: "Page size",
+                                    options: [
+                                        {value: 10, label: "10"},
+                                        {value: 50, label: "50"},
+                                        {value: 100, label: "100"}]
+                                }}
+                                title={"Preferences"}
+                                confirmLabel={"Ok"}
+                                cancelLabel={"Cancel"}
+                                preferences={preferences}
+                                onConfirm={({detail}) => setPreferences(detail)}
+                            />
+                        }
+                    header={
+                        <Header
+                            counter=
+                            {
+                                "(" + messageCount  +")"
+                            }
+
+                        actions={            
+                            <SpaceBetween direction="horizontal"  size="xs">
+                                <Button     
+                                    onClick = {() => {
+                                        onClickRefresh();
+                                    }}
+                                    iconName="refresh" 
+                                    wrapText={false}
+                                    disabled={readMessagesRequest}
+                                >
+                                    Refresh
+                                </Button>
+                            </SpaceBetween>
+                        }
+                        >
+                            Messages
+                        </Header>
+                    }
+                    pagination={
+                        <PaginationRendering 
+                            numberOfItems={(streamDetails?.storageStatus.newestSequenceNumber || 0) - (streamDetails?.storageStatus.oldestSequenceNumber || 0) + 1}
+                            numberOfItemPerPage={preferences.pageSize || 1}
+                            pageIndex={currentPageIndex}
+                            onPageIndexChanged={ (pageIndex:any) => OnPageIndexChangedHanlder(pageIndex)}
+                        />
+                    }
+                />
+            </SpaceBetween>
         </ContentLayout>
       );
 }

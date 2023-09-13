@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, {useEffect, useState} from "react";
+import React, {useContext, useEffect, useState} from "react";
 import {withRouter} from "react-router-dom";
 import {
     ContentLayout,
@@ -18,14 +18,15 @@ import {
     CollectionPreferences, CollectionPreferencesProps,
     Button,
     Link,
-
+    Modal,
+    
 } from "@cloudscape-design/components";
 
 import { ConfigMessage } from "../util/CommUtils";
 
 import {formatBytes, getExportDefinitionType} from "../util/StreamManager";
-import { Stream, StreamManagerComponentConfiguration } from "../util/StreamManager";
-import { SERVER } from "../index";
+import { Stream, StreamManagerComponentConfiguration, ResponseMessage } from "../util/StreamManager";
+import { SERVER, DefaultContext } from "../index";
 import { APICall } from "../util/CommUtils";
 import { ComponentItem } from "../util/ComponentItem";
 import { STREAM_MANAGER_ROUTE_HREF_PREFIX } from "../util/constNames";
@@ -35,6 +36,8 @@ function StreamManager() {
     const [filteringText, setFilteringText] = useState("")
     const [streamManagerStreamsList, setStreamManagerStreamsList] = useState<Stream[]>([])
     const [requestStreamsListInProgress, setRequestStreamsListInProgress] = useState(false)
+    const [viewConfirmDelete, setViewConfirmDelete] = useState(false);
+    const defaultContext = useContext(DefaultContext);
     const [streamManagerComponentConfiguration, setStreamManagerComponentConfiguration] = useState<StreamManagerComponentConfiguration>({
         Version: '-',
         JVM_ARGS: '-',
@@ -167,51 +170,53 @@ function StreamManager() {
     function getStreamManagerComponentConfiguration () {
         SERVER.sendRequest({ call: APICall.getDeviceDetails, args: [] }).then((response) => 
             {
-                const rootPath = response.rootPath;
-                SERVER.sendRequest({call: APICall.getComponent, args: ["aws.greengrass.StreamManager"]}).then(
-                    (getComponentResponse:ComponentItem) => 
-                    {
-                        if (getComponentResponse) 
+                if (response){
+                    const rootPath = response.rootPath;
+                    SERVER.sendRequest({call: APICall.getComponent, args: ["aws.greengrass.StreamManager"]}).then(
+                        (getComponentResponse:ComponentItem) => 
                         {
-                            SERVER.sendRequest({call: APICall.getConfig, args: ["aws.greengrass.StreamManager"]}).then(
-                            (response:ConfigMessage) => 
-                                {
-                                    const streamManagerServerPort = response.yaml.match(/STREAM_MANAGER_SERVER_PORT:\s+"(\d+)"/)?.[1] || "-";
-                                    const streamManagerAuthenticateClient = response.yaml.match(/STREAM_MANAGER_AUTHENTICATE_CLIENT:\s+"(\w+)"/)?.[1] || "";
-                                    const logLevel = response.yaml.match(/LOG_LEVEL:\s+"(\w+)"/)?.[1] || "";
-                                    const jvmArgs = response.yaml.match(/JVM_ARGS:\s+"(\w+)"/)?.[1] || "";
-                                    const streamManagerExporterMaxBandwidth = response.yaml.match(/STREAM_MANAGER_EXPORTER_MAX_BANDWIDTH:\s+"(\d+)"/)?.[1] || "";
-                                    const streamManagerS3UploadMinPart = response.yaml.match(/STREAM_MANAGER_EXPORTER_S3_DESTINATION_MULTIPART_UPLOAD_MIN_PART_SIZE_BYTES:\s+"(\d+)"/)?.[1] || "";
-                                    const streamManagerThreadPoolSize = response.yaml.match(/STREAM_MANAGER_EXPORTER_THREAD_POOL_SIZE:\s+"(\d+)"/)?.[1] || "";
-                                    let streamManagerStoreRootDir = response.yaml.match(/STREAM_MANAGER_STORE_ROOT_DIR:\s+"([^"]+)"/)?.[1] || "";
-
-                                    if (streamManagerStoreRootDir === '.')
+                            if (getComponentResponse) 
+                            {
+                                SERVER.sendRequest({call: APICall.getConfig, args: ["aws.greengrass.StreamManager"]}).then(
+                                (response:ConfigMessage) => 
                                     {
-                                        streamManagerStoreRootDir = rootPath + '/work/aws.greengrass.StreamManager'
+                                        const streamManagerServerPort = response.yaml.match(/STREAM_MANAGER_SERVER_PORT:\s+"(\d+)"/)?.[1] || "-";
+                                        const streamManagerAuthenticateClient = response.yaml.match(/STREAM_MANAGER_AUTHENTICATE_CLIENT:\s+"(\w+)"/)?.[1] || "";
+                                        const logLevel = response.yaml.match(/LOG_LEVEL:\s+"(\w+)"/)?.[1] || "";
+                                        const jvmArgs = response.yaml.match(/JVM_ARGS:\s+"(\w+)"/)?.[1] || "";
+                                        const streamManagerExporterMaxBandwidth = response.yaml.match(/STREAM_MANAGER_EXPORTER_MAX_BANDWIDTH:\s+"(\d+)"/)?.[1] || "";
+                                        const streamManagerS3UploadMinPart = response.yaml.match(/STREAM_MANAGER_EXPORTER_S3_DESTINATION_MULTIPART_UPLOAD_MIN_PART_SIZE_BYTES:\s+"(\d+)"/)?.[1] || "";
+                                        const streamManagerThreadPoolSize = response.yaml.match(/STREAM_MANAGER_EXPORTER_THREAD_POOL_SIZE:\s+"(\d+)"/)?.[1] || "";
+                                        let streamManagerStoreRootDir = response.yaml.match(/STREAM_MANAGER_STORE_ROOT_DIR:\s+"([^"]+)"/)?.[1] || "";
+    
+                                        if (streamManagerStoreRootDir === '.')
+                                        {
+                                            streamManagerStoreRootDir = rootPath + '/work/aws.greengrass.StreamManager'
+                                        }
+            
+                                        setStreamManagerComponentConfiguration({
+                                            Version: getComponentResponse?.version,
+                                            JVM_ARGS: jvmArgs,
+                                            LOG_LEVEL: logLevel,
+                                            STREAM_MANAGER_AUTHENTICATE_CLIENT: streamManagerAuthenticateClient,
+                                            STREAM_MANAGER_EXPORTER_MAX_BANDWIDTH: formatBytes(parseInt(streamManagerExporterMaxBandwidth || "0", 10)),
+                                            STREAM_MANAGER_EXPORTER_S3_DESTINATION_MULTIPART_UPLOAD_MIN_PART_SIZE_BYTES: formatBytes(parseInt(streamManagerS3UploadMinPart || "0", 10)),
+                                            STREAM_MANAGER_SERVER_PORT: streamManagerServerPort,
+                                            STREAM_MANAGER_STORE_ROOT_DIR: streamManagerStoreRootDir,
+                                            STREAM_MANAGER_EXPORTER_THREAD_POOL_SIZE:streamManagerThreadPoolSize
+                                        })
+                                    },
+                                    (reason) => {
+                                        console.log("Error in [StreamManager]: " + reason);
                                     }
-        
-                                    setStreamManagerComponentConfiguration({
-                                        Version: getComponentResponse?.version,
-                                        JVM_ARGS: jvmArgs,
-                                        LOG_LEVEL: logLevel,
-                                        STREAM_MANAGER_AUTHENTICATE_CLIENT: streamManagerAuthenticateClient,
-                                        STREAM_MANAGER_EXPORTER_MAX_BANDWIDTH: formatBytes(parseInt(streamManagerExporterMaxBandwidth || "0", 10)),
-                                        STREAM_MANAGER_EXPORTER_S3_DESTINATION_MULTIPART_UPLOAD_MIN_PART_SIZE_BYTES: formatBytes(parseInt(streamManagerS3UploadMinPart || "0", 10)),
-                                        STREAM_MANAGER_SERVER_PORT: streamManagerServerPort,
-                                        STREAM_MANAGER_STORE_ROOT_DIR: streamManagerStoreRootDir,
-                                        STREAM_MANAGER_EXPORTER_THREAD_POOL_SIZE:streamManagerThreadPoolSize
-                                    })
-                                },
-                                (reason) => {
-                                    console.log("Error in [StreamManager]: " + reason);
-                                }
-                            );
+                                );
+                            }
+                        },
+                        (reason) => {
+                          console.log("Error in [StreamManager]: " + reason);
                         }
-                    },
-                    (reason) => {
-                      console.log("Error in [StreamManager]: " + reason);
-                    }
-                  );
+                      );
+                }
             },
             (reason) => {
                 console.log("Error in [StreamManager]: " + reason);
@@ -236,16 +241,26 @@ function StreamManager() {
 
     function deleteMessageStream(streamName:string){
         setRequestStreamsListInProgress(true);
-        // SERVER.sendRequest({ call: APICall.deleteMessageStream, args: [streamName] }).then(
-        //     (response) => {
-        //         setRequestStreamsListInProgress(false);
-        //     },
-        //     (reason) => {
-        //       console.log("Error in [StreamManager]: " + reason);
-        //       setRequestStreamsListInProgress(false);
-        //     }
-        // )
-        setRequestStreamsListInProgress(false);
+        SERVER.sendRequest({ call: APICall.streamManagerDeleteMessageStream, args: [streamName] }).then(
+            (response:ResponseMessage) => {
+                setRequestStreamsListInProgress(false);
+                defaultContext.addFlashItem!({
+                    type: response.successful === true?'success':'error',
+                    header: response.successful === true?'Deleted ' + streamName + ' successfully':'Error deleting ' + streamName,
+                    content: response.errorMsg
+                });
+                listStreams();
+            },
+            (reason) => {
+                console.log("Error in [StreamManager]: " + reason);
+                setRequestStreamsListInProgress(false);
+                defaultContext.addFlashItem!({
+                    type: 'error',
+                    header: 'Error deleting ' + streamName,
+                    content: reason
+                });
+            }
+        )
     }
 
     function listStreams() {
@@ -270,6 +285,23 @@ function StreamManager() {
     const onClickRefresh = () => {
         listStreams();
     }
+
+    const onClickDelete = () => {
+        setViewConfirmDelete(true)
+    }
+
+    const onDismiss = () => {
+        setViewConfirmDelete(false);
+    }
+
+    const confirmDelete = () => {
+        if (selectedStream){
+            deleteMessageStream(selectedStream[0].definition.name)
+            setViewConfirmDelete(false);
+            setSelectedStream([]);
+        }
+    }
+
     const tabs: TabsProps.Tab[] = [
         {
             id: "tab1",
@@ -359,6 +391,31 @@ function StreamManager() {
                             >
                                 Refresh
                             </Button>
+                            <Button     
+                                onClick = {() => {
+                                    onClickDelete();
+                                }}
+                                wrapText={false}
+                                disabled={selectedStream?.length? false:true}
+                            >
+                                Delete
+                            </Button>
+                            <Modal
+                                onDismiss={onDismiss}
+                                visible={viewConfirmDelete}
+                                size="medium"
+                                footer={
+                                    <Box float="right">
+                                    <SpaceBetween direction="horizontal" size="xs">
+                                        <Button variant="link" onClick={onDismiss}>Cancel</Button>
+                                        <Button variant="primary" onClick={confirmDelete}>Delete</Button>
+                                    </SpaceBetween>
+                                    </Box>
+                                }
+                                header={selectedStream?.length? 'Delete ' + selectedStream[0].definition.name : ''}
+                                >
+                                Are you sure you want to delete the stream?
+                                </Modal>
                         </SpaceBetween>
                     }
                     >

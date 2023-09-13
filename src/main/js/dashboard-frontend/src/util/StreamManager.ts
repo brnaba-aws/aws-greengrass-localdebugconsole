@@ -130,3 +130,8 @@ export interface Message {
   ingestTime?: number | null; // Use number or null to represent Long or optional
   payload: Uint8Array | null; // Use Uint8Array or null to represent byte[] or optional
 }
+
+export interface ResponseMessage {
+  successful: boolean
+  errorMsg: string
+}
