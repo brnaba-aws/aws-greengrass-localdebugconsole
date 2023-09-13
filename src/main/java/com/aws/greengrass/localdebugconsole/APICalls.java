@@ -116,4 +116,9 @@ public enum APICalls {
      * Read message(s) from a chosen stream with options. If no options are specified it will try to read 1 message from the stream.
      */
     streamManagerReadMessages,
+
+    /**
+     * Append a message into the specified message stream.
+     */
+    streamManagerAppendMessage,
 }

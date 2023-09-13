@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
     Box, 
     ColumnLayout, 
@@ -11,11 +11,14 @@ import {
     CollectionPreferencesProps,
     Button, 
     CollectionPreferences, 
-    TextFilter
+    TextFilter,
+    Modal,
+    Form,
+    Textarea
 } from "@cloudscape-design/components";
 import { RouteComponentProps, useHistory, withRouter } from "react-router-dom";
-import { Stream, Message, formatBytes, ExportStatus, getElapsedTime } from "../util/StreamManager";
-import { SERVER } from "../index";
+import { Stream, Message, formatBytes, ResponseMessage, getElapsedTime } from "../util/StreamManager";
+import { SERVER , DefaultContext} from "../index";
 import { APICall } from "../util/CommUtils";
 import { STREAM_MANAGER_ROUTE_HREF_PREFIX } from "../util/constNames";
 import PaginationRendering from "../util/PaginationRendering";
@@ -30,7 +33,11 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
     const [messageCount, setMessageCount] = useState(0);
     const [currentPageIndex, setCurrentPageIndex] = useState(1)
     const [readMessagesRequest, setReadMessagesRequest] = useState(false);
+    const [appendMessageRequest, setAppendMessageRequest] = useState(false);
     const [filteringText, setFilteringText] = useState("");
+    const [viewAppendMessage, setViewAppendMessage] = useState(false);
+    const [messageToAppend, setMessageToAppend] = useState("");
+    const defaultContext = useContext(DefaultContext);
     let streamName = useHistory().location.pathname.substring(STREAM_MANAGER_ROUTE_HREF_PREFIX.length - 1);
     const columnDefinitionsMessages: TableProps.ColumnDefinition<Message>[] = [
             {
@@ -105,18 +112,22 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
         describeStream(streamName, 0);
     }
 
+    const onClickAppend = () => {
+        setViewAppendMessage(true);
+    }
+
     const tabs: TabsProps.Tab[] = [
         {
             id: "tab2",
                 label: "Details",
                 content: (
-                    <ColumnLayout columns={4} variant="text-grid">
+                    <ColumnLayout key={"tab2"} columns={4} variant="text-grid">
                         {items.map((group, index) => (
                             <SpaceBetween size="xs" key={index}>
                                 {group.map((item) => (
                                     <div key={item.field}>
-                                    <Box margin={{bottom: "xxxs"}} color="text-label">{item.field}</Box>
-                                    <div>{item.value}</div>
+                                        <Box margin={{bottom: "xxxs"}} color="text-label">{item.field}</Box>
+                                        <div>{item.value}</div>
                                     </div>
                                 ))}
                             </SpaceBetween>
@@ -130,37 +141,39 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                 content: (
                     <ColumnLayout columns={streamDetails?.exportStatuses.length} variant="text-grid">
                         {streamDetails?.exportStatuses.map((group, index) => (
-                            <SpaceBetween size="xs" key={index}>
+                            <SpaceBetween size="xs" key={group.exportConfigIdentifier}>
                                 <div key={index}>
-                                    <Box margin={{bottom: "xxxs"}} color="text-label">Identifier</Box>
-                                    <div>{group.exportConfigIdentifier}</div>
-                                </div>
-                                <div key={index}>
-                                    <Box margin={{bottom: "xxxs"}} color="text-label">Exported bytes</Box>
-                                    <div>{formatBytes(group.exportedBytesFromStream)}</div>
-                                </div>
-                                <div key={index}>
-                                    <Box margin={{bottom: "xxxs"}} color="text-label">Exported messages</Box>
-                                    <div>{group.exportedMessagesCount}</div>
-                                </div>
-                                <div key={index}>
-                                    <Box margin={{bottom: "xxxs"}} color="text-label">Last exported sequence number</Box>
-                                    <div>{group.lastExportedSequenceNumber}</div>
-                                </div>
-                                <div key={index}>
-                                    <Box margin={{bottom: "xxxs"}} color="text-label">Last exported time</Box>
-                                    <div>{new Intl.DateTimeFormat("en-US", {
-                                            year: "numeric",
-                                            month: "2-digit",
-                                            day: "2-digit",
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                            second: "2-digit",
-                                        }).format(group.lastExportTime)} - {getElapsedTime(group.lastExportTime)}</div>
-                                </div>
-                                <div key={index}>
-                                    <Box margin={{bottom: "xxxs"}} color="text-label">Error Message</Box>
-                                    <div>{group.errorMessage || 'None'}</div>
+                                    <div >
+                                        <Box margin={{bottom: "xxxs"}} color="text-label">Identifier</Box>
+                                        <div>{group.exportConfigIdentifier}</div>
+                                    </div>
+                                    <div >
+                                        <Box margin={{bottom: "xxxs"}} color="text-label">Exported bytes</Box>
+                                        <div>{formatBytes(group.exportedBytesFromStream)}</div>
+                                    </div>
+                                    <div >
+                                        <Box margin={{bottom: "xxxs"}} color="text-label">Exported messages</Box>
+                                        <div>{group.exportedMessagesCount}</div>
+                                    </div>
+                                    <div>
+                                        <Box margin={{bottom: "xxxs"}} color="text-label">Last exported sequence number</Box>
+                                        <div>{group.lastExportedSequenceNumber}</div>
+                                    </div>
+                                    <div >
+                                        <Box margin={{bottom: "xxxs"}} color="text-label">Last exported time</Box>
+                                        <div>{new Intl.DateTimeFormat("en-US", {
+                                                year: "numeric",
+                                                month: "2-digit",
+                                                day: "2-digit",
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                                second: "2-digit",
+                                            }).format(group.lastExportTime)} - {getElapsedTime(group.lastExportTime)}</div>
+                                    </div>
+                                    <div>
+                                        <Box margin={{bottom: "xxxs"}} color="text-label">Error Message</Box>
+                                        <div>{group.errorMessage || 'None'}</div>
+                                    </div>
                                 </div>
                             </SpaceBetween>
                         ))}
@@ -228,6 +241,32 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
         }
     }
 
+    const onDismiss = () => {
+        setViewAppendMessage(false);
+        setMessageToAppend("");
+    }
+
+    const appendMessageClick = () => {
+        setAppendMessageRequest(true);
+        SERVER.sendRequest({ call: APICall.streamManagerAppendMessage, args: [streamName, messageToAppend] }).then(
+            (response:ResponseMessage) => {
+                if (response) {
+                    setAppendMessageRequest(false);
+                    defaultContext.addFlashItem!({
+                        type: response.successful === true?'success':'error',
+                        header: response.successful === true?'Message has been added to ' + streamName:'Failed to add the message to ' + streamName,
+                        content: response.errorMsg
+                    });
+                    describeStream(streamName, 0);
+                    setViewAppendMessage(false);
+                }
+            },
+            (reason) => {
+                console.log("Error in [StreamManager]: " + reason);
+            }
+        );
+    }
+
     useEffect(() => {
         describeStream(streamName, 0);
     }, [currentPageIndex, preferences]);
@@ -239,6 +278,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     <Tabs tabs={tabs}></Tabs>
                 </Container>
                 <Table
+                        key={"messageTable"}
                         empty={
                             <Box textAlign="center" color="inherit">
                                 <b>No resources</b>
@@ -257,6 +297,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         items={messagesList.filter((m:Message) => atob(m.payload?.toString() || '').includes(filteringText.toLowerCase()))}
                         filter={
                             <TextFilter
+                                key={"findMessageTextFilter"}
                                 filteringPlaceholder="Find message(s)"
                                 filteringText={filteringText}
                                 onChange={({detail}) =>setFilteringText(detail.filteringText)}
@@ -266,6 +307,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         visibleColumns={preferences.visibleContent}
                         preferences={
                             <CollectionPreferences
+                                key={"CollectionPreferences"}
                                 visibleContentPreference={{
                                     title: "Visible columns",
                                     options: [{
@@ -298,8 +340,9 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                             }
 
                         actions={            
-                            <SpaceBetween direction="horizontal"  size="xs">
+                            <SpaceBetween key={"SpaceBetween1"} direction="horizontal"  size="xs">
                                 <Button     
+                                    key={"Refresh"}
                                     onClick = {() => {
                                         onClickRefresh();
                                     }}
@@ -309,6 +352,46 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                 >
                                     Refresh
                                 </Button>
+                                <Button     
+                                    key={"Append"}
+                                    onClick = {() => {
+                                        onClickAppend();
+                                    }}
+                                    wrapText={false}
+                                    disabled={appendMessageRequest}
+                                >
+                                    Add Message
+                                </Button>
+                                <Modal
+                                    key={"ModalAppendMessage"}
+                                    onDismiss={onDismiss}
+                                    visible={viewAppendMessage}
+                                    size="medium"
+                                    footer={
+                                        <Box key={"1"} float="right">
+                                        <SpaceBetween key={"SpaceBetween2"} direction="horizontal" size="xs">
+                                            <Button variant="link" onClick={onDismiss}>Cancel</Button>
+                                            <Button variant="primary" onClick={appendMessageClick}>Append</Button>
+                                        </SpaceBetween>
+                                        </Box>
+                                    }
+                                    header={'Append message to '+streamName}
+                                    >
+                                        <Form
+                                            key={"FormAddMessage"}
+                                            variant="embedded"
+                                            header={<Header variant="h1"></Header>}
+                                        >
+                                            <Textarea
+                                                key={"TextareaAddMessage"}
+                                                onChange={({ detail }) => { setMessageToAppend(detail.value) }}
+                                                value={messageToAppend}
+                                                autoFocus
+                                                disabled={false}
+                                                placeholder="Enter the message here..."
+                                            />
+                                        </Form>
+                                </Modal>
                             </SpaceBetween>
                         }
                         >

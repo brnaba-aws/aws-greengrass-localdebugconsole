@@ -415,7 +415,7 @@ function StreamManager() {
                                 header={selectedStream?.length? 'Delete ' + selectedStream[0].definition.name : ''}
                                 >
                                 Are you sure you want to delete the stream?
-                                </Modal>
+                            </Modal>
                         </SpaceBetween>
                     }
                     >
