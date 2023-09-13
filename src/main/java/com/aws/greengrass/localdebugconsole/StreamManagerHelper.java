@@ -10,6 +10,7 @@ import com.amazonaws.greengrass.streammanager.client.config.StreamManagerClientC
 import com.amazonaws.greengrass.streammanager.client.config.StreamManagerServerInfo;
 import com.amazonaws.greengrass.streammanager.client.exception.StreamManagerException;
 import com.amazonaws.greengrass.streammanager.model.Message;
+import com.amazonaws.greengrass.streammanager.model.MessageStreamDefinition;
 import com.amazonaws.greengrass.streammanager.model.MessageStreamInfo;
 import com.amazonaws.greengrass.streammanager.client.StreamManagerClient;
 import com.amazonaws.greengrass.streammanager.model.ReadMessagesOptions;
@@ -150,6 +151,18 @@ public class StreamManagerHelper {
         }
         if (this.isConnected){
             this.client.appendMessage(streamName, message);
+        }
+        else {
+            throw new StreamManagerException("Connection to Stream Manager failed!");
+        }
+    }
+
+    public void createMessageStream(MessageStreamDefinition messageStream) throws StreamManagerException {
+        if (!this.isConnected) {
+            this.connect();
+        }
+        if (this.isConnected){
+            this.client.createMessageStream(messageStream);
         }
         else {
             throw new StreamManagerException("Connection to Stream Manager failed!");

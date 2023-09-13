@@ -61,6 +61,73 @@ export const getElapsedTime = (elapsedtimesec:number) => {
 };
 
 
+interface IoTAnalyticsConfig {
+  identifier:string,
+  iotChannel:string,
+  iotMsgIdPrefix:string,
+  batchSize:number,
+  batchIntervalMillis:number,
+  priority:number,
+  startSequenceNumber:number,
+  disabled:boolean
+}
+
+interface ExportFormat {
+  RAW_NOT_BATCHED:0,
+  JSON_BATCHED:1
+}
+
+interface KinesisConfig {
+  identifier:string,
+  kinesisStreamName:string,
+  batchSize:number,
+  batchIntervalMillis:number,
+  priority:number,
+  startSequenceNumber:number,
+  disabled:boolean
+}
+
+interface HTTPConfig {
+  identifier:string,
+  uri:string,
+  batchSize:number,
+  batchIntervalMillis:number,
+  priority:number,
+  startSequenceNumber:number,
+  disabled:boolean,
+  exportFormat:ExportFormat
+}
+
+interface IoTSiteWiseConfig {
+  identifier:string,
+  batchSize:number,
+  batchIntervalMillis:number,
+  priority:number,
+  startSequenceNumber:number,
+  disabled:boolean
+}
+
+interface StatusLevel {
+  ERROR: 0,
+  WARN: 1,
+  INFO: 2,
+  DEBUG: 3,
+  TRACE: 4,
+}
+
+interface StatusConfig {
+  statusLevel:StatusLevel,
+  statusStreamName: string
+}
+
+interface S3ExportTaskExecutorConfig {
+  identifier:string,
+  sizeThresholdForMultipartUploadBytes:number,
+  priority:number,
+  disabled:boolean,
+  statusConfig:StatusConfig
+}
+
 export enum PersistenceType {
     File,
     Memory
@@ -72,11 +139,11 @@ export enum StategyType {
 }
 
 interface ExportDefinition {
-    kinesis: any[];
-    http: any[];
-    iotAnalytics: any[];
-    IotSitewise: any[];
-    s3TaskExecutor: any[];
+    kinesis: KinesisConfig[];
+    http: HTTPConfig[];
+    iotAnalytics: IoTAnalyticsConfig[];
+    IotSitewise: IoTSiteWiseConfig[];
+    s3TaskExecutor: S3ExportTaskExecutorConfig[];
 }
 
 interface StorageStatus {
@@ -134,4 +201,16 @@ export interface Message {
 export interface ResponseMessage {
   successful: boolean
   errorMsg: string
+}
+
+
+export interface MessageStreamDefinition {
+  name: string,
+  maxSize: number,
+  streamSegmentSize: number,
+  timeToLiveMillis: number,
+  strategyOnFull: StategyType,
+  persistence: PersistenceType ,
+  flushOnWrite: boolean,
+  exportDefinition: ExportDefinition,
 }
