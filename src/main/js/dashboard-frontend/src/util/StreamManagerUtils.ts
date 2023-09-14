@@ -60,8 +60,32 @@ export const getElapsedTime = (elapsedtimesec:number) => {
   }
 };
 
+export const getExportType = (identifier: string, streamDetails: Stream | undefined) => {
+  const exportTypes = [
+    { type: 'Kinesis', key: 'kinesis' },
+    { type: 'IoT Analytics', key: 'iotAnalytics' },
+    { type: 'IoT SiteWise', key: 'IotSitewise' },
+    { type: 'HTTP', key: 'http' },
+    { type: 'S3', key: 's3TaskExecutor' },
+  ];
 
-interface IoTAnalyticsConfig {
+  if (streamDetails) {
+    for (const exportType of exportTypes) {
+      const exportDefinitionArray = streamDetails.definition.exportDefinition[exportType.key];
+      if (exportDefinitionArray) {
+        const match = exportDefinitionArray.find(
+          (exportDefinition:any) => exportDefinition.identifier === identifier
+        );
+        if (match) {
+          return exportType.type;
+        }
+      }
+    }
+  }
+};
+
+
+export interface IoTAnalyticsConfig {
   identifier:string,
   iotChannel:string,
   iotMsgIdPrefix:string,
@@ -72,12 +96,12 @@ interface IoTAnalyticsConfig {
   disabled:boolean
 }
 
-interface ExportFormat {
-  RAW_NOT_BATCHED:0,
-  JSON_BATCHED:1
+export enum ExportFormat {
+  RAW_NOT_BATCHED=0,
+  JSON_BATCHED=1
 }
 
-interface KinesisConfig {
+export interface KinesisConfig {
   identifier:string,
   kinesisStreamName:string,
   batchSize:number,
@@ -87,7 +111,7 @@ interface KinesisConfig {
   disabled:boolean
 }
 
-interface HTTPConfig {
+export interface HTTPConfig {
   identifier:string,
   uri:string,
   batchSize:number,
@@ -98,7 +122,7 @@ interface HTTPConfig {
   exportFormat:ExportFormat
 }
 
-interface IoTSiteWiseConfig {
+export interface IoTSiteWiseConfig {
   identifier:string,
   batchSize:number,
   batchIntervalMillis:number,
@@ -120,7 +144,7 @@ interface StatusConfig {
   statusStreamName: string
 }
 
-interface S3ExportTaskExecutorConfig {
+export interface S3ExportTaskExecutorConfig {
   identifier:string,
   sizeThresholdForMultipartUploadBytes:number,
   priority:number,
@@ -138,12 +162,13 @@ export enum StrategyType {
   OverwriteOldestData=1
 }
 
-interface ExportDefinition {
+export interface ExportDefinition {
     kinesis: KinesisConfig[];
     http: HTTPConfig[];
     iotAnalytics: IoTAnalyticsConfig[];
     IotSitewise: IoTSiteWiseConfig[];
     s3TaskExecutor: S3ExportTaskExecutorConfig[];
+    [key: string]: any; // Index signature to allow indexing with strings
 }
 
 interface StorageStatus {
@@ -176,7 +201,7 @@ export interface Stream {
     key: number;
     definition: Definition,
     exportStatuses: ExportStatus[],
-    storageStatus: StorageStatus
+    storageStatus: StorageStatus,
 }
 
 export interface StreamManagerComponentConfiguration {
@@ -213,4 +238,91 @@ export interface MessageStreamDefinition {
   persistence: PersistenceType ,
   flushOnWrite: boolean,
   exportDefinition?: ExportDefinition,
+}
+
+export function validateMessageStreamDefinition(messageStreamDefinition:MessageStreamDefinition, setErrorCallback:any){
+  
+}
+export function StreamManagerReducer(state:any, action:any) {
+  switch (action.type) {
+      case "set_name":
+          const alphanumericRegex = /^[a-zA-Z0-9\s,.\-_]+$/;
+          if (action.payload.length === 0) {
+            action.callback('Name cannot be empty.');
+          } else if (action.payload.length < 1 || action.payload.length > 255) {
+            action.callback('Name length must be between 1 and 255 characters.');
+          } else if (!alphanumericRegex.test(action.payload)) {
+            action.callback('Name must be alphanumeric and can include spaces, commas, periods, hyphens, and underscores.');
+          } else {
+            action.callback('');
+          }
+          return {
+              ...state,
+              name: action.payload
+          };
+      case "set_maxSize":
+          if (parseInt(action.payload, 10) < 1024) {
+            action.callback('Max size cannot be lower than 1024 bytes.');
+          }
+          else {
+            action.callback('');
+          }
+          return {
+              ...state,
+              maxSize: parseInt(action.payload, 10)
+          };
+      case "set_streamSegmentSize":
+          if (parseInt(action.payload, 10) < 1024) {
+            action.callback('stream segment size cannot be lower than 1024 bytes.');
+          }
+          else {
+            action.callback('');
+          }
+          return {
+              ...state,
+              streamSegmentSize: parseInt(action.payload, 10)
+          };
+      case "set_strategyOnFull":
+          return {
+              ...state,
+              strategyOnFull: parseInt(action.payload, 10)
+          };
+      case "set_persistence":
+          return {
+              ...state,
+              persistence: parseInt(action.payload, 10)
+          };
+      case "set_flushOnWrite":
+          return {
+              ...state,
+              flushOnWrite: parseInt(action.payload)===0?true:false
+          };
+      case "clear":
+          action.callback('');
+          return {
+              name: "new-stream",
+              maxSize:256*1024*1024,
+              streamSegmentSize: 16*1024*1024,
+              strategyOnFull: StrategyType.OverwriteOldestData,
+              persistence: PersistenceType.File, 
+              flushOnWrite: false,
+              exportDefinition: {
+                  kinesis:[],
+                  http:[],
+                  iotAnalytics: [],
+                  IotSitewise: [],
+                  s3TaskExecutor: []
+              }
+          };
+      case "set_all":
+        return {
+            name: action.payload.name,
+            maxSize:action.payload.maxSize,
+            streamSegmentSize: action.payload.streamSegmentSize,
+            strategyOnFull: action.payload.strategyOnFull,
+            persistence: action.payload.persistence, 
+            flushOnWrite: action.payload.flushOnWrite,
+            exportDefinition: action.payload.exportDefinition
+        };
+  }
 }
