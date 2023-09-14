@@ -79,7 +79,7 @@ class Arch extends Component {
                   <SpaceBetween size="xs" key={index}>
                     {group.map((item) => (
                         <div key={item.field}>
-                          <Box margin={{bottom: "xxxs"}} color="text-label">{item.field}</Box>
+                          <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">{item.field}</Box>
                           <div>{item.value}</div>
                         </div>
                     ))}
