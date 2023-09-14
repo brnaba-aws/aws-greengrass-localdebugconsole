@@ -278,6 +278,11 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
                     break;
                 }
 
+                case streamManagerUpdateMessageStream:{
+                    StreamManagerUpdateMessageStream(conn, packedRequest, req);
+                    break;
+                }
+
                 default: { // echo
                     sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, req.call));
                     break;
@@ -458,6 +463,20 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
         try {
             MessageStreamDefinition messageStreamDefinition = jsonMapper.readValue(req.args[0], MessageStreamDefinition.class);
             this.streamManagerHelper.createMessageStream(messageStreamDefinition);
+            responseMessage.successful = true;
+        }
+        catch (Exception e){
+            logger.error("Error while appending message to the stream:", e);
+            responseMessage.errorMsg = e.getMessage();
+        }
+        sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
+    }
+
+    private void StreamManagerUpdateMessageStream(WebSocket conn, PackedRequest packedRequest, Request req) {
+        StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage(false,"");
+        try {
+            MessageStreamDefinition messageStreamDefinition = jsonMapper.readValue(req.args[0], MessageStreamDefinition.class);
+            this.streamManagerHelper.updateMessageStream(messageStreamDefinition);
             responseMessage.successful = true;
         }
         catch (Exception e){
