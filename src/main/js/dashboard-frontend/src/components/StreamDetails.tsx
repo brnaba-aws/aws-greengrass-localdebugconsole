@@ -51,13 +51,13 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                 cell: (e:Message) => e.sequenceNumber
             },
             {
-                id: "payload",
-                header: "Payload",
+                id: "message",
+                header: "Message",
                 cell: (e:Message) => atob(e.payload?.toString() || '')
             },
             {
                 id: "ingestTime",
-                header: "Ingest time",
+                header: "Message ingested",
                 cell: (e:Message) => new Intl.DateTimeFormat("en-US", {
                                         year: "numeric",
                                         month: "2-digit",
@@ -69,10 +69,15 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
             },
     ];
     
-    const [preferences, setPreferences] = useState<CollectionPreferencesProps.Preferences>({
-        pageSize: 100,
-        visibleContent: ["sequenceNumber", "payload", "ingestTime"]
-    });
+    let storedPreference = localStorage.getItem('streamDetailsPreferences');
+    if (!storedPreference){
+        storedPreference =  JSON.stringify({
+            pageSize: 100,
+            visibleContent: ["sequenceNumber", "message", "ingestTime"]
+        })
+    }
+    const [preferences, setPreferences] = useState<CollectionPreferencesProps.Preferences>(JSON.parse(storedPreference));
+
     const items = [
         [
             {
@@ -121,12 +126,12 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
             id: "tab1",
                 label: "Details",
                 content: (
-                    <ColumnLayout key={"tab2"} columns={4} variant="text-grid">
+                    <ColumnLayout key={"tab2"} columns={2} variant="text-grid">
                         {items.map((group, index) => (
                             <SpaceBetween size="xs" key={index}>
                                 {group.map((item) => (
                                     <div key={item.field}>
-                                        <Box margin={{bottom: "xxxs"}} color="text-label">{item.field}</Box>
+                                        <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">{item.field}</Box>
                                         <div>{item.value}</div>
                                     </div>
                                 ))}
@@ -140,28 +145,28 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                 label: "Export statuses",
                 content: (
                     <ColumnLayout columns={streamDetails?.exportStatuses.length} variant="text-grid">
-                        {streamDetails?.exportStatuses.map((group, index) => (
+                        {streamDetails?.exportStatuses && streamDetails?.exportStatuses.map((group, index) => (
                             <SpaceBetween direction="horizontal" size="xxs" key={group.exportConfigIdentifier}>
                                 <div key={index}>
                                     <SpaceBetween direction="vertical" size="xs" key={group.exportConfigIdentifier}>
                                         <div >
-                                            <Box margin={{bottom: "xxxs"}} color="text-label">Identifier</Box>
+                                            <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Identifier</Box>
                                             <div>{group.exportConfigIdentifier}</div>
                                         </div>
                                         <div >
-                                            <Box margin={{bottom: "xxxs"}} color="text-label">Exported bytes</Box>
+                                            <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Exported bytes</Box>
                                             <div>{formatBytes(group.exportedBytesFromStream)}</div>
                                         </div>
                                         <div >
-                                            <Box margin={{bottom: "xxxs"}} color="text-label">Exported messages</Box>
+                                            <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Exported messages</Box>
                                             <div>{group.exportedMessagesCount}</div>
                                         </div>
                                         <div>
-                                            <Box margin={{bottom: "xxxs"}} color="text-label">Last exported sequence number</Box>
+                                            <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Last exported sequence number</Box>
                                             <div>{group.lastExportedSequenceNumber}</div>
                                         </div>
                                         <div >
-                                            <Box margin={{bottom: "xxxs"}} color="text-label">Last exported time</Box>
+                                            <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Last exported time</Box>
                                             <div>{new Intl.DateTimeFormat("en-US", {
                                                     year: "numeric",
                                                     month: "2-digit",
@@ -172,13 +177,16 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                                 }).format(group.lastExportTime)} - {getElapsedTime(group.lastExportTime)}</div>
                                         </div>
                                         <div>
-                                            <Box margin={{bottom: "xxxs"}} color="text-label">Error Message</Box>
+                                            <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Error Message</Box>
                                             <div>{group.errorMessage || 'None'}</div>
                                         </div>
                                     </SpaceBetween>
                                 </div>
                             </SpaceBetween>
                         ))}
+                        {   streamDetails?.definition.exportDefinition.kinesis.length === 0 && 
+                            <div>No export status.</div>
+                        }
                     </ColumnLayout>
             ),
         },
@@ -196,37 +204,38 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                         <div key={index}>
                                             <SpaceBetween direction="vertical" size="xs" key={group.identifier}>
                                                 <div >
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Identifier</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Identifier</Box>
                                                     <div>{group.identifier}</div>
                                                 </div>
                                                 <div >
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Kinesis stream</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Kinesis stream</Box>
                                                     <div>{group.kinesisStreamName}</div>
                                                 </div>
                                                 <div >
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Batch size</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Batch size</Box>
                                                     <div>{group.batchSize?group.batchSize:'-'}</div>
                                                 </div>
                                                 <div>
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Batch interval</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Batch interval</Box>
                                                     <div>{group.batchIntervalMillis?group.batchIntervalMillis:'-'}</div>
                                                 </div>
                                                 <div>
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Priority</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Priority</Box>
                                                     <div>{group.priority?group.priority:'-'}</div>
                                                 </div>
                                                 <div>
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Status</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Status</Box>
                                                     <div>{group.disabled === true?'true':'false'}</div>
                                                 </div>
                                                 <div>
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Start sequence number</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Start sequence number</Box>
                                                     <div>{group.startSequenceNumber ? group.startSequenceNumber:'-'}</div>
                                                 </div>
                                             </SpaceBetween>
                                         </div>
                                     </SpaceBetween>
-                                ))}
+                                ))}{streamDetails?.definition.exportDefinition.kinesis.length === 0 && 
+                                    <div>No Kinesis export.</div>}
                             </ColumnLayout>
                         ),
                         label:"Kinesis"
@@ -235,45 +244,48 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         id: "tab32",
                         content:(
                             <ColumnLayout columns={streamDetails?.exportStatuses.length} variant="text-grid">
-                                {streamDetails?.definition.exportDefinition.IotSitewise.map((group, index) => (
+                                {streamDetails?.definition.exportDefinition.IotSitewise && streamDetails?.definition.exportDefinition.IotSitewise.map((group, index) => (
                                     <SpaceBetween direction="horizontal" size="xxs" key={group.identifier}>
                                         <div key={index}>
                                             <SpaceBetween direction="vertical" size="xs" key={group.identifier}>
                                                 <div >
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Identifier</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Identifier</Box>
                                                     <div>{group.identifier}</div>
                                                 </div>
                                                 <div >
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Batch size</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Batch size</Box>
                                                     <div>{group.batchSize?group.batchSize:'-'}</div>
                                                 </div>
                                                 <div>
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Batch interval</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Batch interval</Box>
                                                     <div>{group.batchIntervalMillis?group.batchIntervalMillis:'-'}</div>
                                                 </div>
                                                 <div>
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Priority</Box>
+                                                    <Box margin={{bottom: "xxxs"}}variant="awsui-key-label" color="text-label">Priority</Box>
                                                     <div>{group.priority?group.priority:'-'}</div>
                                                 </div>
                                                 <div>
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Status</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Status</Box>
                                                     <div>{group.disabled === true?'true':'false'}</div>
                                                 </div>
                                                 <div>
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Start sequence number</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Start sequence number</Box>
                                                     <div>{group.startSequenceNumber ? group.startSequenceNumber:'-'}</div>
                                                 </div>
                                             </SpaceBetween>
                                         </div>
                                     </SpaceBetween>
-                                ))}
+                                ))
+                                }{
+                                    streamDetails?.definition.exportDefinition.IotSitewise.length === 0 && 
+                                    <div>No IoT Sitewise export.</div>
+                                }
                             </ColumnLayout>
                         ),
                         label:"IoT Sitewise"
                     },
                     {
                         id: "tab33",
-                        disabled:(streamDetails?.definition.exportDefinition.iotAnalytics.length?false:true),
                         content:(
                             <ColumnLayout columns={streamDetails?.exportStatuses.length} variant="text-grid">
                                 {streamDetails?.definition.exportDefinition.iotAnalytics.map((group, index) => (
@@ -281,48 +293,50 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                         <div key={index}>
                                             <SpaceBetween direction="vertical" size="xs" key={group.identifier}>
                                                 <div >
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Identifier</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Identifier</Box>
                                                     <div>{group.identifier}</div>
                                                 </div>
                                                 <div >
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">IoT channel</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">IoT channel</Box>
                                                     <div>{group.iotChannel}</div>
                                                 </div>
                                                 <div >
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Id prefix</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Id prefix</Box>
                                                     <div>{group.iotMsgIdPrefix}</div>
                                                 </div>
                                                 <div >
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Batch size</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Batch size</Box>
                                                     <div>{group.batchSize?group.batchSize:'-'}</div>
                                                 </div>
                                                 <div>
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Batch interval</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Batch interval</Box>
                                                     <div>{group.batchIntervalMillis?group.batchIntervalMillis:'-'}</div>
                                                 </div>
                                                 <div>
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Priority</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Priority</Box>
                                                     <div>{group.priority?group.priority:'-'}</div>
                                                 </div>
                                                 <div>
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Status</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Status</Box>
                                                     <div>{group.disabled === true?'true':'false'}</div>
                                                 </div>
                                                 <div>
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Start sequence number</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Start sequence number</Box>
                                                     <div>{group.startSequenceNumber ? group.startSequenceNumber:'-'}</div>
                                                 </div>
                                             </SpaceBetween>
                                         </div>
                                     </SpaceBetween>
-                                ))}
+                                ))}{
+                                    streamDetails?.definition.exportDefinition.iotAnalytics.length === 0 && 
+                                    <div>No IoT Analytics export.</div>
+                                }
                             </ColumnLayout>
                         ),
                         label:"IoT analytics"
                     },
                     {
                         id: "tab34",
-                        disabled:(streamDetails?.definition.exportDefinition.http.length?false:true),
                         content:(
                             <ColumnLayout columns={streamDetails?.exportStatuses.length} variant="text-grid">
                                 {streamDetails?.definition.exportDefinition.http.map((group, index) => (
@@ -330,48 +344,50 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                         <div key={index}>
                                             <SpaceBetween direction="vertical" size="xs" key={group.identifier}>
                                                 <div >
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Identifier</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Identifier</Box>
                                                     <div>{group.identifier}</div>
                                                 </div>
                                                 <div >
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">URI</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">URI</Box>
                                                     <div>{group.uri}</div>
                                                 </div>
                                                 <div>
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Export format</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Export format</Box>
                                                     <div>{group.exportFormat?'RAW NOT BATCHED':'JSON_BATCHED'}</div>
                                                 </div>
                                                 <div >
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Batch size</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Batch size</Box>
                                                     <div>{group.batchSize?group.batchSize:'-'}</div>
                                                 </div>
                                                 <div>
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Batch interval</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Batch interval</Box>
                                                     <div>{group.batchIntervalMillis?group.batchIntervalMillis:'-'}</div>
                                                 </div>
                                                 <div>
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Priority</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Priority</Box>
                                                     <div>{group.priority?group.priority:'-'}</div>
                                                 </div>
                                                 <div>
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Status</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Status</Box>
                                                     <div>{group.disabled === true?'true':'false'}</div>
                                                 </div>
                                                 <div>
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Start sequence number</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Start sequence number</Box>
                                                     <div>{group.startSequenceNumber ? group.startSequenceNumber:'-'}</div>
                                                 </div>
                                             </SpaceBetween>
                                         </div>
                                     </SpaceBetween>
-                                ))}
+                                ))}{
+                                    streamDetails?.definition.exportDefinition.http.length === 0 && 
+                                    <div>No HTTP export.</div>
+                                }
                             </ColumnLayout>
                         ),
                         label:"HTTP"
                     },
                     {
                         id: "tab35",
-                        disabled:(streamDetails?.definition.exportDefinition.s3TaskExecutor.length?false:true),
                         content:(
                             <ColumnLayout columns={streamDetails?.exportStatuses.length} variant="text-grid">
                                 {streamDetails?.definition.exportDefinition.s3TaskExecutor.map((group, index) => (
@@ -379,33 +395,36 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                         <div key={index}>
                                             <SpaceBetween direction="vertical" size="xs" key={group.identifier}>
                                                 <div >
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Identifier</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Identifier</Box>
                                                     <div>{group.identifier}</div>
                                                 </div>
                                                 <div >
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Size threshold multipart Upload</Box>
+                                                    <Box margin={{bottom: "xxxs"}}variant="awsui-key-label" color="text-label">Size threshold multipart Upload</Box>
                                                     <div>{formatBytes(group.sizeThresholdForMultipartUploadBytes)}</div>
                                                 </div>
                                                 <div>
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Status stream name</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Status stream name</Box>
                                                     <div>{group.statusConfig.statusStreamName}</div>
                                                 </div>
                                                 <div >
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Status level</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Status level</Box>
                                                     <div>{group.statusConfig.statusLevel}</div>
                                                 </div>
                                                 <div>
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Priority</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Priority</Box>
                                                     <div>{group.priority?group.priority:'-'}</div>
                                                 </div>
                                                 <div>
-                                                    <Box margin={{bottom: "xxxs"}} color="text-label">Status</Box>
+                                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Status</Box>
                                                     <div>{group.disabled === true?'true':'false'}</div>
                                                 </div>
                                             </SpaceBetween>
                                         </div>
                                     </SpaceBetween>
-                                ))}
+                                ))}{
+                                    streamDetails?.definition.exportDefinition.s3TaskExecutor.length === 0 && 
+                                    <div>No S3 export.</div>
+                                }
                             </ColumnLayout>
                         ),
                         label:"S3"
@@ -504,7 +523,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
 
     return (
         <ContentLayout key={"streamDetails"} header={<Header variant={"h1"}>{streamName}</Header>}>
-            <SpaceBetween key={"SpaceBetweenStreamDetails"} direction="vertical"  size="xs">
+            <SpaceBetween key={"SpaceBetweenStreamDetails"} direction="vertical"  size="l">
                 <Container key={"Container"}>
                     <Tabs tabs={tabs}></Tabs>
                 </Container>
@@ -512,13 +531,13 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         key={"messageTable"}
                         empty={
                             <Box textAlign="center" color="inherit">
-                                <b>No resources</b>
+                                <b>No messages</b>
                                 <Box
                                     padding={{ bottom: "s" }}
                                     variant="p"
                                     color="inherit"
                                 >
-                                    No resources to display.
+                                    No message to display.
                                 </Box>
                             </Box>
                         }
@@ -545,7 +564,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                     options: [{
                                         label: "", options: [
                                             {editable: false, label: "sequenceNumber", id: "sequenceNumber"},
-                                            {editable: true, label: "payload", id: "payload"},
+                                            {editable: true, label: "message", id: "message"},
                                             {editable: true, label: "ingestTime", id: "ingestTime"},
                                         ]
                                     }]
@@ -561,7 +580,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                 confirmLabel={"Ok"}
                                 cancelLabel={"Cancel"}
                                 preferences={preferences}
-                                onConfirm={({detail}) => setPreferences(detail)}
+                                onConfirm={({detail}) => {setPreferences(detail);localStorage.setItem("streamDetailsPreferences", JSON.stringify(detail))}}
                             />
                         }
                     header={
@@ -575,6 +594,8 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         actions={            
                             <SpaceBetween key={"SpaceBetween1"} direction="horizontal"  size="xs">
                                 <Button     
+                                    ariaDescribedby={"refresh"}
+                                    ariaLabel="Refresh" 
                                     key={"Refresh"}
                                     onClick = {() => {
                                         onClickRefresh();
@@ -586,6 +607,8 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                     Refresh
                                 </Button>
                                 <Button     
+                                    ariaDescribedby={"Add message"}
+                                    ariaLabel="Add message" 
                                     key={"Append"}
                                     onClick = {() => {
                                         onClickAppend();
@@ -604,12 +627,25 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                     footer={
                                         <Box key={"1"} float="right">
                                         <SpaceBetween key={"SpaceBetween2"} direction="horizontal" size="xs">
-                                            <Button variant="link" onClick={onDismiss}>Cancel</Button>
-                                            <Button variant="primary" onClick={appendMessageClick}>Append</Button>
+                                            <Button 
+                                                variant="link" 
+                                                onClick={onDismiss}
+                                                ariaDescribedby={"Cancel"}
+                                                ariaLabel="Cancel" 
+                                            >
+                                                Cancel
+                                            </Button>
+                                            <Button variant="primary" 
+                                                onClick={appendMessageClick}
+                                                ariaDescribedby={"Add"}
+                                                ariaLabel="Add"
+                                            >
+                                                Add
+                                            </Button>
                                         </SpaceBetween>
                                         </Box>
                                     }
-                                    header={'Append message to '+streamName}
+                                    header={'Add message to '+streamName}
                                     >
                                         <Form
                                             key={"FormAddMessage"}
