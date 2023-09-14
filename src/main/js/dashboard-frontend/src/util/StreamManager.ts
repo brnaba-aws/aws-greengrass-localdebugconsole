@@ -133,9 +133,9 @@ export enum PersistenceType {
     Memory
 }
 
-export enum StategyType {
-    OverwriteOldestData,
-    RejectNewData 
+export enum StrategyType {
+  RejectNewData=0,
+  OverwriteOldestData=1
 }
 
 interface ExportDefinition {
@@ -158,7 +158,7 @@ interface Definition {
     maxSize: number;
     name: string;
     persistence: PersistenceType;
-    strategyOnFull: StategyType;
+    strategyOnFull: StrategyType;
     streamSegmentSize: number;
     timeToLiveMillis: number;
 }
@@ -209,7 +209,7 @@ export interface MessageStreamDefinition {
   maxSize: number,
   streamSegmentSize: number,
   timeToLiveMillis: number,
-  strategyOnFull: StategyType,
+  strategyOnFull: StrategyType,
   persistence: PersistenceType ,
   flushOnWrite: boolean,
   exportDefinition: ExportDefinition,

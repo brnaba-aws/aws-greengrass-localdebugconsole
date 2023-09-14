@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, {useContext, useEffect, useState} from "react";
+import React, {Reducer, useContext, useEffect, useReducer, useState} from "react";
 import {withRouter} from "react-router-dom";
 import {
     ContentLayout,
@@ -19,13 +19,17 @@ import {
     Button,
     Link,
     Modal,
+    FormField,
+    Input,
+    Select,
+    Form,
     
 } from "@cloudscape-design/components";
 
 import { ConfigMessage } from "../util/CommUtils";
 
-import {formatBytes, getExportDefinitionType} from "../util/StreamManager";
-import { Stream, StreamManagerComponentConfiguration, ResponseMessage } from "../util/StreamManager";
+import {PersistenceType, StrategyType, formatBytes, getExportDefinitionType} from "../util/StreamManager";
+import { Stream, StreamManagerComponentConfiguration, ResponseMessage, MessageStreamDefinition } from "../util/StreamManager";
 import { SERVER, DefaultContext } from "../index";
 import { APICall } from "../util/CommUtils";
 import { ComponentItem } from "../util/ComponentItem";
@@ -38,6 +42,23 @@ function StreamManager() {
     const [streamManagerStreamsList, setStreamManagerStreamsList] = useState<Stream[]>([])
     const [requestStreamsListInProgress, setRequestStreamsListInProgress] = useState(false)
     const [viewConfirmDelete, setViewConfirmDelete] = useState(false);
+    const [viewConfirmCreateStream, setViewConfirmCreateStream] = useState(false);
+    const [newStream, dispatch] = useReducer(reducer, {
+        name: "",
+        maxSize: 0,
+        streamSegmentSize: 0,
+        timeToLiveMillis: 0,
+        strategyOnFull: StrategyType.OverwriteOldestData,
+        persistence: PersistenceType.File, 
+        flushOnWrite: false,
+        exportDefinition: {
+            kinesis:[],
+            http:[],
+            iotAnalytics: [],
+            IotSitewise: [],
+            s3TaskExecutor: []
+        }
+    });
     const defaultContext = useContext(DefaultContext);
     const [currentPageIndex, setCurrentPageIndex] = useState(1)
     const [streamManagerComponentConfiguration, setStreamManagerComponentConfiguration] = useState<StreamManagerComponentConfiguration>({
@@ -130,7 +151,7 @@ function StreamManager() {
             {
                 id: "strategyOnFull",
                 header: "Strategy",
-                cell: (e:Stream) => (e.definition.strategyOnFull === 0 ? "RejectNewData": "OverwriteOldestData")
+                cell: (e:Stream) => (e.definition.strategyOnFull === 0 ? "RejectNewData":"OverwriteOldestData")
             },
             {
                 id: "oldestSequenceNumber",
@@ -158,10 +179,15 @@ function StreamManager() {
                 cell: e => getExportDefinitionType(e.definition.exportDefinition)
             }
     ];
-    const [preferences, setPreferences] = useState<CollectionPreferencesProps.Preferences>({
-        pageSize: 10,
-        visibleContent: ["name", "persistence", "strategyOnFull", "streamSegmentSize", "maxSize", "totalBytes", "flushOnWrite", "timeToLiveMillis","oldestSequenceNumber", "newestSequenceNumber", "exportDefinition"]
-    });
+
+    let storedPreference = localStorage.getItem('streamPreferences');
+    if (!storedPreference){
+        storedPreference =  JSON.stringify({
+            pageSize: 10,
+            visibleContent: ["name", "persistence", "strategyOnFull", "maxSize", "exportDefinition"]
+        })
+    }
+    const [preferences, setPreferences] = useState<CollectionPreferencesProps.Preferences>(JSON.parse(storedPreference));
 
     useEffect(() => {   
         getStreamManagerComponentConfiguration();
@@ -226,6 +252,44 @@ function StreamManager() {
         );
     }
 
+    function reducer(state:any, action:any) {
+        switch (action.type) {
+            case "set_name":
+                return {
+                    ...state,
+                    name: action.payload
+                };
+            case "set_maxSize":
+                return {
+                    ...state,
+                    maxSize: parseInt(action.payload, 10)
+                };
+            case "set_streamSegmentSize":
+                return {
+                    ...state,
+                    streamSegmentSize: parseInt(action.payload, 10)
+                };
+            case "set_strategyOnFull":
+                return {
+                    ...state,
+                    strategyOnFull: parseInt(action.payload, 10)
+                };
+            case "set_persistence":
+                return {
+                    ...state,
+                    persistence: parseInt(action.payload, 10)
+                };
+            case "set_flushOnWrite":
+                return {
+                    ...state,
+                    flushOnWrite: parseInt(action.payload)===0?true:false
+                };
+            case "clear":
+                return {
+                };
+        }
+      }
+
     function describeStream(streamName:string, index:number){
         SERVER.sendRequest({ call: APICall.streamManagerDescribeStream, args: [streamName] }).then(
             (response) => {
@@ -281,7 +345,9 @@ function StreamManager() {
               console.log("Error in [StreamManager]: " + reason);
               setRequestStreamsListInProgress(false);
             }
-        );
+        ).catch((reason)=>{
+            console.log(reason)
+        });
     }
 
     const onClickRefresh = () => {
@@ -292,8 +358,9 @@ function StreamManager() {
         setViewConfirmDelete(true)
     }
 
-    const onDismiss = () => {
+    const onDismiss = (e:any) => {
         setViewConfirmDelete(false);
+        setViewConfirmCreateStream(false);
     }
 
     const confirmDelete = () => {
@@ -302,6 +369,16 @@ function StreamManager() {
             setViewConfirmDelete(false);
             setSelectedStream([]);
         }
+    }
+
+    const onClickCreateStream = () => {
+        setViewConfirmCreateStream(true);
+    }
+
+    const confirmCreateStream = () => {
+        console.log(newStream);
+        setViewConfirmCreateStream(false);
+        dispatch({type: 'clear'});
     }
 
     function OnPageIndexChangedHanlder (pageIndex:number) {
@@ -316,13 +393,13 @@ function StreamManager() {
                 <Table
                     empty={
                         <Box textAlign="center" color="inherit">
-                            <b>No resources</b>
+                            <b>No stream</b>
                             <Box
                                 padding={{ bottom: "s" }}
                                 variant="p"
                                 color="inherit"
                             >
-                                No resources to display.
+                                No streams to display.
                             </Box>
                         </Box>
                     }
@@ -375,7 +452,7 @@ function StreamManager() {
                             confirmLabel={"Ok"}
                             cancelLabel={"Cancel"}
                             preferences={preferences}
-                            onConfirm={({detail}) => setPreferences(detail)}
+                            onConfirm={({detail}) => {setPreferences(detail); localStorage.setItem("streamPreferences",JSON.stringify(detail))}}
                         />
                     }
                 header={
@@ -388,39 +465,162 @@ function StreamManager() {
                     actions={            
                         <SpaceBetween direction="horizontal"  size="xs">
                             <Button     
+                                ariaDescribedby={"refresh"}
+                                ariaLabel="Refresh"
                                 onClick = {() => {
                                     onClickRefresh();
                                 }}
                                 iconName="refresh" 
                                 wrapText={false}
-                                disabled={requestStreamsListInProgress}
+                                disabled={false}
                             >
-                                Refresh
                             </Button>
                             <Button     
+                                ariaDescribedby={"Create stream"}
+                                ariaLabel="Create stream"
+                                onClick = {() => {
+                                    onClickCreateStream();
+                                }}
+                                wrapText={false}
+                                iconName="add-plus"
+                                disabled={requestStreamsListInProgress}
+                            >
+                                Create stream
+                            </Button>
+                            <Button     
+                                ariaDescribedby={"Delete stream"}
+                                ariaLabel="Delete stream"
                                 onClick = {() => {
                                     onClickDelete();
                                 }}
                                 wrapText={false}
+                                iconName="remove"
                                 disabled={selectedStream?.length? false:true}
                             >
                                 Delete
                             </Button>
                             <Modal
-                                onDismiss={onDismiss}
+                                key={"deleteStream"}
+                                onDismiss={ (e) => onDismiss(e)}
                                 visible={viewConfirmDelete}
                                 size="medium"
                                 footer={
                                     <Box float="right">
                                     <SpaceBetween direction="horizontal" size="xs">
-                                        <Button variant="link" onClick={onDismiss}>Cancel</Button>
-                                        <Button variant="primary" onClick={confirmDelete}>Delete</Button>
+                                        <Button 
+                                            variant="link" 
+                                            onClick={onDismiss}
+                                            ariaDescribedby={"Cancel"}
+                                            ariaLabel="Cancel"
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button 
+                                            variant="primary"
+                                            onClick={confirmDelete}
+                                            ariaDescribedby={"Delete"}
+                                            ariaLabel="Delete"
+                                        >
+                                            Delete
+                                        </Button>
                                     </SpaceBetween>
                                     </Box>
                                 }
                                 header={selectedStream?.length? 'Delete ' + selectedStream[0].definition.name : ''}
                                 >
                                 Are you sure you want to delete the stream?
+                            </Modal>
+                            <Modal
+                                key={"createStream"}
+                                onDismiss={onDismiss}
+                                visible={viewConfirmCreateStream}
+                                size="medium"
+                                header={"Create new stream"}
+                                >
+                                    <Form
+                                        variant="embedded"
+                                        actions={
+                                            <SpaceBetween direction="horizontal" size="xs">
+                                                <Button 
+                                                    formAction="none"
+                                                    variant="link"
+                                                    ariaDescribedby={"Cancel"}
+                                                    ariaLabel="Cancel"
+                                                    onClick={(e) => onDismiss(e)}
+                                                >
+                                                    Cancel
+                                                </Button>
+                                                <Button 
+                                                    loading={false} 
+                                                    variant="primary"
+                                                    ariaDescribedby={"Create"}
+                                                    ariaLabel="Create"
+                                                >
+                                                    Create
+                                                </Button>
+                                            </SpaceBetween>
+                                        }
+                                        //errorText={createStreamErrorText !== ''? createStreamErrorText: false}
+                                    >
+                                        <Container>
+                                            <SpaceBetween direction="vertical" size="l">
+                                                <FormField label="Stream Name">
+                                                    <Input
+                                                        value={newStream.name || ''}
+                                                        onChange={(event) => dispatch({type: 'set_name', payload: event.detail.value})}
+                                                        disabled={false}
+                                                    />
+                                                </FormField>
+                                                <FormField label="Stream Max Size (in bytes)">
+                                                    <Input
+                                                        value={newStream.maxSize}
+                                                        onChange={(event) => dispatch({type: 'set_maxSize', payload: event.detail.value})}
+                                                        disabled={false}
+                                                    />
+                                                </FormField>
+                                                <FormField label="Stream Segment Size (in bytes)">
+                                                    <Input
+                                                        value={newStream.streamSegmentSize}
+                                                        onChange={(event) => dispatch({type: 'set_streamSegmentSize', payload: event.detail.value})}
+                                                        disabled={false}
+                                                    />
+                                                </FormField>
+                                                <FormField label="Strategy on full">
+                                                    <Select
+                                                        options={[
+                                                            { label: "OverwriteOldestData", value: "1" },
+                                                            { label: "RejectNewData", value: "0" }
+                                                        ]}
+                                                        selectedOption={newStream.strategyOnFull===StrategyType.OverwriteOldestData?{ label: "OverwriteOldestData", value: "1" }:{ label: "RejectNewData", value: "0" }}
+                                                        onChange={({ detail }) => dispatch({type: 'set_strategyOnFull', payload: detail.selectedOption.value})}
+                                                        disabled={false}
+                                                    />
+                                                </FormField>
+                                                <FormField label="Persistence">
+                                                    <Select
+                                                        options={[
+                                                            { label: "File", value: "0" },
+                                                            { label: "Memory", value: "1" }
+                                                        ]}
+                                                        selectedOption={newStream.persistence===PersistenceType.File?{ label: "File", value: "0" }:{ label: "Memory", value: "1" }}
+                                                        onChange={({ detail }) => dispatch({type: 'set_persistence', payload: detail.selectedOption.value})}
+                                                        disabled={false}
+                                                    />
+                                                </FormField>
+                                                <FormField label="Flush on write">
+                                                    <Select
+                                                        options={[
+                                                            { label: "True", value: "0" },
+                                                            { label: "False", value: "1" }
+                                                        ]}
+                                                        selectedOption={newStream.flushOnWrite===true?{ label: "True", value: "0" }:{ label: "False", value: "1" }}
+                                                        onChange={({ detail }) =>  dispatch({type: 'set_flushOnWrite', payload: detail.selectedOption.value})}
+                                                        disabled={false}
+                                                    />
+                                                </FormField>
+                                            </SpaceBetween>
+                                        </Container>
+                                    </Form>
                             </Modal>
                         </SpaceBetween>
                     }
@@ -436,6 +636,7 @@ function StreamManager() {
                         onPageIndexChanged={ (pageIndex:any) => OnPageIndexChangedHanlder(pageIndex)}
                     />
                 }
+                variant="borderless"
                 />
             ),
         },
@@ -443,12 +644,12 @@ function StreamManager() {
             id: "tab2",
                 label: "Configuration",
                 content: (
-                    <ColumnLayout columns={4} variant="text-grid">
+                    <ColumnLayout columns={items.length} variant="text-grid">
                         {items.map((group, index) => (
                             <SpaceBetween size="xs" key={index}>
                                 {group.map((item) => (
                                     <div key={item.field}>
-                                    <Box margin={{bottom: "xxxs"}} color="text-label">{item.field}</Box>
+                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">{item.field}</Box>
                                     <div>{item.value}</div>
                                     </div>
                                 ))}
