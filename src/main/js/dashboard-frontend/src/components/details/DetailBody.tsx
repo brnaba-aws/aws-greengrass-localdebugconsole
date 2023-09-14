@@ -85,11 +85,11 @@ export default class DetailBody extends Component<
         <ColumnLayout columns={2} variant="text-grid">
           <SpaceBetween size={"l"}>
             <div>
-              <Box margin={{bottom: "xxxs"}} color="text-label">Component name</Box>
+              <Box margin={{bottom: "xxxs"}} variant="awsui-key-label"  color="text-label">Component name</Box>
               <div>{this.state.service.name}</div>
             </div>
             <div>
-              <Box margin={{bottom: "xxxs"}} color="text-label">Operating status</Box>
+              <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Operating status</Box>
               <Box color={`text-status-${this.state.service.statusIcon}` as BoxProps.Color}>
                 <StatusIndicator type={this.state.service.statusIcon} />
                 {` ${this.state.service.status}`}
@@ -99,7 +99,7 @@ export default class DetailBody extends Component<
 
           <SpaceBetween size={"l"}>
             <div>
-              <Box margin={{bottom: "xxxs"}} color="text-label">Version</Box>
+              <Box margin={{bottom: "xxxs"}} variant="awsui-key-label"  color="text-label">Version</Box>
               <div>{this.state.service.version}</div>
             </div>
             <div>
@@ -107,7 +107,7 @@ export default class DetailBody extends Component<
                 content='Authorship of the component. "Built-In" Components are provided with Greengrass. "User" components are ones you create.'
                 header={"Component Origin"}
               >
-                Origin
+                <b>Origin</b>
               </Popover>
               <div>{this.state.service.origin}</div>
             </div>
