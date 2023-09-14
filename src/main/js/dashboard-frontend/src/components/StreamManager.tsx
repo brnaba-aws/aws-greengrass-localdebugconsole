@@ -73,7 +73,7 @@ function StreamManager() {
         STREAM_MANAGER_STORE_ROOT_DIR: '-'
     });
     const [selectedStream, setSelectedStream] = useState<Stream[]>()
-    const items = [
+    const componentConfigurationItems = [
         [
             {
                 field: "Version",
@@ -644,8 +644,8 @@ function StreamManager() {
             id: "tab2",
                 label: "Configuration",
                 content: (
-                    <ColumnLayout columns={items.length} variant="text-grid">
-                        {items.map((group, index) => (
+                    <ColumnLayout columns={componentConfigurationItems.length} variant="text-grid">
+                        {componentConfigurationItems.map((group, index) => (
                             <SpaceBetween size="xs" key={index}>
                                 {group.map((item) => (
                                     <div key={item.field}>
