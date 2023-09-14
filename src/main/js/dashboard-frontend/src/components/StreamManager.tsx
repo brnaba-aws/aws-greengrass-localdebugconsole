@@ -619,7 +619,6 @@ function StreamManager() {
                                         }
                                         errorText={createStreamErrorText !== ''? createStreamErrorText: false}
                                     >
-                                        <Container>
                                             <SpaceBetween direction="vertical" size="l">
                                                 <FormField 
                                                     label="Stream Name"
@@ -697,7 +696,6 @@ function StreamManager() {
                                                     />
                                                 </FormField>}
                                             </SpaceBetween>
-                                        </Container>
                                     </Form>
                             </Modal>
                         </SpaceBetween>
@@ -742,7 +740,6 @@ function StreamManager() {
 
   return (
     <ContentLayout header={<Header variant={"h1"}>Stream Manager</Header>}>
-
         <Container>
             <Tabs tabs={tabs}></Tabs>
         </Container>
