@@ -453,7 +453,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
             (response) => {
                 if (response) {
                     const item:Stream = response;
-                    console.log(item);
                     item.key = index;
                     setStreamDetails(item);
                     setMessageCount(item.storageStatus.newestSequenceNumber-item.storageStatus.oldestSequenceNumber + 1)
@@ -551,14 +550,26 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                     variant="p"
                                     color="inherit"
                                 >
-                                    No message to display.
+                                   <Button
+                                        ariaDescribedby={"Add message"}
+                                        ariaLabel="Add message" 
+                                        key={"Append"}
+                                        onClick = {() => {
+                                            onClickAppend();
+                                        }}
+                                        iconName="add-plus"
+                                        wrapText={false}
+                                        disabled={appendMessageRequest}
+                                    >
+                                        Add Message
+                                    </Button>
                                 </Box>
                             </Box>
                         }
                         trackBy="key"
-                        loading={false}
+                        loading={readMessagesRequest}
                         wrapLines={true}
-                        loadingText="Loading resources"
+                        loadingText="Loading messages"
                         items={messagesList.filter((m:Message) => atob(m.payload?.toString() || '').includes(filteringText.toLowerCase()))}
                         filter={
                             <TextFilter
@@ -620,7 +631,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                 >
                                     Refresh
                                 </Button>
-                                <Button     
+                                {messageCount > 0 && <Button
                                     ariaDescribedby={"Add message"}
                                     ariaLabel="Add message" 
                                     key={"Append"}
@@ -632,7 +643,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                     disabled={appendMessageRequest}
                                 >
                                     Add Message
-                                </Button>
+                                </Button>}
                                 <Modal
                                     key={"ModalAppendMessage"}
                                     onDismiss={onDismiss}
