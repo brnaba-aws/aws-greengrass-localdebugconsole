@@ -198,7 +198,7 @@ export interface Message {
   payload: Uint8Array | null; // Use Uint8Array or null to represent byte[] or optional
 }
 
-export interface ResponseMessage {
+export interface StreamManagerResponseMessage {
   successful: boolean
   errorMsg: string
 }
@@ -208,9 +208,9 @@ export interface MessageStreamDefinition {
   name: string,
   maxSize: number,
   streamSegmentSize: number,
-  timeToLiveMillis: number,
+  timeToLiveMillis?: number,
   strategyOnFull: StrategyType,
   persistence: PersistenceType ,
   flushOnWrite: boolean,
-  exportDefinition: ExportDefinition,
+  exportDefinition?: ExportDefinition,
 }

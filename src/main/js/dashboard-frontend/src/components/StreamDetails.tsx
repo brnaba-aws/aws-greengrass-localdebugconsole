@@ -17,7 +17,7 @@ import {
     Textarea
 } from "@cloudscape-design/components";
 import { RouteComponentProps, useHistory, withRouter } from "react-router-dom";
-import { Stream, Message, formatBytes, ResponseMessage, getElapsedTime } from "../util/StreamManager";
+import { Stream, Message, formatBytes, StreamManagerResponseMessage, getElapsedTime } from "../util/StreamManager";
 import { SERVER , DefaultContext} from "../index";
 import { APICall } from "../util/CommUtils";
 import { STREAM_MANAGER_ROUTE_HREF_PREFIX } from "../util/constNames";
@@ -106,6 +106,20 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                 field: "Flush on write",
                 value: (streamDetails?.definition.flushOnWrite?'true':'false'),
             },
+        ],
+        [
+            {
+                field: "Newest sequence number",
+                value: (streamDetails?.storageStatus.newestSequenceNumber)
+            },
+            {
+                field: "Oldest sequence number",
+                value: (streamDetails?.storageStatus.oldestSequenceNumber),
+            },
+            {
+                field: "TTL on message",
+                value: (streamDetails?.definition.timeToLiveMillis),
+            },
         ]
     ];
 
@@ -126,7 +140,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
             id: "tab1",
                 label: "Details",
                 content: (
-                    <ColumnLayout key={"tab2"} columns={2} variant="text-grid">
+                    <ColumnLayout key={"tab2"} columns={items.length} variant="text-grid">
                         {items.map((group, index) => (
                             <SpaceBetween size="xs" key={index}>
                                 {group.map((item) => (
@@ -192,7 +206,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
         },
         {
             id: "tab3",
-            label: "Export definition",
+            label: "Export definitions",
             content: (
                 <Tabs tabs={[
                     {
@@ -499,7 +513,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
     const appendMessageClick = () => {
         setAppendMessageRequest(true);
         SERVER.sendRequest({ call: APICall.streamManagerAppendMessage, args: [streamName, messageToAppend] }).then(
-            (response:ResponseMessage) => {
+            (response:StreamManagerResponseMessage) => {
                 if (response) {
                     setAppendMessageRequest(false);
                     defaultContext.addFlashItem!({
