@@ -41,11 +41,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
     let streamName = useHistory().location.pathname.substring(STREAM_MANAGER_ROUTE_HREF_PREFIX.length - 1);
     const columnDefinitionsMessages: TableProps.ColumnDefinition<Message>[] = [
             {
-                id: "key",
-                header: "key",
-                cell: (e:Message) => e.sequenceNumber
-            },
-            {
                 id: "sequenceNumber",
                 header: "Sequence number",
                 cell: (e:Message) => e.sequenceNumber
@@ -162,7 +157,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         {streamDetails?.exportStatuses && streamDetails?.exportStatuses.map((group, index) => (
                             <SpaceBetween direction="horizontal" size="xxs" key={group.exportConfigIdentifier}>
                                 <div key={index}>
-                                    <SpaceBetween direction="vertical" size="xs" key={group.exportConfigIdentifier}>
+                                    <SpaceBetween direction="vertical" size="xs" key={group.exportConfigIdentifier+index}>
                                         <div >
                                             <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Identifier</Box>
                                             <div>{group.exportConfigIdentifier}</div>
@@ -216,7 +211,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                 {streamDetails?.definition.exportDefinition.kinesis.map((group, index) => (
                                     <SpaceBetween direction="horizontal" size="xxs" key={group.identifier}>
                                         <div key={index}>
-                                            <SpaceBetween direction="vertical" size="xs" key={group.identifier}>
+                                            <SpaceBetween direction="vertical" size="xs" key={group.identifier+index}>
                                                 <div >
                                                     <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Identifier</Box>
                                                     <div>{group.identifier}</div>
@@ -261,7 +256,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                 {streamDetails?.definition.exportDefinition.IotSitewise && streamDetails?.definition.exportDefinition.IotSitewise.map((group, index) => (
                                     <SpaceBetween direction="horizontal" size="xxs" key={group.identifier}>
                                         <div key={index}>
-                                            <SpaceBetween direction="vertical" size="xs" key={group.identifier}>
+                                            <SpaceBetween direction="vertical" size="xs" key={group.identifier+index}>
                                                 <div >
                                                     <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Identifier</Box>
                                                     <div>{group.identifier}</div>
@@ -305,7 +300,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                 {streamDetails?.definition.exportDefinition.iotAnalytics.map((group, index) => (
                                     <SpaceBetween direction="horizontal" size="xxs" key={group.identifier}>
                                         <div key={index}>
-                                            <SpaceBetween direction="vertical" size="xs" key={group.identifier}>
+                                            <SpaceBetween direction="vertical" size="xs" key={group.identifier+index}>
                                                 <div >
                                                     <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Identifier</Box>
                                                     <div>{group.identifier}</div>
@@ -356,7 +351,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                 {streamDetails?.definition.exportDefinition.http.map((group, index) => (
                                     <SpaceBetween direction="horizontal" size="xxs" key={group.identifier}>
                                         <div key={index}>
-                                            <SpaceBetween direction="vertical" size="xs" key={group.identifier}>
+                                            <SpaceBetween direction="vertical" size="xs" key={group.identifier+index}>
                                                 <div >
                                                     <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Identifier</Box>
                                                     <div>{group.identifier}</div>
@@ -407,7 +402,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                 {streamDetails?.definition.exportDefinition.s3TaskExecutor.map((group, index) => (
                                     <SpaceBetween direction="horizontal" size="xxs" key={group.identifier}>
                                         <div key={index}>
-                                            <SpaceBetween direction="vertical" size="xs" key={group.identifier}>
+                                            <SpaceBetween direction="vertical" size="xs" key={group.identifier+index}>
                                                 <div >
                                                     <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">Identifier</Box>
                                                     <div>{group.identifier}</div>
@@ -541,73 +536,74 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     <Tabs tabs={tabs}></Tabs>
                 </Container>
                 <Table
-                        key={"messageTable"}
-                        empty={
-                            <Box textAlign="center" color="inherit">
-                                <b>No messages</b>
-                                <Box
-                                    padding={{ bottom: "s" }}
-                                    variant="p"
-                                    color="inherit"
+                    key={"messageTable"}
+                    empty={
+                        <Box key={"box1"} textAlign="center" color="inherit">
+                            <b>No messages</b>
+                            <Box
+                                key={"box1-1"}
+                                padding={{ bottom: "s" }}
+                                variant="p"
+                                color="inherit"
+                            >
+                                <Button
+                                    ariaDescribedby={"Add message"}
+                                    ariaLabel="Add message" 
+                                    key={"Append"}
+                                    onClick = {() => {
+                                        onClickAppend();
+                                    }}
+                                    iconName="add-plus"
+                                    wrapText={false}
+                                    disabled={appendMessageRequest}
                                 >
-                                   <Button
-                                        ariaDescribedby={"Add message"}
-                                        ariaLabel="Add message" 
-                                        key={"Append"}
-                                        onClick = {() => {
-                                            onClickAppend();
-                                        }}
-                                        iconName="add-plus"
-                                        wrapText={false}
-                                        disabled={appendMessageRequest}
-                                    >
-                                        Add Message
-                                    </Button>
-                                </Box>
+                                    Add Message
+                                </Button>
                             </Box>
-                        }
-                        trackBy="key"
-                        loading={readMessagesRequest}
-                        wrapLines={true}
-                        loadingText="Loading messages"
-                        items={messagesList.filter((m:Message) => atob(m.payload?.toString() || '').includes(filteringText.toLowerCase()))}
-                        filter={
-                            <TextFilter
-                                key={"findMessageTextFilter"}
-                                filteringPlaceholder="Find message(s)"
-                                filteringText={filteringText}
-                                onChange={({detail}) =>setFilteringText(detail.filteringText)}
-                            />
-                        }
-                        columnDefinitions={columnDefinitionsMessages}
-                        visibleColumns={preferences.visibleContent}
-                        preferences={
-                            <CollectionPreferences
-                                key={"CollectionPreferences"}
-                                visibleContentPreference={{
-                                    title: "Visible columns",
-                                    options: [{
-                                        label: "", options: [
-                                            {editable: false, label: "sequenceNumber", id: "sequenceNumber"},
-                                            {editable: true, label: "message", id: "message"},
-                                            {editable: true, label: "ingestTime", id: "ingestTime"},
-                                        ]
-                                    }]
-                                }}
-                                pageSizePreference={{
-                                    title: "Page size",
-                                    options: [
-                                        {value: 10, label: "10"},
-                                        {value: 50, label: "50"},
-                                        {value: 100, label: "100"}]
-                                }}
-                                title={"Preferences"}
-                                confirmLabel={"Ok"}
-                                cancelLabel={"Cancel"}
-                                preferences={preferences}
-                                onConfirm={({detail}) => {setPreferences(detail);localStorage.setItem("streamDetailsPreferences", JSON.stringify(detail))}}
-                            />
-                        }
+                        </Box>
+                    }
+                    trackBy="sequenceNumber"
+                    loading={readMessagesRequest}
+                    wrapLines={true}
+                    loadingText="Loading messages"
+                    items={messagesList.filter((m:Message) => atob(m.payload?.toString() || '').includes(filteringText.toLowerCase()))}
+                    filter={
+                        <TextFilter
+                            key={"findMessageTextFilter"}
+                            filteringPlaceholder="Find message(s)"
+                            filteringText={filteringText}
+                            onChange={({detail}) =>setFilteringText(detail.filteringText)}
+                        />
+                    }
+                    columnDefinitions={columnDefinitionsMessages}
+                    visibleColumns={preferences.visibleContent}
+                    preferences={
+                        <CollectionPreferences
+                            key={"CollectionPreferences"}
+                            visibleContentPreference={{
+                                title: "Visible columns",
+                                options: [{
+                                    label: "", options: [
+                                        {editable: false, label: "sequenceNumber", id: "sequenceNumber"},
+                                        {editable: true, label: "message", id: "message"},
+                                        {editable: true, label: "ingestTime", id: "ingestTime"},
+                                    ]
+                                }]
+                            }}
+                            pageSizePreference={{
+                                title: "Page size",
+                                options: [
+                                    {value: 10, label: "10"},
+                                    {value: 50, label: "50"},
+                                    {value: 100, label: "100"}]
+                            }}
+                            title={"Preferences"}
+                            confirmLabel={"Ok"}
+                            cancelLabel={"Cancel"}
+                            preferences={preferences}
+                            onConfirm={({detail}) => {setPreferences(detail);localStorage.setItem("streamDetailsPreferences", JSON.stringify(detail))}}
+                        />
+                    }
                     header={
                         <Header
                             key={"counterHeader"}
@@ -634,7 +630,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                 {messageCount > 0 && <Button
                                     ariaDescribedby={"Add message"}
                                     ariaLabel="Add message" 
-                                    key={"Append"}
+                                    key={"Append2"}
                                     onClick = {() => {
                                         onClickAppend();
                                     }}
@@ -651,27 +647,30 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                     size="medium"
                                     footer={
                                         <Box key={"1"} float="right">
-                                        <SpaceBetween key={"SpaceBetween2"} direction="horizontal" size="xs">
-                                            <Button 
-                                                variant="link" 
-                                                onClick={onDismiss}
-                                                ariaDescribedby={"Cancel"}
-                                                ariaLabel="Cancel" 
-                                            >
-                                                Cancel
-                                            </Button>
-                                            <Button variant="primary" 
-                                                onClick={appendMessageClick}
-                                                ariaDescribedby={"Add"}
-                                                ariaLabel="Add"
-                                            >
-                                                Add
-                                            </Button>
-                                        </SpaceBetween>
+                                            <SpaceBetween key={"SpaceBetween2"} direction="horizontal" size="xs">
+                                                <Button 
+                                                    key={"ModalAppendMessageCancelButton"}
+                                                    variant="link" 
+                                                    onClick={onDismiss}
+                                                    ariaDescribedby={"Cancel"}
+                                                    ariaLabel="Cancel" 
+                                                >
+                                                    Cancel
+                                                </Button>
+                                                <Button 
+                                                    key={"ModalAppendMessageAddButton"}
+                                                    variant="primary" 
+                                                    onClick={appendMessageClick}
+                                                    ariaDescribedby={"Add"}
+                                                    ariaLabel="Add"
+                                                >
+                                                    Add
+                                                </Button>
+                                            </SpaceBetween>
                                         </Box>
                                     }
                                     header={'Add message to '+streamName}
-                                    >
+                                >
                                         <Form
                                             key={"FormAddMessage"}
                                             variant="embedded"
@@ -695,6 +694,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     }
                     pagination={
                         <PaginationRendering 
+                            key={"paginatinoRendering"}
                             numberOfItems={(streamDetails?.storageStatus.newestSequenceNumber || 0) - (streamDetails?.storageStatus.oldestSequenceNumber || 0) + 1}
                             numberOfItemPerPage={preferences.pageSize || 1}
                             pageIndex={currentPageIndex}
