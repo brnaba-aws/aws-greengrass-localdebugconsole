@@ -84,10 +84,6 @@ function StreamManager() {
                 value: streamManagerComponentConfiguration?.STREAM_MANAGER_SERVER_PORT.toString(),
             },
             {
-                field: "Root path",
-                value: streamManagerComponentConfiguration.STREAM_MANAGER_STORE_ROOT_DIR,
-            },
-            {
                 field: "Authentication Client",
                 value: streamManagerComponentConfiguration.STREAM_MANAGER_AUTHENTICATE_CLIENT
             },
@@ -107,6 +103,10 @@ function StreamManager() {
             },
         ],
         [
+            {
+                field: "Root path",
+                value: streamManagerComponentConfiguration.STREAM_MANAGER_STORE_ROOT_DIR,
+            },
             {
                 field: "Log Level",
                 value: streamManagerComponentConfiguration.LOG_LEVEL,
