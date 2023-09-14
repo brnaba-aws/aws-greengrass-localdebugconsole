@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, {Reducer, useContext, useEffect, useReducer, useState} from "react";
+import React, { useContext, useEffect, useReducer, useState } from "react";
 import {withRouter} from "react-router-dom";
 import {
     ContentLayout,
@@ -29,7 +29,7 @@ import {
 import { ConfigMessage } from "../util/CommUtils";
 
 import {PersistenceType, StrategyType, formatBytes, getExportDefinitionType} from "../util/StreamManager";
-import { Stream, StreamManagerComponentConfiguration, ResponseMessage, MessageStreamDefinition } from "../util/StreamManager";
+import { Stream, StreamManagerComponentConfiguration, StreamManagerResponseMessage } from "../util/StreamManager";
 import { SERVER, DefaultContext } from "../index";
 import { APICall } from "../util/CommUtils";
 import { ComponentItem } from "../util/ComponentItem";
@@ -43,11 +43,11 @@ function StreamManager() {
     const [requestStreamsListInProgress, setRequestStreamsListInProgress] = useState(false)
     const [viewConfirmDelete, setViewConfirmDelete] = useState(false);
     const [viewConfirmCreateStream, setViewConfirmCreateStream] = useState(false);
+    const [createStreamErrorText, setCreateStreamErrorText] = useState("");
     const [newStream, dispatch] = useReducer(reducer, {
-        name: "",
-        maxSize: 0,
-        streamSegmentSize: 0,
-        timeToLiveMillis: 0,
+        name: "new-stream",
+        maxSize: 256*1024*1024,
+        streamSegmentSize: 16*1024*1024,
         strategyOnFull: StrategyType.OverwriteOldestData,
         persistence: PersistenceType.File, 
         flushOnWrite: false,
@@ -255,16 +255,38 @@ function StreamManager() {
     function reducer(state:any, action:any) {
         switch (action.type) {
             case "set_name":
+                const alphanumericRegex = /^[a-zA-Z0-9\s,.\-_]+$/;
+                if (action.payload.length === 0) {
+                    setCreateStreamErrorText('Name cannot be empty.');
+                } else if (action.payload.length < 1 || action.payload.length > 255) {
+                    setCreateStreamErrorText('Name length must be between 1 and 255 characters.');
+                } else if (!alphanumericRegex.test(action.payload)) {
+                    setCreateStreamErrorText('Name must be alphanumeric and can include spaces, commas, periods, hyphens, and underscores.');
+                } else {
+                    setCreateStreamErrorText('');
+                }
                 return {
                     ...state,
                     name: action.payload
                 };
             case "set_maxSize":
+                if (parseInt(action.payload, 10) < 1024) {
+                    setCreateStreamErrorText('Max size cannot be lower than 1024 bytes.');
+                }
+                else {
+                    setCreateStreamErrorText('');
+                }
                 return {
                     ...state,
                     maxSize: parseInt(action.payload, 10)
                 };
             case "set_streamSegmentSize":
+                if (parseInt(action.payload, 10) < 1024) {
+                    setCreateStreamErrorText('stream segment size cannot be lower than 1024 bytes.');
+                }
+                else {
+                    setCreateStreamErrorText('');
+                }
                 return {
                     ...state,
                     streamSegmentSize: parseInt(action.payload, 10)
@@ -285,7 +307,21 @@ function StreamManager() {
                     flushOnWrite: parseInt(action.payload)===0?true:false
                 };
             case "clear":
+                setCreateStreamErrorText('');
                 return {
+                    name: "new-stream",
+                    maxSize:256*1024*1024,
+                    streamSegmentSize: 16*1024*1024,
+                    strategyOnFull: StrategyType.OverwriteOldestData,
+                    persistence: PersistenceType.File, 
+                    flushOnWrite: false,
+                    exportDefinition: {
+                        kinesis:[],
+                        http:[],
+                        iotAnalytics: [],
+                        IotSitewise: [],
+                        s3TaskExecutor: []
+                    }
                 };
         }
       }
@@ -308,7 +344,7 @@ function StreamManager() {
     function deleteMessageStream(streamName:string){
         setRequestStreamsListInProgress(true);
         SERVER.sendRequest({ call: APICall.streamManagerDeleteMessageStream, args: [streamName] }).then(
-            (response:ResponseMessage) => {
+            (response:StreamManagerResponseMessage) => {
                 setRequestStreamsListInProgress(false);
                 defaultContext.addFlashItem!({
                     type: response.successful === true?'success':'error',
@@ -361,6 +397,7 @@ function StreamManager() {
     const onDismiss = (e:any) => {
         setViewConfirmDelete(false);
         setViewConfirmCreateStream(false);
+        dispatch({type:'clear'});
     }
 
     const confirmDelete = () => {
@@ -376,9 +413,27 @@ function StreamManager() {
     }
 
     const confirmCreateStream = () => {
-        console.log(newStream);
-        setViewConfirmCreateStream(false);
-        dispatch({type: 'clear'});
+        SERVER.sendRequest({ call: APICall.streamManagerCreateMessageStream, args: [JSON.stringify(newStream)] }).then(
+            (response:StreamManagerResponseMessage) => {
+                if (response.successful) 
+                {
+                    setViewConfirmCreateStream(false);
+                    defaultContext.addFlashItem!({
+                        type: 'success',
+                        header: 'Created ' + newStream.name + " successfully",
+                        content: response.errorMsg
+                    });
+                    dispatch({type: 'clear'});
+                    listStreams();
+                }
+                else {
+                    setCreateStreamErrorText(response.errorMsg);
+                }
+            },
+            (reason) => {
+              console.log("Error in [StreamManager]: " + reason);
+            }
+          );
     }
 
     function OnPageIndexChangedHanlder (pageIndex:number) {
@@ -552,37 +607,53 @@ function StreamManager() {
                                                 </Button>
                                                 <Button 
                                                     loading={false} 
+                                                    disabled={createStreamErrorText.length !== 0}
                                                     variant="primary"
                                                     ariaDescribedby={"Create"}
                                                     ariaLabel="Create"
+                                                    onClick={(e) => confirmCreateStream()}
                                                 >
                                                     Create
                                                 </Button>
                                             </SpaceBetween>
                                         }
-                                        //errorText={createStreamErrorText !== ''? createStreamErrorText: false}
+                                        errorText={createStreamErrorText !== ''? createStreamErrorText: false}
                                     >
                                         <Container>
                                             <SpaceBetween direction="vertical" size="l">
-                                                <FormField label="Stream Name">
+                                                <FormField 
+                                                    label="Stream Name"
+                                                    constraintText="Must be an alphanumeric string including spaces, commas, periods, hyphens, and underscores with length between 1 and 255."
+                                                >
                                                     <Input
                                                         value={newStream.name || ''}
                                                         onChange={(event) => dispatch({type: 'set_name', payload: event.detail.value})}
                                                         disabled={false}
                                                     />
                                                 </FormField>
-                                                <FormField label="Stream Max Size (in bytes)">
+                                                <FormField 
+                                                    label="Stream Max Size (in bytes)"
+                                                    constraintText="Set to 256MB by default with a minimum of 1KB and a maximum of 8192PB."
+                                                >
                                                     <Input
                                                         value={newStream.maxSize}
                                                         onChange={(event) => dispatch({type: 'set_maxSize', payload: event.detail.value})}
                                                         disabled={false}
+                                                        inputMode="decimal"
+                                                        type="number"
                                                     />
                                                 </FormField>
-                                                <FormField label="Stream Segment Size (in bytes)">
+                                                <FormField 
+                                                    constraintText="Set to 16MB by default with a minimum of 1KB and a maximum of 2GB."
+                                                    label="Stream Segment Size (in bytes)"
+                                                >
                                                     <Input
                                                         value={newStream.streamSegmentSize}
                                                         onChange={(event) => dispatch({type: 'set_streamSegmentSize', payload: event.detail.value})}
                                                         disabled={false}
+                                                        step={1024}
+                                                        inputMode="decimal"
+                                                        type="number"
                                                     />
                                                 </FormField>
                                                 <FormField label="Strategy on full">
@@ -596,7 +667,11 @@ function StreamManager() {
                                                         disabled={false}
                                                     />
                                                 </FormField>
-                                                <FormField label="Persistence">
+                                                <FormField 
+                                                    label="Persistence"
+                                                    constraintText="If set to File, the file system will be used to persist messages long-term and is resilient to restarts.
+                                                    Memory should be used when performance matters more than durability as it only stores the stream in memory and never writes to the disk."
+                                                >
                                                     <Select
                                                         options={[
                                                             { label: "File", value: "0" },
@@ -607,7 +682,10 @@ function StreamManager() {
                                                         disabled={false}
                                                     />
                                                 </FormField>
-                                                <FormField label="Flush on write">
+                                                {newStream.persistence===PersistenceType.File && <FormField 
+                                                    label="Flush on write" 
+                                                    constraintText="Waits for the filesystem to complete the write for every message. This is safer, but slower. Default is false."
+                                                >
                                                     <Select
                                                         options={[
                                                             { label: "True", value: "0" },
@@ -617,7 +695,7 @@ function StreamManager() {
                                                         onChange={({ detail }) =>  dispatch({type: 'set_flushOnWrite', payload: detail.selectedOption.value})}
                                                         disabled={false}
                                                     />
-                                                </FormField>
+                                                </FormField>}
                                             </SpaceBetween>
                                         </Container>
                                     </Form>
