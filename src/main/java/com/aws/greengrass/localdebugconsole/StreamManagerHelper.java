@@ -168,4 +168,16 @@ public class StreamManagerHelper {
             throw new StreamManagerException("Connection to Stream Manager failed!");
         }
     }
+
+    public void updateMessageStream(MessageStreamDefinition messageStream) throws StreamManagerException {
+        if (!this.isConnected) {
+            this.connect();
+        }
+        if (this.isConnected){
+            this.client.updateMessageStream(messageStream);
+        }
+        else {
+            throw new StreamManagerException("Connection to Stream Manager failed!");
+        }
+    }
 }
