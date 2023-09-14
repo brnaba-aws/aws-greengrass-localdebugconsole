@@ -469,7 +469,7 @@ function StreamManager() {
                     trackBy="key"
                     loading={requestStreamsListInProgress}
                     selectedItems={selectedStream}
-                    loadingText="Loading resources"
+                    loadingText="Loading streams"
                     items={streamManagerStreamsList.slice((currentPageIndex-1)*(preferences.pageSize || 10),(currentPageIndex-1)*(preferences.pageSize || 10) + (preferences.pageSize || 10)).filter((s:Stream) => s.definition.name.toLowerCase().includes(filteringText.toLowerCase()))}
                     onSelectionChange={(e: any) => {
                         setSelectedStream(streamManagerStreamsList.filter((s:Stream) => s.definition.name === e.detail.selectedItems[0].definition.name))
