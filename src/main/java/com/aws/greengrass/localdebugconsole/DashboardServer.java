@@ -388,31 +388,33 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
     }
 
     private void StreamManagerListStreams(WebSocket conn, PackedRequest packedRequest) {
-        StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage(false,"");
+        StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage();
         try {
-            sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, this.streamManagerHelper.listStreams()));
+            responseMessage.streamsList = this.streamManagerHelper.listStreams();
+            responseMessage.successful = true;
         }
         catch (Exception e){
             logger.error("Error while listing streams:",e);
             responseMessage.errorMsg = e.getMessage();
-            sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
         }
+        sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
     }
 
     private void StreamManagerDescribeStream(WebSocket conn, PackedRequest packedRequest, Request req) {
-        StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage(false,"");
+        StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage();
         try {
-            sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, this.streamManagerHelper.describeStream(req.args[0])));
+            responseMessage.messageStreamInfo = this.streamManagerHelper.describeStream(req.args[0]);
+            responseMessage.successful = true;
         }
         catch (Exception e){
             logger.error("Error while describing stream:",e);
             responseMessage.errorMsg = e.getMessage();
-            sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
         }
+        sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
     }
 
     private void StreamManagerDeleteMessageStream(WebSocket conn, PackedRequest packedRequest, Request req) {
-        StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage(false,"");
+        StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage();
         try {
             this.streamManagerHelper.deleteMessageStream(req.args[0]);
             responseMessage.successful = true;
@@ -425,35 +427,31 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
     }
 
     private void StreamManagerReadMessages(WebSocket conn, PackedRequest packedRequest, Request req) {
-        StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage(false,"");
+        StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage();
         try {
             if (req.args.length == 5) {
-                sendIfOpen(conn,
-                        new Message(
-                                MessageType.RESPONSE,
-                                packedRequest.requestID,
-                                this.streamManagerHelper.readMessages(
-                                        req.args[0],
-                                        Long.parseLong(req.args[1]),
-                                        Long.parseLong(req.args[2]),
-                                        Long.parseLong(req.args[3]),
-                                        Long.parseLong(req.args[4]))));
+                responseMessage.messagesList = this.streamManagerHelper.readMessages(
+                                                    req.args[0],
+                                                    Long.parseLong(req.args[1]),
+                                                    Long.parseLong(req.args[2]),
+                                                    Long.parseLong(req.args[3]),
+                                                    Long.parseLong(req.args[4]));
+                responseMessage.successful = true;
             }
             else{
                 logger.atError().log("StreamManagerReadMessages requires 5 arguments");
                 responseMessage.errorMsg = "StreamManagerReadMessages requires 5 arguments";
-                sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
             }
         }
         catch (Exception e){
             logger.error("Error while reading messages:", e);
             responseMessage.errorMsg = e.getMessage();
-            sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
         }
+        sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
     }
 
     private void StreamManagerAppendMessage(WebSocket conn, PackedRequest packedRequest, Request req) {
-        StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage(false,"");
+        StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage();
         try {
             this.streamManagerHelper.appendMessage(req.args[0], req.args[1].getBytes());
             responseMessage.successful = true;
@@ -466,7 +464,7 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
     }
 
     private void StreamManagerCreateMessageStream(WebSocket conn, PackedRequest packedRequest, Request req) {
-        StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage(false,"");
+        StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage();
         try {
             MessageStreamDefinition messageStreamDefinition = jsonMapper.readValue(req.args[0], MessageStreamDefinition.class);
             this.streamManagerHelper.createMessageStream(messageStreamDefinition);
@@ -480,7 +478,7 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
     }
 
     private void StreamManagerUpdateMessageStream(WebSocket conn, PackedRequest packedRequest, Request req) {
-        StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage(false,"");
+        StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage();
         try {
             MessageStreamDefinition messageStreamDefinition = jsonMapper.readValue(req.args[0], MessageStreamDefinition.class);
             this.streamManagerHelper.updateMessageStream(messageStreamDefinition);
