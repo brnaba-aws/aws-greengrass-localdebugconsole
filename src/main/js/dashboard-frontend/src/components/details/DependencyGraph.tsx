@@ -131,7 +131,6 @@ class DependencyGraph extends Component<
     this.d3render(inner, this.g);
     inner.attr("transform", `translate(20, 20)`);
     svg.attr("height", this.g.graph().height + 40);
-    svg.attr("width", this.g.graph().width + 40);
   }
   async componentDidMount() {
     await SERVER.initConnections();
@@ -166,7 +165,7 @@ class DependencyGraph extends Component<
         disableContentPaddings={true}
       >
         <div className="holder">
-          <svg width="100" height="100" ref={this.svg}>
+          <svg height="100" style={{width: "100%"}} ref={this.svg}>
             <g ref={this.innerG} />
           </svg>
         </div>
