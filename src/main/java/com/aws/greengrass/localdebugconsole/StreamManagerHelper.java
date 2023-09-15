@@ -74,41 +74,21 @@ public class StreamManagerHelper {
         }
     }
 
-    public List<String> listStreams() {
+    public List<String> listStreams() throws StreamManagerException  {
         if (!this.isConnected) {
-            try {
-                // Trying to reconnect in case it didn't work at first.
-                this.connect();
-            }catch (Exception e){
-                logger.error("StreamManagerHelper.listStreams:", e);
-            }
+            this.connect();
         }
         if (this.isConnected){
-            try {
-                return this.client.listStreams();
-            }
-            catch (Exception e){
-                logger.error("StreamManagerHelper.listStreams:", e);
-            }
+            return this.client.listStreams();
         }
         return Collections.emptyList();
     }
-    public MessageStreamInfo describeStream(String streamName) {
+    public MessageStreamInfo describeStream(String streamName) throws StreamManagerException   {
         if (!this.isConnected) {
-            try {
-                // Trying to reconnect in case it didn't work at first.
-                this.connect();
-            }catch (Exception e){
-                logger.error("Unable to connect to Stream Manager:", e);
-            }
+            this.connect();
         }
         if (this.isConnected){
-            try {
-                return this.client.describeMessageStream(streamName);
-            }
-            catch (Exception e){
-                logger.error("Unable to describe stream:", e);
-            }
+            return this.client.describeMessageStream(streamName);
         }
         return new MessageStreamInfo();
     }
@@ -125,22 +105,12 @@ public class StreamManagerHelper {
         }
     }
 
-    public List<Message> readMessages(String streamName, Long desiredStartSequenceNumber, Long minMessageCount, Long maxMessageCount, Long readTimeoutMillis){
+    public List<Message> readMessages(String streamName, Long desiredStartSequenceNumber, Long minMessageCount, Long maxMessageCount, Long readTimeoutMillis) throws StreamManagerException {
         if (!this.isConnected) {
-            try {
-                // Trying to reconnect in case it didn't work at first.
-                this.connect();
-            }catch (Exception e){
-                logger.error("Unable to connect to Stream Manager:", e);
-            }
+            this.connect();
         }
         if (this.isConnected){
-            try {
-                return this.client.readMessages(streamName, new ReadMessagesOptions( desiredStartSequenceNumber, minMessageCount, maxMessageCount, readTimeoutMillis));
-            }
-            catch (Exception e){
-                logger.error("Unable to read messages:", e);
-            }
+            return this.client.readMessages(streamName, new ReadMessagesOptions( desiredStartSequenceNumber, minMessageCount, maxMessageCount, readTimeoutMillis));
         }
         return Collections.emptyList();
     }
