@@ -388,22 +388,26 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
     }
 
     private void StreamManagerListStreams(WebSocket conn, PackedRequest packedRequest) {
+        StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage(false,"");
         try {
             sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, this.streamManagerHelper.listStreams()));
         }
         catch (Exception e){
-            logger.error(e.getMessage()); //TODO: print proper error
-            sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, e.getMessage()));
+            logger.error("Error while listing streams:",e);
+            responseMessage.errorMsg = e.getMessage();
+            sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
         }
     }
 
     private void StreamManagerDescribeStream(WebSocket conn, PackedRequest packedRequest, Request req) {
+        StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage(false,"");
         try {
             sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, this.streamManagerHelper.describeStream(req.args[0])));
         }
         catch (Exception e){
-            logger.error(e.getMessage());//TODO: print proper error
-            sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, e.getMessage()));
+            logger.error("Error while describing stream:",e);
+            responseMessage.errorMsg = e.getMessage();
+            sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
         }
     }
 
@@ -421,6 +425,7 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
     }
 
     private void StreamManagerReadMessages(WebSocket conn, PackedRequest packedRequest, Request req) {
+        StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage(false,"");
         try {
             if (req.args.length == 5) {
                 sendIfOpen(conn,
@@ -436,12 +441,14 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
             }
             else{
                 logger.atError().log("StreamManagerReadMessages requires 5 arguments");
-                sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, "StreamManagerReadMessages requires 5 arguments"));
+                responseMessage.errorMsg = "StreamManagerReadMessages requires 5 arguments";
+                sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
             }
         }
         catch (Exception e){
-            logger.error(e.getMessage());//TODO: print proper error
-            sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, e.getMessage()));
+            logger.error("Error while reading messages:", e);
+            responseMessage.errorMsg = e.getMessage();
+            sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
         }
     }
 
