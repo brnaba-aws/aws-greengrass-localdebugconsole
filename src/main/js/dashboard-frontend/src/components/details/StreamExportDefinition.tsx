@@ -34,7 +34,7 @@ import StreamManagerResponseMessage from "../../util/StreamManagerResponseMessag
 
 interface StreamDefinitionProps {
   loadingFlagProps:boolean
-  addExportDefinitionCallbackProps: CallableFunction,
+  describeStreamCallbackPros: CallableFunction,
   streamProps: Stream
 }
 
@@ -47,7 +47,7 @@ enum ExportDefinitionActionType {
 
 const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
 
-    const {streamProps, loadingFlagProps} = props
+    const {streamProps, loadingFlagProps, describeStreamCallbackPros} = props
     const defaultContext = useContext(DefaultContext); 
     
 
@@ -79,14 +79,14 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
         iotMsgIdPrefix:"iot-analytics-prefix",
     };
     const defaultHttpExportDefinition =  {
-                identifier:"http-id",
-                uri:"",
-                batchSize:500,
-                batchIntervalMillis:60000,
-                priority:10,
-                startSequenceNumber:0,
-                disabled:false,
-                exportFormat:ExportFormat.RAW_NOT_BATCHED
+        identifier:"http-id",
+        uri:"",
+        batchSize:500,
+        batchIntervalMillis:60000,
+        priority:10,
+        startSequenceNumber:0,
+        disabled:false,
+        exportFormat:ExportFormat.RAW_NOT_BATCHED
     };
     const defaultS3ExportDefinition =  {
         identifier:"s3-id",
@@ -345,20 +345,23 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
     }
 
     function onClickDeleteExportDefinition () {
-        console.log('onClickDeleteExportDefinition');
         setViewModalConfirmExportDelete(true);
     }
 
     function onConfirmDeleteExportDefinition () {
         console.log('onConfirmDeleteExportDefinition');
-        setViewModalExportDefinitionKinesis(false);
+        setViewModalConfirmExportDelete(false);
+
+        if (selectedItems[activeTab]?.[0]) {
+            updateMessageStream(activeTab, selectedItems[activeTab]?.[0], ExportDefinitionActionType.DELETE);
+        }
     }
 
     function onClickUpdateExportDefinition () {  
         const tabToModalMap:any = 
         {
             kinesis: 'kinesis',
-            IotSitewise: 'IotSiteWise',
+            IotSitewise: 'IotSitewise',
             iotAnalytics: 'iotAnalytics',
             http: 'http',
             s3TaskExecutor: 's3TaskExecutor',
@@ -477,13 +480,13 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                     s3TaskExecutor: streamProps.messageStreamInfo.definition.exportDefinition.s3TaskExecutor
                 }
 
-                // Loop through the list of KinesisConfig objects
-                for (const iotSitewiseConfig of streamProps.messageStreamInfo.definition.exportDefinition?.kinesis || []) {
+                // Loop through the list of IoTSiteWiseConfig objects
+                for (const iotSitewiseConfig of streamProps.messageStreamInfo.definition.exportDefinition?.IotSitewise || []) {
                     if (iotSitewiseConfig.identifier === updatedIoTSitewiseExportDefinition.identifier) {
                         // If the identifier matches the predefined one,
                         if (actionType === ExportDefinitionActionType.UPDATE){
                             // push the update export definition
-                            messageStream.exportDefinition?.kinesis.push(updatedIoTSitewiseExportDefinition);
+                            messageStream.exportDefinition?.IotSitewise.push(updatedIoTSitewiseExportDefinition);
                         }
                         else if (actionType === ExportDefinitionActionType.DELETE){
                             //don't push anything
@@ -493,7 +496,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                         }
                     } else {
                         // If the identifier doesn't match, push the original entity
-                        messageStream.exportDefinition?.kinesis.push(iotSitewiseConfig);
+                        messageStream.exportDefinition?.IotSitewise.push(iotSitewiseConfig);
                     }
                 }
             }
@@ -519,7 +522,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
         SERVER.sendRequest({ call: APICall.streamManagerUpdateMessageStream, args: [JSON.stringify(messageStream)] }).then(
             (response:StreamManagerResponseMessage) => 
             {
-                console.log(response);
                 if (response.successful === true) {
                     defaultContext.addFlashItem!({
                         type: response.successful === true?'success':'error',
@@ -528,6 +530,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                     });
                     setErrorUpdateStreamFeedback('');
                     onDismiss();
+                    describeStreamCallbackPros();
                 } 
                 else {
                     if (response.errorMsg){
@@ -553,7 +556,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
 
     function setUpdateExportDefinition (exportType:string, exportDefinitionSelected:any) {
         const typeMappings:any = defaultExportDefinition;
-        console.log(exportType, exportDefinitionSelected);
 
         if (typeMappings.hasOwnProperty(exportType)) {
             const typeProperties = typeMappings[exportType];
@@ -633,18 +635,19 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
         }
         if (selectedItems[activeTab][0])
         {
-            setUpdateExportDefinition(activeTab, selectedItems[activeTab][0]);
+            setUpdateExportDefinition(activeTab, defaultExportDefinition[activeTab]);
         }
         else {
             setUpdateExportDefinition(activeTab, defaultExportDefinition[activeTab]);
         }
         setErrorUpdateStreamFeedback('')
         setViewModalConfirmExportDelete(false);
-        setViewModalAddExportDefinition(false)
+        setViewModalAddExportDefinition(false);
+        setSelectedItems(initialSelectedItems);
     }
 
     useEffect(() => {
-    }, []);
+    }, [activeTab]);
 
     function reducer(state:any, action:any) {
         const typeMappings:any = {
@@ -761,7 +764,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                                     ariaLabel="Update"
                                     onClick={ (e:any) => onClickConfirmUpdateExportDefinition(isNewDefinition)}
                                 >
-                                    Update
+                                    {isNewDefinition === true ? 'Add':'Update'}
                                 </Button>
                             </SpaceBetween>
                         }
@@ -937,6 +940,42 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
             generateExportDefinitionModal(exportType, isVisible, headerText, true, updateExportDefinition[exportType],"", onClickConfirmUpdateExportDefinition, onDismiss)
         );
     }
+
+    function generateModalContentDeleteExport(){
+        return (
+            <Modal
+                key={"deleteExportDefinition"}
+                onDismiss={ (e) => onDismiss()}
+                visible={viewModalConfirmExportDelete}
+                size="medium"
+                footer={
+                    <Box float="right">
+                    <SpaceBetween direction="horizontal" size="xs">
+                        <Button 
+                            variant="link" 
+                            onClick={onDismiss}
+                            ariaDescribedby={"Cancel"}
+                            ariaLabel="Cancel"
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            variant="primary"
+                            onClick={onConfirmDeleteExportDefinition}
+                            ariaDescribedby={"Delete"}
+                            ariaLabel="Delete"
+                        >
+                            Delete
+                        </Button>
+                    </SpaceBetween>
+                    </Box>
+                }
+                header={'Delete export definition?'}
+                >
+                Are you sure you want to delete this export?
+            </Modal>
+        );
+    }
       
       
 
@@ -970,7 +1009,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                         }}
                         iconName="edit"
                         wrapText={false}
-                        disabled={loadingFlagProps || (selectedItems['kinesis'].length===0 && selectedItems['IotSitewise'].length===0)}
+                        disabled={loadingFlagProps || (selectedItems[activeTab].length===0)}
                     >
                         Update export
                     </Button>
@@ -1010,6 +1049,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
             {generateModalContentHttp()}
             {generateModalContents3TaskExecutor()}
             {generateModalContentNewExport()}
+            {generateModalContentDeleteExport()}
             </>
         }
         
