@@ -71,7 +71,13 @@ export const getExportType = (identifier: string, streamDetails: Stream | undefi
 
   if (streamDetails) {
     for (const exportType of exportTypes) {
-      const exportDefinitionArray = streamDetails.definition.exportDefinition[exportType.key];
+      const exportDefinitionArray = streamDetails.messageStreamInfo.definition.exportDefinition?streamDetails.messageStreamInfo.definition.exportDefinition[exportType.key]:{
+        kinesis:[],
+        http:[],
+        iotAnalytics: [],
+        IotSitewise: [],
+        s3TaskExecutor: []
+    };
       if (exportDefinitionArray) {
         const match = exportDefinitionArray.find(
           (exportDefinition:any) => exportDefinition.identifier === identifier
@@ -104,12 +110,13 @@ export enum ExportFormat {
 export interface KinesisConfig {
   identifier:string,
   kinesisStreamName:string,
-  batchSize:number,
-  batchIntervalMillis:number,
+  batchSize?:number,
+  batchIntervalMillis?:number,
   priority:number,
   startSequenceNumber:number,
   disabled:boolean
 }
+
 
 export interface HTTPConfig {
   identifier:string,
@@ -131,15 +138,15 @@ export interface IoTSiteWiseConfig {
   disabled:boolean
 }
 
-interface StatusLevel {
-  ERROR: 0,
-  WARN: 1,
-  INFO: 2,
-  DEBUG: 3,
-  TRACE: 4,
+export enum StatusLevel {
+  ERROR=0,
+  WARN=1,
+  INFO=2,
+  DEBUG=3,
+  TRACE=4,
 }
 
-interface StatusConfig {
+export interface StatusConfig {
   statusLevel:StatusLevel,
   statusStreamName: string
 }
@@ -152,12 +159,12 @@ export interface S3ExportTaskExecutorConfig {
   statusConfig:StatusConfig
 }
 
-export enum PersistenceType {
+export enum Persistence {
     File,
     Memory
 }
 
-export enum StrategyType {
+export enum StrategyOnFull {
   RejectNewData=0,
   OverwriteOldestData=1
 }
@@ -177,17 +184,6 @@ interface StorageStatus {
     totalBytes: number;
 }
 
-interface Definition {
-    exportDefinition: ExportDefinition;
-    flushOnWrite: boolean;
-    maxSize: number;
-    name: string;
-    persistence: PersistenceType;
-    strategyOnFull: StrategyType;
-    streamSegmentSize: number;
-    timeToLiveMillis: number;
-}
-
 export interface ExportStatus {
     errorMessage: string;
     exportConfigIdentifier: string;
@@ -197,11 +193,14 @@ export interface ExportStatus {
     lastExportedSequenceNumber: number;
 }
 
+export interface MessageStreamInfo {
+  definition: MessageStreamDefinition;
+  storageStatus: StorageStatus;
+  exportStatuses: ExportStatus[];
+}
 export interface Stream {
     key: number;
-    definition: Definition,
-    exportStatuses: ExportStatus[],
-    storageStatus: StorageStatus,
+    messageStreamInfo:MessageStreamInfo;
 }
 
 export interface StreamManagerComponentConfiguration {
@@ -223,24 +222,18 @@ export interface Message {
   payload: Uint8Array | null; // Use Uint8Array or null to represent byte[] or optional
 }
 
-export interface StreamManagerResponseMessage {
-  successful: boolean
-  errorMsg: string
-}
-
-
 export interface MessageStreamDefinition {
   name: string,
   maxSize: number,
   streamSegmentSize: number,
   timeToLiveMillis?: number,
-  strategyOnFull: StrategyType,
-  persistence: PersistenceType ,
+  strategyOnFull: StrategyOnFull,
+  persistence: Persistence ,
   flushOnWrite: boolean,
-  exportDefinition?: ExportDefinition,
+  exportDefinition: ExportDefinition,
 }
 
-export function validateMessageStreamDefinition(messageStreamDefinition:MessageStreamDefinition, setErrorCallback:any){
+export function validateMessageStreamDefinition(messageStreamDefinition:MessageStreamDefinition, setErrorcallbackError:any){
   
 }
 export function StreamManagerReducer(state:any, action:any) {
@@ -248,13 +241,13 @@ export function StreamManagerReducer(state:any, action:any) {
       case "set_name":
           const alphanumericRegex = /^[a-zA-Z0-9\s,.\-_]+$/;
           if (action.payload.length === 0) {
-            action.callback('Name cannot be empty.');
+            action.callbackError('Name cannot be empty.');
           } else if (action.payload.length < 1 || action.payload.length > 255) {
-            action.callback('Name length must be between 1 and 255 characters.');
+            action.callbackError('Name length must be between 1 and 255 characters.');
           } else if (!alphanumericRegex.test(action.payload)) {
-            action.callback('Name must be alphanumeric and can include spaces, commas, periods, hyphens, and underscores.');
+            action.callbackErrorError('Name must be alphanumeric and can include spaces, commas, periods, hyphens, and underscores.');
           } else {
-            action.callback('');
+            action.callbackError('');
           }
           return {
               ...state,
@@ -262,10 +255,10 @@ export function StreamManagerReducer(state:any, action:any) {
           };
       case "set_maxSize":
           if (parseInt(action.payload, 10) < 1024) {
-            action.callback('Max size cannot be lower than 1024 bytes.');
+            action.callbackError('Max size cannot be lower than 1024 bytes.');
           }
           else {
-            action.callback('');
+            action.callbackError('');
           }
           return {
               ...state,
@@ -273,10 +266,10 @@ export function StreamManagerReducer(state:any, action:any) {
           };
       case "set_streamSegmentSize":
           if (parseInt(action.payload, 10) < 1024) {
-            action.callback('stream segment size cannot be lower than 1024 bytes.');
+            action.callbackError('stream segment size cannot be lower than 1024 bytes.');
           }
           else {
-            action.callback('');
+            action.callbackError('');
           }
           return {
               ...state,
@@ -298,13 +291,13 @@ export function StreamManagerReducer(state:any, action:any) {
               flushOnWrite: parseInt(action.payload)===0?true:false
           };
       case "clear":
-          action.callback('');
+          action.callbackError('');
           return {
               name: "new-stream",
               maxSize:256*1024*1024,
               streamSegmentSize: 16*1024*1024,
-              strategyOnFull: StrategyType.OverwriteOldestData,
-              persistence: PersistenceType.File, 
+              strategyOnFull: StrategyOnFull.OverwriteOldestData,
+              persistence: Persistence.File, 
               flushOnWrite: false,
               exportDefinition: {
                   kinesis:[],
@@ -314,6 +307,7 @@ export function StreamManagerReducer(state:any, action:any) {
                   s3TaskExecutor: []
               }
           };
+
       case "set_all":
         return {
             name: action.payload.name,
