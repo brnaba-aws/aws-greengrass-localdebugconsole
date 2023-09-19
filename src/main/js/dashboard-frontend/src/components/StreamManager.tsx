@@ -29,20 +29,20 @@ import {
 import { ConfigMessage } from "../util/CommUtils";
 
 import {
-    PersistenceType, 
-    StrategyType, 
+    StrategyOnFull, 
     formatBytes, 
     getExportDefinitionType,
     Stream, 
     StreamManagerComponentConfiguration, 
-    StreamManagerResponseMessage,
-    StreamManagerReducer
+    StreamManagerReducer,
+    Persistence
 } from "../util/StreamManagerUtils";
 import { SERVER, DefaultContext } from "../index";
 import { APICall } from "../util/CommUtils";
 import { ComponentItem } from "../util/ComponentItem";
 import { STREAM_MANAGER_ROUTE_HREF_PREFIX } from "../util/constNames";
 import PaginationRendering from "../util/PaginationRendering";
+import StreamManagerResponseMessage from "../util/StreamManagerResponseMessage";
 
 function StreamManager() {
 
@@ -56,8 +56,8 @@ function StreamManager() {
         name: "new-stream",
         maxSize: 256*1024*1024,
         streamSegmentSize: 16*1024*1024,
-        strategyOnFull: StrategyType.OverwriteOldestData,
-        persistence: PersistenceType.File, 
+        strategyOnFull: StrategyOnFull.OverwriteOldestData,
+        persistence: Persistence.File, 
         flushOnWrite: false,
         exportDefinition: {
             kinesis:[],
@@ -129,62 +129,69 @@ function StreamManager() {
             {
                 id: "key",
                 header: "key",
-                cell: (e:Stream) => e.definition.name
+                cell: (e:Stream) => e.messageStreamInfo.definition.name
             },
             {
                 id: "name",
                 header: "Name",
-                cell: (e:Stream) => <Link href={`${STREAM_MANAGER_ROUTE_HREF_PREFIX}${e.definition.name}`}>{e.definition.name}</Link>
+                cell: (e:Stream) => <Link href={`${STREAM_MANAGER_ROUTE_HREF_PREFIX}${e.messageStreamInfo.definition.name}`}>{e.messageStreamInfo.definition.name}</Link>
             },
             {
                 id: "maxSize",
                 header: "Max Size",
-                cell: (e:Stream) => formatBytes(e.definition.maxSize)
+                cell: (e:Stream) => formatBytes(e.messageStreamInfo.definition.maxSize)
             },
             {
                 id: "streamSegmentSize",
                 header: "Segment Size",
-                cell: (e:Stream) => formatBytes(e.definition.streamSegmentSize)
+                cell: (e:Stream) => formatBytes(e.messageStreamInfo.definition.streamSegmentSize)
             },
             {
                 id: "totalBytes",
                 header: "Total Size",
-                cell: (e:Stream) => formatBytes(e.storageStatus.totalBytes)
+                cell: (e:Stream) => formatBytes(e.messageStreamInfo.storageStatus.totalBytes)
             },
             {
                 id: "persistence",
                 header: "Persistence",
-                cell: (e:Stream) => (e.definition.persistence === 0 ? "File":"Memory")
+                cell: (e:Stream) => (e.messageStreamInfo.definition.persistence === 0 ? "File":"Memory")
             },
             {
                 id: "strategyOnFull",
                 header: "Strategy",
-                cell: (e:Stream) => (e.definition.strategyOnFull === 0 ? "RejectNewData":"OverwriteOldestData")
+                cell: (e:Stream) => (e.messageStreamInfo.definition.strategyOnFull === 0 ? "RejectNewData":"OverwriteOldestData")
             },
             {
                 id: "oldestSequenceNumber",
                 header: "Oldest sequence number",
-                cell: (e:Stream) => e.storageStatus.oldestSequenceNumber
+                cell: (e:Stream) => e.messageStreamInfo.storageStatus.oldestSequenceNumber
             },
             {
                 id: "newestSequenceNumber",
                 header: "Newest sequence number",
-                cell: (e:Stream) => e.storageStatus.newestSequenceNumber
+                cell: (e:Stream) => e.messageStreamInfo.storageStatus.newestSequenceNumber
             },
             {
                 id: "timeToLiveMillis",
                 header: "TTL on message",
-                cell: (e:Stream) => (!e.definition.timeToLiveMillis?'None':e.definition.timeToLiveMillis)
+                cell: (e:Stream) => (!e.messageStreamInfo.definition.timeToLiveMillis?'None':e.messageStreamInfo.definition.timeToLiveMillis)
             },
             {
                 id: "flushOnWrite",
                 header: "Flush on write",
-                cell: (e:Stream) => (e.definition.flushOnWrite?'true':'false')
+                cell: (e:Stream) => (e.messageStreamInfo.definition.flushOnWrite?'true':'false')
             },
             {
                 id: "exportDefinition",
                 header: "Export definition",
-                cell: e => getExportDefinitionType(e.definition.exportDefinition)
+                cell: e => getExportDefinitionType(e.messageStreamInfo.definition.exportDefinition || {
+                                                                                                        kinesis:[],
+                                                                                                        http:[],
+                                                                                                        iotAnalytics: [],
+                                                                                                        IotSitewise: [],
+                                                                                                        s3TaskExecutor: []
+                                                                                                    }
+                                                    )
             }
     ];
 
@@ -264,15 +271,33 @@ function StreamManager() {
 
     function describeStream(streamName:string, index:number){
         SERVER.sendRequest({ call: APICall.streamManagerDescribeStream, args: [streamName] }).then(
-            (response) => {
+            (response:StreamManagerResponseMessage) => {
                 if (response) {
-                    const item:Stream = response;
-                    item.key = index;
-                    setStreamManagerStreamsList(prevList => [...prevList, item]);
+                    if (response.successful){
+                        if (response.messageStreamInfo){
+                            const item:Stream = {
+                                key: index, 
+                                messageStreamInfo: response.messageStreamInfo
+                            };
+                            item.key = index;
+                            setStreamManagerStreamsList(prevList => [...prevList, item]);
+                            setRequestStreamsListInProgress(false);
+                        }
+                        else{
+                            setRequestStreamsListInProgress(false);
+                        }
+                    }
+                    else{
+                        setRequestStreamsListInProgress(false);
+                    }
+                }
+                else {
+                    setRequestStreamsListInProgress(false);
                 }
             },
             (reason) => {
               console.log("Error in [StreamManager]: " + reason);
+              setRequestStreamsListInProgress(false);
             }
           );
     }
@@ -305,13 +330,20 @@ function StreamManager() {
         setStreamManagerStreamsList([]);
         setRequestStreamsListInProgress(true);
         SERVER.sendRequest({ call: APICall.streamManagerListStreams, args: [] }).then(
-            (response) => {
+            (response:StreamManagerResponseMessage) => {
                 if (response){
-                    response.forEach( (item:string, index:number) => {
-                        describeStream(item, index); 
-                    });
+                    if (response.successful){
+                        response.streamsList.forEach( (item:string, index:number) => {
+                            describeStream(item, index); 
+                        });
+                    }
+                    else {
+                        setRequestStreamsListInProgress(false);
+                    }
                 }
-                setRequestStreamsListInProgress(false);
+                else {
+                    setRequestStreamsListInProgress(false);
+                }
             },
             (reason) => {
               console.log("Error in [StreamManager]: " + reason);
@@ -319,6 +351,7 @@ function StreamManager() {
             }
         ).catch((reason)=>{
             console.log(reason)
+            setRequestStreamsListInProgress(false);
         });
     }
 
@@ -339,7 +372,7 @@ function StreamManager() {
 
     const confirmDelete = () => {
         if (selectedStream){
-            deleteMessageStream(selectedStream[0].definition.name)
+            deleteMessageStream(selectedStream[0].messageStreamInfo.definition.name)
             setViewConfirmDelete(false);
             setSelectedStream([]);
         }
@@ -365,7 +398,7 @@ function StreamManager() {
                     listStreams();
                 }
                 else {
-                    setCreateStreamErrorText(response.errorMsg);
+                    setCreateStreamErrorText(response.errorMsg?response.errorMsg:'Unknown error');
                 }
             },
             (reason) => {
@@ -408,9 +441,9 @@ function StreamManager() {
                     loading={requestStreamsListInProgress}
                     selectedItems={selectedStream}
                     loadingText="Loading streams"
-                    items={streamManagerStreamsList.slice((currentPageIndex-1)*(preferences.pageSize || 10),(currentPageIndex-1)*(preferences.pageSize || 10) + (preferences.pageSize || 10)).filter((s:Stream) => s.definition.name.toLowerCase().includes(filteringText.toLowerCase()))}
+                    items={streamManagerStreamsList.slice((currentPageIndex-1)*(preferences.pageSize || 10),(currentPageIndex-1)*(preferences.pageSize || 10) + (preferences.pageSize || 10)).filter((s:Stream) => s.messageStreamInfo.definition.name.toLowerCase().includes(filteringText.toLowerCase()))}
                     onSelectionChange={(e: any) => {
-                        setSelectedStream(streamManagerStreamsList.filter((s:Stream) => s.definition.name === e.detail.selectedItems[0].definition.name))
+                        setSelectedStream(streamManagerStreamsList.filter((s:Stream) => s.messageStreamInfo.definition.name === e.detail.selectedItems[0].messageStreamInfo.definition.name))
                     }}
                     columnDefinitions={columnDefinitions}
                     visibleColumns={preferences.visibleContent}
@@ -519,7 +552,7 @@ function StreamManager() {
                                     </SpaceBetween>
                                     </Box>
                                 }
-                                header={selectedStream?.length? 'Delete ' + selectedStream[0].definition.name : ''}
+                                header={selectedStream?.length? 'Delete ' + selectedStream[0].messageStreamInfo.definition.name : ''}
                                 >
                                 Are you sure you want to delete the stream?
                             </Modal>
@@ -600,7 +633,7 @@ function StreamManager() {
                                                             { label: "OverwriteOldestData", value: "1" },
                                                             { label: "RejectNewData", value: "0" }
                                                         ]}
-                                                        selectedOption={newStream.strategyOnFull===StrategyType.OverwriteOldestData?{ label: "OverwriteOldestData", value: "1" }:{ label: "RejectNewData", value: "0" }}
+                                                        selectedOption={newStream.strategyOnFull===StrategyOnFull.OverwriteOldestData?{ label: "OverwriteOldestData", value: "1" }:{ label: "RejectNewData", value: "0" }}
                                                         onChange={({ detail }) => dispatch({type: 'set_strategyOnFull', payload: detail.selectedOption.value, callback:setCreateStreamErrorText})}
                                                         disabled={false}
                                                     />
@@ -615,12 +648,12 @@ function StreamManager() {
                                                             { label: "File", value: "0" },
                                                             { label: "Memory", value: "1" }
                                                         ]}
-                                                        selectedOption={newStream.persistence===PersistenceType.File?{ label: "File", value: "0" }:{ label: "Memory", value: "1" }}
+                                                        selectedOption={newStream.persistence===Persistence.File?{ label: "File", value: "0" }:{ label: "Memory", value: "1" }}
                                                         onChange={({ detail }) => dispatch({type: 'set_persistence', payload: detail.selectedOption.value, callback:setCreateStreamErrorText})}
                                                         disabled={false}
                                                     />
                                                 </FormField>
-                                                {newStream.persistence===PersistenceType.File && <FormField 
+                                                {newStream.persistence===Persistence.File && <FormField 
                                                     label="Flush on write" 
                                                     constraintText="Waits for the filesystem to complete the write for every message. This is safer, but slower. Default is false."
                                                 >
