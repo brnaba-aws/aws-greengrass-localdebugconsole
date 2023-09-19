@@ -282,7 +282,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
             {
                 id: "startSequenceNumber",
                 header: "Start sequence number",
-                cell: (e:HTTPConfig) => e.startSequenceNumber || '-'
+                cell: (e:HTTPConfig) => e.startSequenceNumber
             },
             {
                 id: "priority",
@@ -410,6 +410,14 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
             const iotSitewiseIndexToUpdate:any = streamProps.messageStreamInfo.definition.exportDefinition.IotSitewise.findIndex(
                 (item:IoTSiteWiseConfig) => item.identifier.toString() === exportDefinition.identifier.toString());
 
+            // Find the index of the item to update
+            const httpIndexToUpdate:any = streamProps.messageStreamInfo.definition.exportDefinition.http.findIndex(
+                (item:HTTPConfig) => item.identifier.toString() === exportDefinition.identifier.toString());
+
+                // Find the index of the item to update
+                const iotAnalyticsIndexToUpdate:any = streamProps.messageStreamInfo.definition.exportDefinition.iotAnalytics.findIndex(
+                    (item:IoTAnalyticsConfig) => item.identifier.toString() === exportDefinition.identifier.toString());
+
             // Check if the identifier was found in kinesis
             if (kinesisIndexToUpdate !== -1) {
                 const updatedKinesisExportDefinition:any = {
@@ -497,6 +505,96 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                     } else {
                         // If the identifier doesn't match, push the original entity
                         messageStream.exportDefinition?.IotSitewise.push(iotSitewiseConfig);
+                    }
+                }
+            } else if (iotAnalyticsIndexToUpdate !== -1){
+                const updatedIotAnalyticsExportDefinition:IoTAnalyticsConfig = {
+                    ...streamProps.messageStreamInfo.definition.exportDefinition.iotAnalytics[iotAnalyticsIndexToUpdate],
+                    // Update the properties you need here
+                    batchSize:exportDefinition['batchSize'],
+                    ...(exportDefinition['batchSize'] > 0  && {
+                        batchSize: exportDefinition['batchSize'],
+                    }),
+                    ...(exportDefinition['batchIntervalMillis'] > 0 && {
+                        batchIntervalMillis: exportDefinition['batchIntervalMillis'],
+                    }),
+                    priority:exportDefinition['priority'],
+                    startSequenceNumber:exportDefinition['startSequenceNumber'],
+                    disabled:exportDefinition['disabled'],
+                    iotChannel:exportDefinition['iotChannel'],
+                    iotMsgIdPrefix:exportDefinition['iotMsgIdPrefix'],
+                };
+
+                messageStream.exportDefinition = {
+                    kinesis:streamProps.messageStreamInfo.definition.exportDefinition.kinesis,
+                    http:streamProps.messageStreamInfo.definition.exportDefinition.http,
+                    iotAnalytics: [],
+                    IotSitewise: streamProps.messageStreamInfo.definition.exportDefinition.IotSitewise,
+                    s3TaskExecutor: streamProps.messageStreamInfo.definition.exportDefinition.s3TaskExecutor
+                }
+
+                // Loop through the list of KinesisConfig objects
+                for (const exportConfig of streamProps.messageStreamInfo.definition.exportDefinition.iotAnalytics || []) {
+                    if (exportConfig.identifier === updatedIotAnalyticsExportDefinition.identifier) {
+                        // If the identifier matches the predefined one,
+                        if (actionType === ExportDefinitionActionType.UPDATE){
+                            // push the update export definition
+                            messageStream.exportDefinition.iotAnalytics.push(updatedIotAnalyticsExportDefinition);
+                        }
+                        else if (actionType === ExportDefinitionActionType.DELETE){
+                            //don't push anything
+                        }
+                        else {
+                            console.log('unknown actionType');
+                        }
+                    } else {
+                        // If the identifier doesn't match, push the original entity
+                        messageStream.exportDefinition.iotAnalytics.push(exportConfig);
+                    }
+                }
+            } else if (httpIndexToUpdate !== -1){
+                const updatedHttpExportDefinition:any = {
+                    ...streamProps.messageStreamInfo.definition.exportDefinition?.http[httpIndexToUpdate],
+                    // Update the properties you need here
+                    uri: exportDefinition['uri'],
+                    exportFormat: exportDefinition['exportFormat'],
+                    batchSize:exportDefinition['batchSize'],
+                    ...(exportDefinition['batchSize'] > 0  && {
+                        batchSize: exportDefinition['batchSize'],
+                    }),
+                    ...(exportDefinition['batchIntervalMillis'] > 0 && {
+                        batchIntervalMillis: exportDefinition['batchIntervalMillis'],
+                    }),
+                    priority:exportDefinition['priority'],
+                    startSequenceNumber:exportDefinition['startSequenceNumber'],
+                    disabled:exportDefinition['disabled']
+                };
+
+                messageStream.exportDefinition = {
+                    kinesis:streamProps.messageStreamInfo.definition.exportDefinition.kinesis,
+                    http:[],
+                    iotAnalytics: streamProps.messageStreamInfo.definition.exportDefinition.iotAnalytics,
+                    IotSitewise: streamProps.messageStreamInfo.definition.exportDefinition.IotSitewise,
+                    s3TaskExecutor: streamProps.messageStreamInfo.definition.exportDefinition.s3TaskExecutor
+                }
+
+                // Loop through the list of KinesisConfig objects
+                for (const exportConfig of streamProps.messageStreamInfo.definition.exportDefinition.http || []) {
+                    if (exportConfig.identifier === updatedHttpExportDefinition.identifier) {
+                        // If the identifier matches the predefined one,
+                        if (actionType === ExportDefinitionActionType.UPDATE){
+                            // push the update export definition
+                            messageStream.exportDefinition?.http.push(updatedHttpExportDefinition);
+                        }
+                        else if (actionType === ExportDefinitionActionType.DELETE){
+                            //don't push anything
+                        }
+                        else {
+                            console.log('unknown actionType');
+                        }
+                    } else {
+                        // If the identifier doesn't match, push the original entity
+                        messageStream.exportDefinition.http.push(exportConfig);
                     }
                 }
             }
@@ -647,7 +745,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
     }
 
     useEffect(() => {
-    }, [activeTab]);
+    }, [activeTab, streamProps]);
 
     function reducer(state:any, action:any) {
         const typeMappings:any = {
@@ -669,34 +767,34 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                 disabled: 'disabled',
             },
             iotAnalytics:{
-                identifier:"string",
-                batchSize:500,
-                batchIntervalMillis:0,
-                priority:10,
-                startSequenceNumber:0,
-                disabled:false,
-                iotChannel:"string",
-                iotMsgIdPrefix:"string",
+                identifier:"identifier",
+                batchSize:'batchSize',
+                batchIntervalMillis:'batchIntervalMillis',
+                priority:'priority',
+                startSequenceNumber:'startSequenceNumber',
+                disabled: 'disabled',
+                iotChannel:"iotChannel",
+                iotMsgIdPrefix:"iotMsgIdPrefix",
             },
             http:{
-                identifier:"",
-                uri:"",
-                batchSize:500,
-                batchIntervalMillis:0,
-                priority:10,
-                startSequenceNumber:0,
-                disabled:false,
-                exportFormat:ExportFormat.RAW_NOT_BATCHED
+                exportFormat:"exportFormat",
+                identifier: 'identifier',
+                batchSize: 'batchSize',
+                batchIntervalMillis: 'batchIntervalMillis',
+                priority: 'priority',
+                startSequenceNumber: 'startSequenceNumber',
+                disabled: 'disabled',
+                uri:"uri"
             },
             s3TaskExecutor:
             {
-                identifier:'',
-                sizeThresholdForMultipartUploadBytes:5242880,
-                priority:10,
-                disabled:false,
+                identifier: 'identifier',
+                sizeThresholdForMultipartUploadBytes:'sizeThresholdForMultipartUploadBytes',
+                priority: 'priority',
+                disabled: 'disabled',
                 statusConfig:{
-                    statusLevel: StatusLevel.ERROR,
-                    statusStreamName: ''
+                    statusLevel:"statusLevel",
+                    statusStreamName: "statusStreamName"
                 }
             }
         };
@@ -734,7 +832,9 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                                             onDismiss:any) => {
 
         const isKinesis = exportType === 'kinesis';
-        const isS3TaskExecutor = exportType === 's3TaskExecutor'
+        const isS3TaskExecutor = exportType === 's3TaskExecutor';
+        const isIotAnalytics = exportType === 'iotAnalytics';
+        const isHttp = exportType === 'http';
 
         try {return (
             <Modal
@@ -794,8 +894,57 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                                         />
                                     </FormField>
                                 </>
-                            )}  
-
+                            )}
+                        {/* Conditional form fields for IoT Analytics*/}
+                            {isIotAnalytics && (
+                                <>
+                                    <FormField 
+                                        label="IoT Analytics channel"
+                                    >
+                                        <Input
+                                            value={exportDefinition.iotChannel}
+                                            onChange={(event) => setUpdateExportDefinition(exportType, {'iotChannel':event.detail.value})}
+                                            disabled={false}
+                                        />
+                                    </FormField>
+                                    <FormField 
+                                        label="IoT message id prefix"
+                                    >
+                                        <Input
+                                            value={exportDefinition.iotMsgIdPrefix}
+                                            onChange={(event) => setUpdateExportDefinition(exportType, {'iotMsgIdPrefix':event.detail.value})}
+                                            disabled={false}
+                                        />
+                                    </FormField>
+                                </>
+                            )}
+                        {/* Conditional form fields for IoT Analytics*/}
+                        {isHttp && (
+                                <>
+                                    <FormField 
+                                        label="HTTP Uri"
+                                    >
+                                        <Input
+                                            value={exportDefinition.uri}
+                                            onChange={(event) => setUpdateExportDefinition(exportType, {'uri':event.detail.value})}
+                                            disabled={false}
+                                        />
+                                    </FormField>
+                                    <FormField 
+                                        label="Export format"
+                                    >
+                                        <Select
+                                            options={[
+                                                { label: "RAW NOT BATCHED", value: "0" },
+                                                { label: "JSON BATCHED", value: "1" }
+                                            ]}
+                                        selectedOption={exportDefinition.exportFormat===ExportFormat.RAW_NOT_BATCHED?{ label: "RAW NOT BATCHED", value: "0" }:{ label: "JSON BATCHED", value: "1" }}
+                                        onChange={({ detail }) => setUpdateExportDefinition(exportType, {'exportFormat':detail.selectedOption.value==="0"?ExportFormat.RAW_NOT_BATCHED:ExportFormat.JSON_BATCHED})}
+                                        disabled={false}
+                                    />
+                                    </FormField>
+                                </>
+                            )}
                         {/* Common form fields */}
                         {
                             isS3TaskExecutor===false && (
