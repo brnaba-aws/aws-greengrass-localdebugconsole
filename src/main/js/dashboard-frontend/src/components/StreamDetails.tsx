@@ -517,7 +517,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         {streamDetails && 
                             <StreamExportDefinition streamProps={streamDetails} 
                                 loadingFlagProps={describeStreamRequestInProgress}
-                                addExportDefinitionCallbackProps={onClickUpdateExportDefinition}
+                                describeStreamCallbackPros={onClickRefresh}
                             >
                             </StreamExportDefinition>
                         }
@@ -867,7 +867,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     streamDetails && 
                         <StreamExportDefinition streamProps={streamDetails} 
                             loadingFlagProps={false}
-                            addExportDefinitionCallbackProps={onClickUpdateExportDefinition}
+                            describeStreamCallbackPros={onClickRefresh}
                         >
                         </StreamExportDefinition>
                     }
