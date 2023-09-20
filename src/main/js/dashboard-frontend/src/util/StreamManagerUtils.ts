@@ -19,7 +19,7 @@ export function getExportDefinitionType(exportDefinition: ExportDefinition): str
     exportTypes.push('Kinesis');
   }
   if (exportDefinition.http && exportDefinition.http.length > 0) {
-    exportTypes.push('HTTPS');
+    exportTypes.push('HTTP');
   }
   if (exportDefinition.iotAnalytics && exportDefinition.iotAnalytics.length > 0) {
     exportTypes.push('IoT Analytics');
