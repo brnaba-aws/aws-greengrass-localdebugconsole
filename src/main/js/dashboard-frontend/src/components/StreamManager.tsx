@@ -250,19 +250,16 @@ function StreamManager() {
                                         })
                                     },
                                     (reason) => {
-                                        console.log("Error in [StreamManager]: " + reason);
                                     }
                                 );
                             }
                         },
                         (reason) => {
-                          console.log("Error in [StreamManager]: " + reason);
                         }
                       );
                 }
             },
             (reason) => {
-                console.log("Error in [StreamManager]: " + reason);
             }
         );
     }
@@ -296,7 +293,6 @@ function StreamManager() {
                 }
             },
             (reason) => {
-              console.log("Error in [StreamManager]: " + reason);
               setRequestStreamsListInProgress(false);
             }
           );
@@ -315,7 +311,6 @@ function StreamManager() {
                 listStreams();
             },
             (reason) => {
-                console.log("Error in [StreamManager]: " + reason);
                 setRequestStreamsListInProgress(false);
                 defaultContext.addFlashItem!({
                     type: 'error',
@@ -346,11 +341,9 @@ function StreamManager() {
                 }
             },
             (reason) => {
-              console.log("Error in [StreamManager]: " + reason);
               setRequestStreamsListInProgress(false);
             }
         ).catch((reason)=>{
-            console.log(reason)
             setRequestStreamsListInProgress(false);
         });
     }
@@ -402,7 +395,6 @@ function StreamManager() {
                 }
             },
             (reason) => {
-              console.log("Error in [StreamManager]: " + reason);
             }
           );
     }

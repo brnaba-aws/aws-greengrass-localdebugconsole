@@ -295,7 +295,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                 }
             },
             (reason) => {
-                console.log("Error in [StreamManager]: " + reason);
                 setDescribeStreamRequestInProgres(false);
             }
         );
@@ -329,7 +328,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     },
                     (reason) => {
                         setReadMessageStreamRequestInProgres(false);
-                        console.log("Error in [StreamManager]: " + reason);
                     }
                 );
             }
@@ -355,7 +353,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     },
                     (reason) => {
                         setReadMessageStreamRequestInProgres(false);
-                        console.log("Error in [StreamManager]: " + reason);
                     }
                 );
             }
@@ -388,7 +385,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                 }
             },
             (reason) => {
-                console.log("Error in [StreamManager]: " + reason);
             }
         );
     }
@@ -409,7 +405,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     setViewUpdateDefinition(false)
                 },
                 (reason) => {
-                    console.log("Error in [StreamManager]: " + reason);
                 }
             );
         }
