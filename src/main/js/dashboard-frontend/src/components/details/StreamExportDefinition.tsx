@@ -52,7 +52,13 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
 
     const {streamProps, loadingFlagProps, describeStreamCallbackPros} = props
     const defaultContext = useContext(DefaultContext); 
-    let history = useHistory();    
+    const optionsStatusLevel:any = [
+        { label: "Error", value: "0" },
+        { label: "Warning", value: "1" },
+        { label: "Information", value: "2" },
+        { label: "Debug", value: "3" },
+        { label: "Trace", value: "4" }
+    ];
 
     const defaultKinesisExportDefinition =  {
                 identifier:"kinesis-id",
@@ -1018,15 +1024,9 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                                         label="Status level"
                                     >
                                         <Select
-                                            options={[
-                                                { label: "Error", value: "0" },
-                                                { label: "Warning", value: "1" },
-                                                { label: "Information", value: "3" },
-                                                { label: "Debug", value: "4" },
-                                                { label: "Trace", value: "5" }
-                                            ]}
-                                            selectedOption={exportDefinition.statusConfig.statusLevel===0?{ label: "Error", value: "0" }:{ label: "Error", value: "0" }}
-                                            onChange={({ detail }) => setUpdateExportDefinition(exportType, {'statusConfig':{statusStreamName:updateExportDefinition[activeTab].statusConfig.statusStreamName, statusLevelText:detail.selectedOption.value}})}
+                                            options={optionsStatusLevel}
+                                            selectedOption={optionsStatusLevel.filter((e:any) => e.value===exportDefinition.statusConfig.statusLevel.toString())[0]}
+                                            onChange={({ detail }) => {console.log(parseInt(exportDefinition.statusConfig.statusLevel)); console.log(parseInt(detail.selectedOption.value || "0")); setUpdateExportDefinition(exportType, {'statusConfig':{statusStreamName:updateExportDefinition[activeTab].statusConfig.statusStreamName, statusLevel:parseInt(detail.selectedOption.value || "0")}})}}
                                             disabled={false}
                                         />
                                         

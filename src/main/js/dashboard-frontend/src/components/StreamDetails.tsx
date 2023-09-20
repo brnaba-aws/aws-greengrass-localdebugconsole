@@ -54,7 +54,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
     const [filteringText, setFilteringText] = useState("");
     const [viewAppendMessage, setViewAppendMessage] = useState(false);
     const [viewUpdateDefinition, setViewUpdateDefinition] = useState(false);
-    const [viewUpdateExportDefinition, setViewUpdateExportDefinition] = useState(false);
     const [messageToAppend, setMessageToAppend] = useState("");
     const defaultContext = useContext(DefaultContext);
     const [updateStreamErrorText, setUpdateStreamErrorText] = useState("");
@@ -262,19 +261,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     exportDefinition: streamDetails?.messageStreamInfo.definition.exportDefinition
                 }, callbackError:setUpdateStreamErrorText});
                 break;
-
-            case 'ue':
-                setViewUpdateExportDefinition(true);
-                dispatch({type:'set_all',payload:{
-                    name:streamDetails?.messageStreamInfo.definition.name,
-                    maxSize:streamDetails?.messageStreamInfo.definition.maxSize,
-                    streamSegmentSize: streamDetails?.messageStreamInfo.definition.streamSegmentSize,
-                    strategyOnFull: streamDetails?.messageStreamInfo.definition.strategyOnFull,
-                    persistence: streamDetails?.messageStreamInfo.definition.persistence, 
-                    flushOnWrite: streamDetails?.messageStreamInfo.definition.flushOnWrite,
-                    exportDefinition: streamDetails?.messageStreamInfo.definition.exportDefinition
-                }, callbackError:setUpdateStreamErrorText});
-                break;
         }
     }
 
@@ -317,9 +303,9 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
 
     async function readMessages(streamName:string, desiredStartSequenceNumber:number){
         setReadMessageStreamRequestInProgres(true);
+        setMessagesList([]);
         if (desiredStartSequenceNumber >= 0)
         {
-            setMessagesList([]);
             if (desiredStartSequenceNumber - (preferencesMessages.pageSize || 100)*(currentPageIndex-1) >= (preferencesMessages.pageSize || 100)){
                 SERVER.sendRequest({ call: APICall.streamManagerReadMessages, args: [streamName, desiredStartSequenceNumber - (preferencesMessages.pageSize || 100)*(currentPageIndex) + 1, 1, (preferencesMessages.pageSize || 100), 5000] }).then(
                     (response:StreamManagerResponseMessage) => {
@@ -375,7 +361,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
             }
         }
         else {
-            //empty stream
             setReadMessageStreamRequestInProgres(false);
         }
     }
@@ -384,7 +369,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
         setViewAppendMessage(false);
         setMessageToAppend("");
         setViewUpdateDefinition(false)
-        setViewUpdateExportDefinition(false);
     }
 
     const appendMessageClick = () => {
@@ -411,12 +395,10 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
 
     const onClickUpdate = (e:any) => {
         if (streamDetails){
-            setUpdateMessageRequest(true);
+            setDescribeStreamRequestInProgres(true);
             SERVER.sendRequest({ call: APICall.streamManagerUpdateMessageStream, args: [JSON.stringify(updateStream)] }).then(
                 (response:StreamManagerResponseMessage) => {
                     if (response) {
-                        console.log(response);
-                        setUpdateMessageRequest(false);
                         defaultContext.addFlashItem!({
                             type: response.successful === true?'success':'error',
                             header: response.successful === true?streamName+' has been updated':'Failed to update ' + streamName,
@@ -424,7 +406,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         });
                         describeStream(streamName, 0);
                     }
-                    setUpdateMessageRequest(false);
                     setViewUpdateDefinition(false)
                 },
                 (reason) => {
@@ -432,10 +413,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                 }
             );
         }
-    }
-
-    const onClickUpdateExportDefinition = () => {
-        setViewUpdateExportDefinition(true);
     }
 
     useEffect(() => {
@@ -471,7 +448,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                 disabled={describeStreamRequestInProgress || readMessagesStreamRequestInProgress}
                                 items={[
                                     { text: "Update definition", id: "ud", disabled: false },
-                                    { text: "Update exports", id: "ue", disabled: false },
                                     { text: "Add message", id: "am", disabled: false },
                                 ]}
                                 onItemClick={(e) => onItemClick(e.detail.id)}
@@ -831,51 +807,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                             </FormField>}
                         </SpaceBetween>
                     </Form>
-            </Modal>
-
-            <Modal
-                key={"ModalUpdateExportDefinition"}
-                onDismiss={onDismiss}
-                visible={viewUpdateExportDefinition}
-                size="large"
-                header={'Update '+streamName + ' export definitions'}>
-                    <Form
-                    variant="embedded"
-                    actions={
-                        <SpaceBetween direction="horizontal" size="xs">
-                            <Button 
-                                formAction="none"
-                                variant="link"
-                                ariaDescribedby={"Cancel"}
-                                ariaLabel="Cancel"
-                                onClick={onDismiss}
-                            >
-                                Cancel
-                            </Button>
-                            <Button 
-                                loading={false} 
-                                disabled={updateStreamErrorText.length !== 0}
-                                variant="primary"
-                                ariaDescribedby={"Update"}
-                                ariaLabel="Update"
-                                onClick={(e) => onClickUpdate(e)}
-                            >
-                                Update
-                            </Button>
-                        </SpaceBetween>
-                    }
-                    errorText={updateStreamErrorText !== ''? updateStreamErrorText: false}
-                >
-                    {
-                    streamDetails && 
-                        <StreamExportDefinition streamProps={streamDetails} 
-                            loadingFlagProps={false}
-                            describeStreamCallbackPros={describeStreamCallback}
-                        >
-                        </StreamExportDefinition>
-                    }
-                </Form>
-                
             </Modal>
         </ContentLayout>
       );
