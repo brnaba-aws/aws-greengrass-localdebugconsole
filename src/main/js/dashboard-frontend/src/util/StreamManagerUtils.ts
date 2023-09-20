@@ -244,7 +244,6 @@ export function validateMessageStreamDefinition(messageStreamDefinition:MessageS
   
 }
 export function StreamManagerReducer(state:any, action:any) {
-  console.log(action)
   switch (action.type) {
       case "set_name":
           const alphanumericRegex = /^[a-zA-Z0-9\s,.\-_]+$/;

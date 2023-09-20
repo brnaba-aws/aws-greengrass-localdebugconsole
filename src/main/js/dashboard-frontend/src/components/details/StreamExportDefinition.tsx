@@ -349,7 +349,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
     }));    
 
     function onClickAddExportDefinition () {
-        console.log('onClickAddExportDefinition');
         setUpdateExportDefinition(activeTab, defaultExportDefinition[activeTab]);
         setViewModalAddExportDefinition(true);
     }
@@ -359,7 +358,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
     }
 
     function onConfirmDeleteExportDefinition () {
-        console.log('onConfirmDeleteExportDefinition');
         setViewModalConfirmExportDelete(false);
 
         if (selectedItems[activeTab]?.[0]) {
@@ -470,7 +468,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                             //don't push anything
                         }
                         else {
-                            console.log('unknown actionType');
                         }
                     } else {
                         // If the identifier doesn't match, push the original entity
@@ -514,7 +511,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                             //don't push anything
                         }
                         else {
-                            console.log('unknown actionType');
                         }
                     } else {
                         // If the identifier doesn't match, push the original entity
@@ -559,7 +555,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                             //don't push anything
                         }
                         else {
-                            console.log('unknown actionType');
                         }
                     } else {
                         // If the identifier doesn't match, push the original entity
@@ -604,7 +599,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                             //don't push anything
                         }
                         else {
-                            console.log('unknown actionType');
                         }
                     } else {
                         // If the identifier doesn't match, push the original entity
@@ -644,7 +638,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                             //don't push anything
                         }
                         else {
-                            console.log('unknown actionType');
                         }
                     } else {
                         // If the identifier doesn't match, push the original entity
@@ -691,7 +684,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                 }
             },
             (reason) => {
-                console.log("Error in [StreamManager]: " + reason);
             }
         );
     }
@@ -721,7 +713,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                     });
                 }
                 else {
-                    console.log('error')
                 }
             }
         } else {
@@ -1026,7 +1017,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                                         <Select
                                             options={optionsStatusLevel}
                                             selectedOption={optionsStatusLevel.filter((e:any) => e.value===exportDefinition.statusConfig.statusLevel.toString())[0]}
-                                            onChange={({ detail }) => {console.log(parseInt(exportDefinition.statusConfig.statusLevel)); console.log(parseInt(detail.selectedOption.value || "0")); setUpdateExportDefinition(exportType, {'statusConfig':{statusStreamName:updateExportDefinition[activeTab].statusConfig.statusStreamName, statusLevel:parseInt(detail.selectedOption.value || "0")}})}}
+                                            onChange={({ detail }) => setUpdateExportDefinition(exportType, {'statusConfig':{statusStreamName:updateExportDefinition[activeTab].statusConfig.statusStreamName, statusLevel:parseInt(detail.selectedOption.value || "0")}})}
                                             disabled={false}
                                         />
                                         
@@ -1114,7 +1105,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
         );
             
         } catch (error) {
-            console.log(error)
         }
 
     };
