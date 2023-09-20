@@ -232,6 +232,10 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
         describeStream(streamName, 0);
     }
 
+    const describeStreamCallback = (streamName:string) => {
+        describeStream(streamName, 0);
+    }
+
     const onItemClick = (id:string) => {
         switch(id){
             case 'am':
@@ -244,7 +248,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     persistence: streamDetails?.messageStreamInfo.definition.persistence, 
                     flushOnWrite: streamDetails?.messageStreamInfo.definition.flushOnWrite,
                     exportDefinition: streamDetails?.messageStreamInfo.definition.exportDefinition
-                }, callback:setUpdateStreamErrorText});
+                }, callbackError:setUpdateStreamErrorText});
                 break;
             case 'ud':
                 setViewUpdateDefinition(true);
@@ -256,7 +260,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     persistence: streamDetails?.messageStreamInfo.definition.persistence, 
                     flushOnWrite: streamDetails?.messageStreamInfo.definition.flushOnWrite,
                     exportDefinition: streamDetails?.messageStreamInfo.definition.exportDefinition
-                }, callback:setUpdateStreamErrorText});
+                }, callbackError:setUpdateStreamErrorText});
                 break;
 
             case 'ue':
@@ -269,7 +273,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     persistence: streamDetails?.messageStreamInfo.definition.persistence, 
                     flushOnWrite: streamDetails?.messageStreamInfo.definition.flushOnWrite,
                     exportDefinition: streamDetails?.messageStreamInfo.definition.exportDefinition
-                }, callback:setUpdateStreamErrorText});
+                }, callbackError:setUpdateStreamErrorText});
                 break;
         }
     }
@@ -286,7 +290,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                 if (response) {
                     if (response.successful) {
                         if (response.messageStreamInfo) {
-                            console.log(response)
                             const item:Stream = {
                                 key:index,
                                 messageStreamInfo:response.messageStreamInfo
@@ -517,7 +520,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         {streamDetails && 
                             <StreamExportDefinition streamProps={streamDetails} 
                                 loadingFlagProps={describeStreamRequestInProgress}
-                                describeStreamCallbackPros={onClickRefresh}
+                                describeStreamCallbackPros={describeStreamCallback}
                             >
                             </StreamExportDefinition>
                         }
@@ -766,7 +769,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                             >
                                 <Input
                                     value={updateStream.maxSize.toString() || ''}
-                                    onChange={(event) => dispatch({type: 'set_maxSize', payload: event.detail.value, callback:setUpdateStreamErrorText})}
+                                    onChange={(event) => dispatch({type: 'set_maxSize', payload: event.detail.value, callbackError:setUpdateStreamErrorText})}
                                     disabled={false}
                                     step={1024}
                                     inputMode="decimal"
@@ -779,7 +782,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                             >
                                 <Input
                                     value={updateStream.streamSegmentSize.toString() || ''}
-                                    onChange={(event) => dispatch({type: 'set_streamSegmentSize', payload: event.detail.value, callback:setUpdateStreamErrorText})}
+                                    onChange={(event) => dispatch({type: 'set_streamSegmentSize', payload: event.detail.value, callbackError:setUpdateStreamErrorText})}
                                     disabled={false}
                                     step={1024}
                                     inputMode="decimal"
@@ -793,7 +796,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                         { label: "RejectNewData", value: "0" }
                                     ]}
                                     selectedOption={updateStream.strategyOnFull===StrategyOnFull.OverwriteOldestData?{ label: "OverwriteOldestData", value: "1" }:{ label: "RejectNewData", value: "0" }}
-                                    onChange={({ detail }) => dispatch({type: 'set_strategyOnFull', payload: detail.selectedOption.value, callback:setUpdateStreamErrorText})}
+                                    onChange={({ detail }) => dispatch({type: 'set_strategyOnFull', payload: detail.selectedOption.value, callbackError:setUpdateStreamErrorText})}
                                     disabled={false}
                                 />
                             </FormField>
@@ -808,7 +811,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                         { label: "Memory", value: "1" }
                                     ]}
                                     selectedOption={updateStream.persistence===Persistence.File?{ label: "File", value: "0" }:{ label: "Memory", value: "1" }}
-                                    onChange={({ detail }) => dispatch({type: 'set_persistence', payload: detail.selectedOption.value, callback:setUpdateStreamErrorText})}
+                                    onChange={({ detail }) => dispatch({type: 'set_persistence', payload: detail.selectedOption.value, callbackError:setUpdateStreamErrorText})}
                                     disabled={false}
                                 />
                             </FormField>
@@ -822,7 +825,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                         { label: "False", value: "1" }
                                     ]}
                                     selectedOption={updateStream.flushOnWrite===true?{ label: "True", value: "0" }:{ label: "False", value: "1" }}
-                                    onChange={({ detail }) =>  dispatch({type: 'set_flushOnWrite', payload: detail.selectedOption.value, callback:setUpdateStreamErrorText})}
+                                    onChange={({ detail }) =>  dispatch({type: 'set_flushOnWrite', payload: detail.selectedOption.value, callbackError:setUpdateStreamErrorText})}
                                     disabled={false}
                                 />
                             </FormField>}
@@ -867,7 +870,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     streamDetails && 
                         <StreamExportDefinition streamProps={streamDetails} 
                             loadingFlagProps={false}
-                            describeStreamCallbackPros={onClickRefresh}
+                            describeStreamCallbackPros={describeStreamCallback}
                         >
                         </StreamExportDefinition>
                     }

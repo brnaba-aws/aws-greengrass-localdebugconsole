@@ -145,6 +145,13 @@ export enum StatusLevel {
   DEBUG=3,
   TRACE=4,
 }
+export const statusLevelText = {
+  [StatusLevel.ERROR]: 'Error',
+  [StatusLevel.WARN]: 'Warning',
+  [StatusLevel.INFO]: 'Information',
+  [StatusLevel.DEBUG]: 'Debug',
+  [StatusLevel.TRACE]: 'Trace',
+};
 
 export interface StatusConfig {
   statusLevel:StatusLevel,
@@ -237,6 +244,7 @@ export function validateMessageStreamDefinition(messageStreamDefinition:MessageS
   
 }
 export function StreamManagerReducer(state:any, action:any) {
+  console.log(action)
   switch (action.type) {
       case "set_name":
           const alphanumericRegex = /^[a-zA-Z0-9\s,.\-_]+$/;
@@ -245,7 +253,7 @@ export function StreamManagerReducer(state:any, action:any) {
           } else if (action.payload.length < 1 || action.payload.length > 255) {
             action.callbackError('Name length must be between 1 and 255 characters.');
           } else if (!alphanumericRegex.test(action.payload)) {
-            action.callbackErrorError('Name must be alphanumeric and can include spaces, commas, periods, hyphens, and underscores.');
+            action.callbackError('Name must be alphanumeric and can include spaces, commas, periods, hyphens, and underscores.');
           } else {
             action.callbackError('');
           }

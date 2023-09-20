@@ -14,7 +14,7 @@ import {
   Modal,
   Form, FormField,
   Input,
-  Select
+  Select, Link
 } from "@cloudscape-design/components";
 import { 
     KinesisConfig, 
@@ -27,10 +27,13 @@ import {
     Stream,
     StatusLevel,
     MessageStreamDefinition,
+    statusLevelText,
 } from "../../util/StreamManagerUtils";
 import { SERVER , DefaultContext} from "../../index";
 import { APICall } from "../../util/CommUtils";
 import StreamManagerResponseMessage from "../../util/StreamManagerResponseMessage"
+import { STREAM_MANAGER_ROUTE_HREF_PREFIX } from "../../util/constNames";
+import { useHistory } from "react-router-dom";
 
 interface StreamDefinitionProps {
   loadingFlagProps:boolean
@@ -49,7 +52,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
 
     const {streamProps, loadingFlagProps, describeStreamCallbackPros} = props
     const defaultContext = useContext(DefaultContext); 
-    
+    let history = useHistory();    
 
     const defaultKinesisExportDefinition =  {
                 identifier:"kinesis-id",
@@ -309,12 +312,13 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
             {
                 id: "levelStatusConfig",
                 header: "Status config level",
-                cell: (e:S3ExportTaskExecutorConfig) => e.statusConfig.statusLevel
+                cell: (e:S3ExportTaskExecutorConfig) => statusLevelText[e.statusConfig.statusLevel]
             },
             {
                 id: "streamNameStatusConfig",
                 header: "Status config stream name",
-                cell: (e:S3ExportTaskExecutorConfig) => e.statusConfig.statusStreamName
+                cell: (e:S3ExportTaskExecutorConfig) => <Link href={`${STREAM_MANAGER_ROUTE_HREF_PREFIX}${e.statusConfig.statusStreamName}`} onFollow={(f) => describeStreamCallbackPros(e.statusConfig.statusStreamName)} >{e.statusConfig.statusStreamName}</Link>
+                
             },
             {
                 id: "priority",
@@ -414,9 +418,13 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
             const httpIndexToUpdate:any = streamProps.messageStreamInfo.definition.exportDefinition.http.findIndex(
                 (item:HTTPConfig) => item.identifier.toString() === exportDefinition.identifier.toString());
 
-                // Find the index of the item to update
-                const iotAnalyticsIndexToUpdate:any = streamProps.messageStreamInfo.definition.exportDefinition.iotAnalytics.findIndex(
-                    (item:IoTAnalyticsConfig) => item.identifier.toString() === exportDefinition.identifier.toString());
+            // Find the index of the item to update
+            const iotAnalyticsIndexToUpdate:any = streamProps.messageStreamInfo.definition.exportDefinition.iotAnalytics.findIndex(
+                (item:IoTAnalyticsConfig) => item.identifier.toString() === exportDefinition.identifier.toString());
+
+            // Find the index of the item to update
+            const s3TaskExecutorIndexToUpdate:any = streamProps.messageStreamInfo.definition.exportDefinition.s3TaskExecutor.findIndex(
+                (item:S3ExportTaskExecutorConfig) => item.identifier.toString() === exportDefinition.identifier.toString());
 
             // Check if the identifier was found in kinesis
             if (kinesisIndexToUpdate !== -1) {
@@ -597,6 +605,46 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                         messageStream.exportDefinition.http.push(exportConfig);
                     }
                 }
+            } else if (s3TaskExecutorIndexToUpdate !== -1){
+                const updatedS3ExportDefinition:any = {
+                    ...streamProps.messageStreamInfo.definition.exportDefinition.s3TaskExecutor[s3TaskExecutorIndexToUpdate],
+                    // Update the properties you need here
+                    priority:exportDefinition['priority'],
+                    disabled:exportDefinition['disabled'],
+                    sizeThresholdForMultipartUploadBytes:exportDefinition['sizeThresholdForMultipartUploadBytes'],
+                    statusConfig:{
+                        statusLevel:exportDefinition['statusConfig'].statusLevel,
+                        statusStreamName:exportDefinition['statusConfig'].statusStreamName
+                    }
+                };
+
+                messageStream.exportDefinition = {
+                    kinesis:streamProps.messageStreamInfo.definition.exportDefinition.kinesis,
+                    http:streamProps.messageStreamInfo.definition.exportDefinition.http,
+                    iotAnalytics: streamProps.messageStreamInfo.definition.exportDefinition.iotAnalytics,
+                    IotSitewise: streamProps.messageStreamInfo.definition.exportDefinition.IotSitewise,
+                    s3TaskExecutor: []
+                }
+
+                // Loop through the list of KinesisConfig objects
+                for (const exportConfig of streamProps.messageStreamInfo.definition.exportDefinition.s3TaskExecutor || []) {
+                    if (exportConfig.identifier === updatedS3ExportDefinition.identifier) {
+                        // If the identifier matches the predefined one,
+                        if (actionType === ExportDefinitionActionType.UPDATE){
+                            // push the update export definition
+                            messageStream.exportDefinition.s3TaskExecutor.push(updatedS3ExportDefinition);
+                        }
+                        else if (actionType === ExportDefinitionActionType.DELETE){
+                            //don't push anything
+                        }
+                        else {
+                            console.log('unknown actionType');
+                        }
+                    } else {
+                        // If the identifier doesn't match, push the original entity
+                        messageStream.exportDefinition.s3TaskExecutor.push(exportConfig);
+                    }
+                }
             }
         }
         else {
@@ -628,7 +676,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                     });
                     setErrorUpdateStreamFeedback('');
                     onDismiss();
-                    describeStreamCallbackPros();
+                    describeStreamCallbackPros(streamProps.messageStreamInfo.definition.name);
                 } 
                 else {
                     if (response.errorMsg){
@@ -709,11 +757,11 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                 />
             );
             } else {
-            return <div>No {exportType} export definition.</div>;
+            return (<div>No {exportType} export definition.</div>);
             }
         }
         else{
-            return <div>No {exportType} export definition.</div>;
+            return (<div>No {exportType} export definition.</div>);
         }
     }
 
@@ -945,6 +993,47 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                                     </FormField>
                                 </>
                             )}
+                        {isS3TaskExecutor && (
+                                <>
+                                    <FormField 
+                                        label="size Threshold For Multipar tUpload (Bytes)"
+                                    >
+                                        <Input
+                                            value={exportDefinition.sizeThresholdForMultipartUploadBytes}
+                                            onChange={(event) => setUpdateExportDefinition(exportType, {'sizeThresholdForMultipartUploadBytes':event.detail.value})}
+                                            disabled={false}
+                                            step={1024}
+                                        />
+                                    </FormField>
+                                    <FormField 
+                                        label="Status stream name"
+                                    >
+                                        <Input
+                                            value={exportDefinition.statusConfig.statusStreamName}
+                                            onChange={(event) => setUpdateExportDefinition(exportType, {'statusConfig':{statusLevel:updateExportDefinition[activeTab].statusConfig.statusLevel, statusStreamName:event.detail.value}})}
+                                            disabled={false}
+                                        />
+                                    </FormField>
+                                    <FormField 
+                                        label="Status level"
+                                    >
+                                        <Select
+                                            options={[
+                                                { label: "Error", value: "0" },
+                                                { label: "Warning", value: "1" },
+                                                { label: "Information", value: "3" },
+                                                { label: "Debug", value: "4" },
+                                                { label: "Trace", value: "5" }
+                                            ]}
+                                            selectedOption={exportDefinition.statusConfig.statusLevel===0?{ label: "Error", value: "0" }:{ label: "Error", value: "0" }}
+                                            onChange={({ detail }) => setUpdateExportDefinition(exportType, {'statusConfig':{statusStreamName:updateExportDefinition[activeTab].statusConfig.statusStreamName, statusLevelText:detail.selectedOption.value}})}
+                                            disabled={false}
+                                        />
+                                        
+                                    </FormField>
+                                    
+                                </>
+                            )}
                         {/* Common form fields */}
                         {
                             isS3TaskExecutor===false && (
@@ -1162,24 +1251,24 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                     >
                         Update export
                     </Button>
-                {
-                ((streamProps.messageStreamInfo.definition.exportDefinition.IotSitewise.length + streamProps.messageStreamInfo.definition.exportDefinition.kinesis.length +
-                    streamProps.messageStreamInfo.definition.exportDefinition.http.length + streamProps.messageStreamInfo.definition.exportDefinition.iotAnalytics.length + streamProps.messageStreamInfo.definition.exportDefinition.s3TaskExecutor.length) > 0)
-                && <Button
-                    ariaDescribedby={"Delete export"}
-                    ariaLabel="Delete export" 
-                    key={"DeleteExportButtonHeader"}
-                    onClick = {() => {
-                        onClickDeleteExportDefinition();
-                    }}
-                    iconName="remove"
-                    wrapText={false}
-                    disabled={loadingFlagProps}
-                >
-                    Delete export
-                </Button>}
-            </SpaceBetween>
-        }
+                    {
+                    ((streamProps.messageStreamInfo.definition.exportDefinition.IotSitewise.length + streamProps.messageStreamInfo.definition.exportDefinition.kinesis.length +
+                        streamProps.messageStreamInfo.definition.exportDefinition.http.length + streamProps.messageStreamInfo.definition.exportDefinition.iotAnalytics.length + streamProps.messageStreamInfo.definition.exportDefinition.s3TaskExecutor.length) > 0)
+                    && <Button
+                        ariaDescribedby={"Delete export"}
+                        ariaLabel="Delete export" 
+                        key={"DeleteExportButtonHeader"}
+                        onClick = {() => {
+                            onClickDeleteExportDefinition();
+                        }}
+                        iconName="remove"
+                        wrapText={false}
+                        disabled={loadingFlagProps}
+                    >
+                        Delete export
+                    </Button>}
+                </SpaceBetween>
+            }
         >
             Export definitions
         </Header>
@@ -1201,7 +1290,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
             {generateModalContentDeleteExport()}
             </>
         }
-        
     </>
     );
 }

@@ -366,7 +366,7 @@ function StreamManager() {
     const onDismiss = (e:any) => {
         setViewConfirmDelete(false);
         setViewConfirmCreateStream(false);
-        dispatch({type:'clear', callback:setCreateStreamErrorText});
+        dispatch({type:'clear', callbackError:setCreateStreamErrorText});
         setCreateStreamErrorText('');
     }
 
@@ -393,7 +393,7 @@ function StreamManager() {
                         header: 'Created ' + newStream.name + " successfully",
                         content: response.errorMsg
                     });
-                    dispatch({type: 'clear', callback:setCreateStreamErrorText});
+                    dispatch({type: 'clear', callbackError:setCreateStreamErrorText});
                     setCreateStreamErrorText('');
                     listStreams();
                 }
@@ -597,7 +597,7 @@ function StreamManager() {
                                                 >
                                                     <Input
                                                         value={newStream.name || ''}
-                                                        onChange={(event) => dispatch({type: 'set_name', payload: event.detail.value, callback:setCreateStreamErrorText})}
+                                                        onChange={(event) => dispatch({type: 'set_name', payload: event.detail.value, callbackError:setCreateStreamErrorText})}
                                                         disabled={false}
                                                     />
                                                 </FormField>
@@ -607,7 +607,7 @@ function StreamManager() {
                                                 >
                                                     <Input
                                                         value={newStream.maxSize}
-                                                        onChange={(event) => dispatch({type: 'set_maxSize', payload: event.detail.value, callback:setCreateStreamErrorText})}
+                                                        onChange={(event) => dispatch({type: 'set_maxSize', payload: event.detail.value, callbackError:setCreateStreamErrorText})}
                                                         disabled={false}
                                                         step={1024}
                                                         inputMode="decimal"
@@ -620,7 +620,7 @@ function StreamManager() {
                                                 >
                                                     <Input
                                                         value={newStream.streamSegmentSize}
-                                                        onChange={(event) => dispatch({type: 'set_streamSegmentSize', payload: event.detail.value, callback:setCreateStreamErrorText})}
+                                                        onChange={(event) => dispatch({type: 'set_streamSegmentSize', payload: event.detail.value, callbackError:setCreateStreamErrorText})}
                                                         disabled={false}
                                                         step={1024}
                                                         inputMode="decimal"
@@ -634,7 +634,7 @@ function StreamManager() {
                                                             { label: "RejectNewData", value: "0" }
                                                         ]}
                                                         selectedOption={newStream.strategyOnFull===StrategyOnFull.OverwriteOldestData?{ label: "OverwriteOldestData", value: "1" }:{ label: "RejectNewData", value: "0" }}
-                                                        onChange={({ detail }) => dispatch({type: 'set_strategyOnFull', payload: detail.selectedOption.value, callback:setCreateStreamErrorText})}
+                                                        onChange={({ detail }) => dispatch({type: 'set_strategyOnFull', payload: detail.selectedOption.value, callbackError:setCreateStreamErrorText})}
                                                         disabled={false}
                                                     />
                                                 </FormField>
@@ -649,7 +649,7 @@ function StreamManager() {
                                                             { label: "Memory", value: "1" }
                                                         ]}
                                                         selectedOption={newStream.persistence===Persistence.File?{ label: "File", value: "0" }:{ label: "Memory", value: "1" }}
-                                                        onChange={({ detail }) => dispatch({type: 'set_persistence', payload: detail.selectedOption.value, callback:setCreateStreamErrorText})}
+                                                        onChange={({ detail }) => dispatch({type: 'set_persistence', payload: detail.selectedOption.value, callbackError:setCreateStreamErrorText})}
                                                         disabled={false}
                                                     />
                                                 </FormField>
@@ -663,7 +663,7 @@ function StreamManager() {
                                                             { label: "False", value: "1" }
                                                         ]}
                                                         selectedOption={newStream.flushOnWrite===true?{ label: "True", value: "0" }:{ label: "False", value: "1" }}
-                                                        onChange={({ detail }) =>  dispatch({type: 'set_flushOnWrite', payload: detail.selectedOption.value, callback:setCreateStreamErrorText})}
+                                                        onChange={({ detail }) =>  dispatch({type: 'set_flushOnWrite', payload: detail.selectedOption.value, callbackError:setCreateStreamErrorText})}
                                                         disabled={false}
                                                     />
                                                 </FormField>}
