@@ -123,10 +123,10 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
 
     const [errorUpdateStreamFeedback, setErrorUpdateStreamFeedback] = useState('');
 
-    const exportTypes = [{id: "kinesis", name: 'kinesis'}, {
+    const exportTypes = [{id: "kinesis", name: 'Kinesis'}, {
         id: "IotSitewise",
         name: "IoT Sitewise"
-    }, {id: "iotAnalytics", name: 'IoT Analytics'}, {id: "http", name: 'http'}, {id: "s3TaskExecutor", name: "S3"}];
+    }, {id: "iotAnalytics", name: 'IoT Analytics'}, {id: "http", name: 'HTTP'}, {id: "s3TaskExecutor", name: "S3"}];
 
     // Usage example
     const initialSelectedItems: any = {};
@@ -987,7 +987,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                             {isS3TaskExecutor && (
                                 <>
                                     <FormField
-                                        label="size Threshold For Multipar tUpload (Bytes)"
+                                        label="Size threshold For multipart upload (bytes)"
                                     >
                                         <Input
                                             value={exportDefinition.sizeThresholdForMultipartUploadBytes}
@@ -1078,7 +1078,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
 
                             <FormField
                                 constraintText="Priority for this upload stream. Lower values are higher priority."
-                                label="priority"
+                                label="Priority"
                             >
                                 <Input
                                     value={exportDefinition.priority.toString() || '10'}
@@ -1090,7 +1090,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                                 />
                             </FormField>
                             <FormField
-                                label="disabled"
+                                label="Disabled"
                             >
                                 <Select
                                     options={[
