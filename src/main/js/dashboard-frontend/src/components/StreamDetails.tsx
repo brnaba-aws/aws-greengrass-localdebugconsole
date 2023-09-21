@@ -52,9 +52,8 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
     const [currentPageIndex, setCurrentPageIndex] = useState(1)
     const previousPageIndex = useRef(currentPageIndex);
     const [describeStreamRequestInProgress, setDescribeStreamRequestInProgres] = useState(false);
-    const [readMessagesStreamRequestInProgress, setReadMessageStreamRequestInProgres] = useState(false);
+    const [readMessagesStreamRequestInProgress, setReadMessageStreamRequestInProgress] = useState(false);
     const [appendMessageRequest, setAppendMessageRequest] = useState(false);
-    const [updateMessageRequest, setUpdateMessageRequest] = useState(false);
     const [filteringText, setFilteringText] = useState("");
     const [viewAppendMessage, setViewAppendMessage] = useState(false);
     const [viewUpdateDefinition, setViewUpdateDefinition] = useState(false);
@@ -210,7 +209,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
             id: "tabsStreamDefinition",
             label: "Stream definition",
             content: (
-                describeStreamRequestInProgress === true ?
+                describeStreamRequestInProgress ?
                     <StatusIndicator type="loading"> Loading </StatusIndicator> :
                     <ColumnLayout key={"tabsStreamDefinition"} columns={items.length} variant="text-grid">
                         {items.map((group, index) => (
@@ -280,95 +279,55 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
 
     async function describeStream(streamName: string, index: number) {
         setDescribeStreamRequestInProgres(true);
-        SERVER.sendRequest({call: APICall.streamManagerDescribeStream, args: [streamName]}).then(
-            (response: StreamManagerResponseMessage) => {
-                if (response) {
-                    if (response.successful) {
-                        if (response.messageStreamInfo) {
-                            const item: Stream = {
-                                key: index,
-                                messageStreamInfo: response.messageStreamInfo
-                            };
-                            setStreamDetails(item);
-                            setMessageCount(item.messageStreamInfo.storageStatus.newestSequenceNumber - item.messageStreamInfo.storageStatus.oldestSequenceNumber + 1)
-                            readMessages(streamName, item.messageStreamInfo.storageStatus.newestSequenceNumber)
-                            setDescribeStreamRequestInProgres(false);
-                        } else {
-                            setDescribeStreamRequestInProgres(false);
-                        }
-                    } else {
-                        setDescribeStreamRequestInProgres(false);
-                    }
-                } else {
-                    setDescribeStreamRequestInProgres(false);
-                }
-            },
-            (reason) => {
-                setDescribeStreamRequestInProgres(false);
+        try {
+            const response: StreamManagerResponseMessage = await SERVER.sendRequest({
+                call: APICall.streamManagerDescribeStream,
+                args: [streamName]
+            });
+            if (response && response.successful && response.messageStreamInfo) {
+                const item: Stream = {
+                    key: index,
+                    messageStreamInfo: response.messageStreamInfo
+                };
+                setStreamDetails(item);
+                setMessageCount(item.messageStreamInfo.storageStatus.newestSequenceNumber - item.messageStreamInfo.storageStatus.oldestSequenceNumber + 1);
+                readMessages(streamName, item.messageStreamInfo.storageStatus.newestSequenceNumber);
             }
-        );
+        } finally {
+            setDescribeStreamRequestInProgres(false);
+        }
     }
 
     async function readMessages(streamName: string, desiredStartSequenceNumber: number) {
-        setReadMessageStreamRequestInProgres(true);
+        setReadMessageStreamRequestInProgress(true);
         setMessagesList([]);
-        if (desiredStartSequenceNumber >= 0) {
-            if (desiredStartSequenceNumber - (preferencesMessages.pageSize || 100) * (currentPageIndex - 1) >= (preferencesMessages.pageSize || 100)) {
-                SERVER.sendRequest({
-                    call: APICall.streamManagerReadMessages,
-                    args: [streamName, desiredStartSequenceNumber - (preferencesMessages.pageSize || 100) * (currentPageIndex) + 1, 1, (preferencesMessages.pageSize || 100), 5000]
-                }).then(
-                    (response: StreamManagerResponseMessage) => {
-                        if (response) {
-                            if (response.successful) {
-                                if (response.messagesList) {
-                                    const listMessageDescending: Message[] = response.messagesList;
-                                    listMessageDescending.sort((a: any, b: any) => b.sequenceNumber - a.sequenceNumber);
-                                    setMessagesList(listMessageDescending);
-                                    setReadMessageStreamRequestInProgres(false);
-                                } else {
-                                    setReadMessageStreamRequestInProgres(false);
-                                }
-                            } else {
-                                setReadMessageStreamRequestInProgres(false);
-                            }
-                        } else {
-                            setReadMessageStreamRequestInProgres(false);
-                        }
-                    },
-                    (reason) => {
-                        setReadMessageStreamRequestInProgres(false);
+
+        try {
+            if (desiredStartSequenceNumber >= 0) {
+                if (desiredStartSequenceNumber - (preferencesMessages.pageSize || 100) * (currentPageIndex - 1) >= (preferencesMessages.pageSize || 100)) {
+                    const response: StreamManagerResponseMessage = await SERVER.sendRequest({
+                        call: APICall.streamManagerReadMessages,
+                        args: [streamName, desiredStartSequenceNumber - (preferencesMessages.pageSize || 100) * (currentPageIndex) + 1, 1, (preferencesMessages.pageSize || 100), 5000]
+                    });
+
+                    if (response && response.successful && response.messagesList) {
+                        const listMessageDescending: Message[] = response.messagesList;
+                        listMessageDescending.sort((a: any, b: any) => b.sequenceNumber - a.sequenceNumber);
+                        setMessagesList(listMessageDescending);
                     }
-                );
-            } else {
-                SERVER.sendRequest({
-                    call: APICall.streamManagerReadMessages,
-                    args: [streamName, 0, 1, desiredStartSequenceNumber - (preferencesMessages.pageSize || 100) * (currentPageIndex - 1) + 1, 5000]
-                }).then(
-                    (response) => {
-                        if (response) {
-                            if (response.successful) {
-                                if (response.messagesList) {
-                                    const listMessageDescending: Message[] = response.messagesList.sort((a: any, b: any) => b.sequenceNumber - a.sequenceNumber);
-                                    setMessagesList(listMessageDescending);
-                                    setReadMessageStreamRequestInProgres(false);
-                                } else {
-                                    setReadMessageStreamRequestInProgres(false);
-                                }
-                            } else {
-                                setReadMessageStreamRequestInProgres(false);
-                            }
-                        } else {
-                            setReadMessageStreamRequestInProgres(false);
-                        }
-                    },
-                    (reason) => {
-                        setReadMessageStreamRequestInProgres(false);
+                } else {
+                    const response: StreamManagerResponseMessage = await SERVER.sendRequest({
+                        call: APICall.streamManagerReadMessages,
+                        args: [streamName, 0, 1, desiredStartSequenceNumber - (preferencesMessages.pageSize || 100) * (currentPageIndex - 1) + 1, 5000]
+                    });
+                    if (response && response.successful && response.messagesList) {
+                        const listMessageDescending: Message[] = response.messagesList.sort((a: any, b: any) => b.sequenceNumber - a.sequenceNumber);
+                        setMessagesList(listMessageDescending);
                     }
-                );
+                }
             }
-        } else {
-            setReadMessageStreamRequestInProgres(false);
+        } finally {
+            setReadMessageStreamRequestInProgress(false);
         }
     }
 
@@ -378,47 +337,40 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
         setViewUpdateDefinition(false)
     }
 
-    const appendMessageClick = () => {
+    const appendMessageClick = async () => {
         setAppendMessageRequest(true);
-        SERVER.sendRequest({call: APICall.streamManagerAppendMessage, args: [streamName, messageToAppend]}).then(
-            (response: StreamManagerResponseMessage) => {
-                if (response) {
-                    setAppendMessageRequest(false);
-                    defaultContext.addFlashItem!({
-                        type: response.successful === true ? 'success' : 'error',
-                        header: response.successful === true ? 'Message has been added to ' + streamName : 'Failed to add the message to ' + streamName,
-                        content: response.errorMsg
-                    });
-                    describeStream(streamName, 0);
-                    setViewAppendMessage(false);
-                }
-            },
-            (reason) => {
-            }
-        );
+        const response: StreamManagerResponseMessage = await SERVER.sendRequest({
+            call: APICall.streamManagerAppendMessage,
+            args: [streamName, messageToAppend]
+        });
+        if (response) {
+            setAppendMessageRequest(false);
+            defaultContext.addFlashItem!({
+                type: response.successful ? 'success' : 'error',
+                header: response.successful ? 'Message has been added to ' + streamName : 'Failed to add the message to ' + streamName,
+                content: response.errorMsg
+            });
+            describeStream(streamName, 0);
+            setViewAppendMessage(false);
+        }
     }
 
-    const onClickUpdate = (e: any) => {
+    const onClickUpdate = async () => {
         if (streamDetails) {
             setDescribeStreamRequestInProgres(true);
-            SERVER.sendRequest({
+            const response: StreamManagerResponseMessage = await SERVER.sendRequest({
                 call: APICall.streamManagerUpdateMessageStream,
                 args: [JSON.stringify(updateStream)]
-            }).then(
-                (response: StreamManagerResponseMessage) => {
-                    if (response) {
-                        defaultContext.addFlashItem!({
-                            type: response.successful === true ? 'success' : 'error',
-                            header: response.successful === true ? streamName + ' has been updated' : 'Failed to update ' + streamName,
-                            content: response.errorMsg
-                        });
-                        describeStream(streamName, 0);
-                    }
-                    setViewUpdateDefinition(false)
-                },
-                (reason) => {
-                }
-            );
+            });
+            if (response) {
+                defaultContext.addFlashItem!({
+                    type: response.successful ? 'success' : 'error',
+                    header: response.successful ? streamName + ' has been updated' : 'Failed to update ' + streamName,
+                    content: response.errorMsg
+                });
+                describeStream(streamName, 0);
+            }
+            setViewUpdateDefinition(false)
         }
     }
 
@@ -741,7 +693,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                 variant="primary"
                                 ariaDescribedby={"Update"}
                                 ariaLabel="Update"
-                                onClick={(e) => onClickUpdate(e)}
+                                onClick={onClickUpdate}
                             >
                                 Update
                             </Button>
