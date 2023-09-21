@@ -250,36 +250,36 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
                     break;
                 }
                 case streamManagerListStreams: {
-                    StreamManagerListStreams(conn, packedRequest);
+                    streamManagerListStreams(conn, packedRequest);
                     break;
                 }
                 case streamManagerDescribeStream: {
-                    StreamManagerDescribeStream(conn, packedRequest, req);
+                    streamManagerDescribeStream(conn, packedRequest, req);
                     break;
                 }
 
                 case streamManagerDeleteMessageStream: {
-                    StreamManagerDeleteMessageStream(conn, packedRequest, req);
+                    streamManagerDeleteMessageStream(conn, packedRequest, req);
                     break;
                 }
 
                 case streamManagerReadMessages: {
-                    StreamManagerReadMessages(conn, packedRequest, req);
+                    streamManagerReadMessages(conn, packedRequest, req);
                     break;
                 }
 
                 case streamManagerAppendMessage:{
-                    StreamManagerAppendMessage(conn, packedRequest, req);
+                    streamManagerAppendMessage(conn, packedRequest, req);
                     break;
                 }
 
                 case streamManagerCreateMessageStream:{
-                    StreamManagerCreateMessageStream(conn, packedRequest, req);
+                    streamManagerCreateMessageStream(conn, packedRequest, req);
                     break;
                 }
 
                 case streamManagerUpdateMessageStream:{
-                    StreamManagerUpdateMessageStream(conn, packedRequest, req);
+                    streamManagerUpdateMessageStream(conn, packedRequest, req);
                     break;
                 }
 
@@ -387,7 +387,7 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
         }
     }
 
-    private void StreamManagerListStreams(WebSocket conn, PackedRequest packedRequest) {
+    private void streamManagerListStreams(WebSocket conn, PackedRequest packedRequest) {
         StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage();
         try {
             responseMessage.streamsList = this.streamManagerHelper.listStreams();
@@ -400,7 +400,7 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
         sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
     }
 
-    private void StreamManagerDescribeStream(WebSocket conn, PackedRequest packedRequest, Request req) {
+    private void streamManagerDescribeStream(WebSocket conn, PackedRequest packedRequest, Request req) {
         StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage();
         try {
             responseMessage.messageStreamInfo = this.streamManagerHelper.describeStream(req.args[0]);
@@ -413,7 +413,7 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
         sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
     }
 
-    private void StreamManagerDeleteMessageStream(WebSocket conn, PackedRequest packedRequest, Request req) {
+    private void streamManagerDeleteMessageStream(WebSocket conn, PackedRequest packedRequest, Request req) {
         StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage();
         try {
             this.streamManagerHelper.deleteMessageStream(req.args[0]);
@@ -426,7 +426,7 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
         sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
     }
 
-    private void StreamManagerReadMessages(WebSocket conn, PackedRequest packedRequest, Request req) {
+    private void streamManagerReadMessages(WebSocket conn, PackedRequest packedRequest, Request req) {
         StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage();
         try {
             if (req.args.length == 5) {
@@ -450,7 +450,7 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
         sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
     }
 
-    private void StreamManagerAppendMessage(WebSocket conn, PackedRequest packedRequest, Request req) {
+    private void streamManagerAppendMessage(WebSocket conn, PackedRequest packedRequest, Request req) {
         StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage();
         try {
             this.streamManagerHelper.appendMessage(req.args[0], req.args[1].getBytes());
@@ -463,7 +463,7 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
         sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
     }
 
-    private void StreamManagerCreateMessageStream(WebSocket conn, PackedRequest packedRequest, Request req) {
+    private void streamManagerCreateMessageStream(WebSocket conn, PackedRequest packedRequest, Request req) {
         StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage();
         try {
             MessageStreamDefinition messageStreamDefinition = jsonMapper.readValue(req.args[0], MessageStreamDefinition.class);
@@ -477,7 +477,7 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
         sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
     }
 
-    private void StreamManagerUpdateMessageStream(WebSocket conn, PackedRequest packedRequest, Request req) {
+    private void streamManagerUpdateMessageStream(WebSocket conn, PackedRequest packedRequest, Request req) {
         StreamManagerResponseMessage responseMessage = new StreamManagerResponseMessage();
         try {
             MessageStreamDefinition messageStreamDefinition = jsonMapper.readValue(req.args[0], MessageStreamDefinition.class);

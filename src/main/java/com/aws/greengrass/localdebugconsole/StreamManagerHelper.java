@@ -1,14 +1,12 @@
 package com.aws.greengrass.localdebugconsole;
 
 import java.lang.reflect.Field;
-import java.util.Collections;
 import java.util.List;
 
 import com.amazonaws.greengrass.streammanager.client.StreamManagerClientFactory;
 import com.amazonaws.greengrass.streammanager.client.config.StreamManagerAuthInfo;
 import com.amazonaws.greengrass.streammanager.client.config.StreamManagerClientConfig;
 import com.amazonaws.greengrass.streammanager.client.config.StreamManagerServerInfo;
-import com.amazonaws.greengrass.streammanager.client.exception.StreamManagerException;
 import com.amazonaws.greengrass.streammanager.model.Message;
 import com.amazonaws.greengrass.streammanager.model.MessageStreamDefinition;
 import com.amazonaws.greengrass.streammanager.model.MessageStreamInfo;
@@ -44,7 +42,7 @@ public class StreamManagerHelper {
         this.kernel = kernel;
     }
 
-    private void connect(){
+    private void connect() throws RuntimeException{
         try {
             Topics smTopics = this.kernel.findServiceTopic(STREAM_MANAGER_SERVICE_NAME);
             if (smTopics == null) {
@@ -68,86 +66,93 @@ public class StreamManagerHelper {
             this.client = StreamManagerClientFactory.standard().withClientConfig(config).build();
             this.isConnected = true;
         }
-        catch (Exception e){
-            logger.error("StreamManagerHelper.connect:", e);
+        catch (Exception exception){
+            logger.error("StreamManagerHelper.connect:", exception);
             this.isConnected = false;
+            throw new RuntimeException(exception);
         }
     }
 
-    public List<String> listStreams() throws StreamManagerException  {
-        if (!this.isConnected) {
-            this.connect();
-        }
-        if (this.isConnected){
+    public List<String> listStreams() throws RuntimeException  {
+        try {
+            if (!this.isConnected) {
+                this.connect();
+            }
             return this.client.listStreams();
         }
-        return Collections.emptyList();
-    }
-    public MessageStreamInfo describeStream(String streamName) throws StreamManagerException   {
-        if (!this.isConnected) {
-            this.connect();
+        catch (Exception e){
+            throw new RuntimeException(e);
         }
-        if (this.isConnected){
+    }
+    public MessageStreamInfo describeStream(String streamName) throws RuntimeException   {
+        try {
+            if (!this.isConnected) {
+                this.connect();
+            }
             return this.client.describeMessageStream(streamName);
         }
-        return new MessageStreamInfo();
+        catch (Exception e){
+            throw new RuntimeException(e);
+        }
     }
 
-    public void deleteMessageStream(String streamName) throws StreamManagerException {
-        if (!this.isConnected) {
-            this.connect();
-        }
-        if (this.isConnected){
+    public void deleteMessageStream(String streamName) throws RuntimeException {
+        try {
+            if (!this.isConnected) {
+                this.connect();
+            }
             this.client.deleteMessageStream(streamName);
         }
-        else {
-            throw new StreamManagerException("Connection to Stream Manager failed!");
+        catch (Exception e){
+            throw new RuntimeException(e);
         }
     }
 
-    public List<Message> readMessages(String streamName, Long desiredStartSequenceNumber, Long minMessageCount, Long maxMessageCount, Long readTimeoutMillis) throws StreamManagerException {
-        if (!this.isConnected) {
-            this.connect();
+    public List<Message> readMessages(String streamName, Long desiredStartSequenceNumber, Long minMessageCount, Long maxMessageCount, Long readTimeoutMillis) throws RuntimeException {
+        try {
+            if (!this.isConnected) {
+                this.connect();
+            }
+            return this.client.readMessages(streamName, new ReadMessagesOptions(desiredStartSequenceNumber, minMessageCount, maxMessageCount, readTimeoutMillis));
         }
-        if (this.isConnected){
-            return this.client.readMessages(streamName, new ReadMessagesOptions( desiredStartSequenceNumber, minMessageCount, maxMessageCount, readTimeoutMillis));
+        catch (Exception e){
+            throw new RuntimeException(e);
         }
-        return Collections.emptyList();
     }
 
-    public void appendMessage(String streamName, byte[] message) throws StreamManagerException {
-        if (!this.isConnected) {
-            this.connect();
-        }
-        if (this.isConnected){
+    public void appendMessage(String streamName, byte[] message) throws RuntimeException {
+        try {
+            if (!this.isConnected) {
+                this.connect();
+            }
             this.client.appendMessage(streamName, message);
         }
-        else {
-            throw new StreamManagerException("Connection to Stream Manager failed!");
+        catch (Exception e){
+            throw new RuntimeException(e);
         }
     }
 
-    public void createMessageStream(MessageStreamDefinition messageStream) throws StreamManagerException {
-        if (!this.isConnected) {
-            this.connect();
-        }
-        if (this.isConnected){
+    public void createMessageStream(MessageStreamDefinition messageStream) throws RuntimeException {
+        try {
+            if (!this.isConnected) {
+                this.connect();
+            }
             this.client.createMessageStream(messageStream);
         }
-        else {
-            throw new StreamManagerException("Connection to Stream Manager failed!");
+        catch (Exception e){
+            throw new RuntimeException(e);
         }
     }
 
-    public void updateMessageStream(MessageStreamDefinition messageStream) throws StreamManagerException {
-        if (!this.isConnected) {
-            this.connect();
+    public void updateMessageStream(MessageStreamDefinition messageStream) throws RuntimeException {
+        try {
+            if (!this.isConnected) {
+                this.connect();
+            }
+                this.client.updateMessageStream(messageStream);
         }
-        if (this.isConnected){
-            this.client.updateMessageStream(messageStream);
-        }
-        else {
-            throw new StreamManagerException("Connection to Stream Manager failed!");
+        catch (Exception e){
+            throw new RuntimeException(e);
         }
     }
 }
