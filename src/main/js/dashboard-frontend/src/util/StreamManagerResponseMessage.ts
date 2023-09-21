@@ -1,4 +1,4 @@
-import { MessageStreamInfo, Message } from "../util/StreamManagerUtils";
+import { MessageStreamInfo, Message } from "./StreamManagerUtils";
 
 class StreamManagerResponseMessage {
   public successful: boolean;
