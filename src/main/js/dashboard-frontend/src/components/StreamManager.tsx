@@ -223,20 +223,31 @@ function StreamManager() {
                                 SERVER.sendRequest({call: APICall.getConfig, args: ["aws.greengrass.StreamManager"]}).then(
                                 (response:ConfigMessage) => 
                                     {
-                                        const streamManagerServerPort = response.yaml.match(/STREAM_MANAGER_SERVER_PORT:\s+"(\d+)"/)?.[1] || "-";
-                                        const streamManagerAuthenticateClient = response.yaml.match(/STREAM_MANAGER_AUTHENTICATE_CLIENT:\s+"(\w+)"/)?.[1] || "";
-                                        const logLevel = response.yaml.match(/LOG_LEVEL:\s+"(\w+)"/)?.[1] || "";
-                                        const jvmArgs = response.yaml.match(/JVM_ARGS:\s+"(\w+)"/)?.[1] || "";
-                                        const streamManagerExporterMaxBandwidth = response.yaml.match(/STREAM_MANAGER_EXPORTER_MAX_BANDWIDTH:\s+"(\d+)"/)?.[1] || "";
-                                        const streamManagerS3UploadMinPart = response.yaml.match(/STREAM_MANAGER_EXPORTER_S3_DESTINATION_MULTIPART_UPLOAD_MIN_PART_SIZE_BYTES:\s+"(\d+)"/)?.[1] || "";
-                                        const streamManagerThreadPoolSize = response.yaml.match(/STREAM_MANAGER_EXPORTER_THREAD_POOL_SIZE:\s+"(\d+)"/)?.[1] || "";
-                                        let streamManagerStoreRootDir = response.yaml.match(/STREAM_MANAGER_STORE_ROOT_DIR:\s+"([^"]+)"/)?.[1] || "";
+                                        let streamManagerServerPort = "";
+                                        let streamManagerAuthenticateClient = "";
+                                        let logLevel = "";
+                                        let jvmArgs = "";
+                                        let streamManagerExporterMaxBandwidth = "";
+                                        let streamManagerS3UploadMinPart = "";
+                                        let streamManagerThreadPoolSize = "";
+                                        let streamManagerStoreRootDir = "";
     
-                                        if (streamManagerStoreRootDir === '.')
-                                        {
-                                            streamManagerStoreRootDir = rootPath + '/work/aws.greengrass.StreamManager'
-                                        }
-            
+                                        if (response.successful === true){
+                                            streamManagerServerPort = response.yaml.match(/STREAM_MANAGER_SERVER_PORT:\s+"(\d+)"/)?.[1] || "-";
+                                            streamManagerAuthenticateClient = response.yaml.match(/STREAM_MANAGER_AUTHENTICATE_CLIENT:\s+"(\w+)"/)?.[1] || "";
+                                            logLevel = response.yaml.match(/LOG_LEVEL:\s+"(\w+)"/)?.[1] || "";
+                                            jvmArgs = response.yaml.match(/JVM_ARGS:\s+"(\w+)"/)?.[1] || "";
+                                            streamManagerExporterMaxBandwidth = response.yaml.match(/STREAM_MANAGER_EXPORTER_MAX_BANDWIDTH:\s+"(\d+)"/)?.[1] || "";
+                                            streamManagerS3UploadMinPart = response.yaml.match(/STREAM_MANAGER_EXPORTER_S3_DESTINATION_MULTIPART_UPLOAD_MIN_PART_SIZE_BYTES:\s+"(\d+)"/)?.[1] || "";
+                                            streamManagerThreadPoolSize = response.yaml.match(/STREAM_MANAGER_EXPORTER_THREAD_POOL_SIZE:\s+"(\d+)"/)?.[1] || "";
+                                            streamManagerStoreRootDir = response.yaml.match(/STREAM_MANAGER_STORE_ROOT_DIR:\s+"([^"]+)"/)?.[1] || "";
+        
+                                            if (streamManagerStoreRootDir === '.')
+                                            {
+                                                streamManagerStoreRootDir = rootPath + '/work/aws.greengrass.StreamManager'
+                                            }
+                                        } 
+
                                         setStreamManagerComponentConfiguration({
                                             Version: getComponentResponse?.version,
                                             JVM_ARGS: jvmArgs,
@@ -333,6 +344,11 @@ function StreamManager() {
                         });
                     }
                     else {
+                        defaultContext.addFlashItem!({
+                            type: 'error',
+                            header: 'Error',
+                            content: response.errorMsg
+                        });
                         setRequestStreamsListInProgress(false);
                     }
                 }
@@ -395,6 +411,7 @@ function StreamManager() {
                 }
             },
             (reason) => {
+                console.log(reason);
             }
           );
     }
