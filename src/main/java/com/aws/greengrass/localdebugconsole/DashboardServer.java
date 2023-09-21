@@ -11,7 +11,13 @@ import com.aws.greengrass.builtin.services.pubsub.PublishEvent;
 import com.aws.greengrass.builtin.services.pubsub.SubscribeRequest;
 import com.aws.greengrass.deployment.DeviceConfiguration;
 import com.aws.greengrass.lifecyclemanager.Kernel;
-import com.aws.greengrass.localdebugconsole.messageutils.*;
+import com.aws.greengrass.localdebugconsole.messageutils.CommunicationMessage;
+import com.aws.greengrass.localdebugconsole.messageutils.DeviceDetails;
+import com.aws.greengrass.localdebugconsole.messageutils.Message;
+import com.aws.greengrass.localdebugconsole.messageutils.MessageType;
+import com.aws.greengrass.localdebugconsole.messageutils.PackedRequest;
+import com.aws.greengrass.localdebugconsole.messageutils.Request;
+import com.aws.greengrass.localdebugconsole.messageutils.StreamManagerResponseMessage;
 import com.aws.greengrass.logging.api.Logger;
 import com.aws.greengrass.mqttclient.MqttClient;
 import com.aws.greengrass.mqttclient.MqttRequestException;
@@ -20,6 +26,7 @@ import com.aws.greengrass.mqttclient.v5.Subscribe;
 import com.aws.greengrass.mqttclient.v5.Unsubscribe;
 import com.aws.greengrass.util.DefaultConcurrentHashMap;
 import com.aws.greengrass.util.Pair;
+import com.aws.greengrass.util.Utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,7 +39,9 @@ import org.java_websocket.server.WebSocketServer;
 import software.amazon.awssdk.aws.greengrass.model.ReceiveMode;
 
 import java.net.InetSocketAddress;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -394,8 +403,8 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
             responseMessage.successful = true;
         }
         catch (Exception e){
-            logger.error("Error while listing streams:",e);
-            responseMessage.errorMsg = e.getMessage();
+            logger.error("Error while listing streams:", e);
+            responseMessage.errorMsg = Utils.generateFailureMessage(e);
         }
         sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
     }
@@ -408,7 +417,7 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
         }
         catch (Exception e){
             logger.error("Error while describing stream:",e);
-            responseMessage.errorMsg = e.getMessage();
+            responseMessage.errorMsg = Utils.generateFailureMessage(e);
         }
         sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
     }
@@ -421,7 +430,7 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
         }
         catch (Exception e){
             logger.error("Error while deleting stream:", e);
-            responseMessage.errorMsg = e.getMessage();
+            responseMessage.errorMsg = Utils.generateFailureMessage(e);
         }
         sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
     }
@@ -445,7 +454,7 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
         }
         catch (Exception e){
             logger.error("Error while reading messages:", e);
-            responseMessage.errorMsg = e.getMessage();
+            responseMessage.errorMsg = Utils.generateFailureMessage(e);
         }
         sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
     }
@@ -458,7 +467,7 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
         }
         catch (Exception e){
             logger.error("Error while appending message to the stream:", e);
-            responseMessage.errorMsg = e.getMessage();
+            responseMessage.errorMsg = Utils.generateFailureMessage(e);
         }
         sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
     }
@@ -472,7 +481,7 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
         }
         catch (Exception e){
             logger.error("Error while appending message to the stream:", e);
-            responseMessage.errorMsg = e.getMessage();
+            responseMessage.errorMsg = Utils.generateFailureMessage(e);
         }
         sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
     }
@@ -486,7 +495,7 @@ public class DashboardServer extends WebSocketServer implements KernelMessagePus
         }
         catch (Exception e){
             logger.error("Error while appending message to the stream:", e);
-            responseMessage.errorMsg = e.getMessage();
+            responseMessage.errorMsg = Utils.generateFailureMessage(e);
         }
         sendIfOpen(conn, new Message(MessageType.RESPONSE, packedRequest.requestID, responseMessage));
     }
