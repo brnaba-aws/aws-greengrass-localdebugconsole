@@ -1,0 +1,1411 @@
+{
+  "$schema":"http://json-schema.org/draft-04/schema#",
+  "title":"StreamManager Model",
+  "type":"object",
+  "properties":{
+    "VersionInfo":{
+      "$ref":"#/definitions/VersionInfo"
+    },
+    "MessageStreamDefinition":{
+      "$ref":"#/definitions/MessageStreamDefinition"
+    },
+    "Message":{
+      "$ref":"#/definitions/Message"
+    },
+    "MessageFrame":{
+      "$ref":"#/definitions/MessageFrame"
+    },
+    "TraceableRequest":{
+      "$ref":"#/definitions/TraceableRequest"
+    },
+    "UnknownOperationError":{
+      "$ref":"#/definitions/UnknownOperationError"
+    },
+    "CreateMessageStreamRequest":{
+      "$ref":"#/definitions/CreateMessageStreamRequest"
+    },
+    "CreateMessageStreamResponse":{
+      "$ref":"#/definitions/CreateMessageStreamResponse"
+    },
+    "UpdateMessageStreamRequest":{
+      "$ref":"#/definitions/UpdateMessageStreamRequest"
+    },
+    "UpdateMessageStreamResponse":{
+      "$ref":"#/definitions/UpdateMessageStreamResponse"
+    },
+    "DeleteMessageStreamRequest":{
+      "$ref":"#/definitions/DeleteMessageStreamRequest"
+    },
+    "DeleteMessageStreamResponse":{
+      "$ref":"#/definitions/DeleteMessageStreamResponse"
+    },
+    "DescribeMessageStreamRequest":{
+      "$ref":"#/definitions/DescribeMessageStreamRequest"
+    },
+    "DescribeMessageStreamResponse":{
+      "$ref":"#/definitions/DescribeMessageStreamResponse"
+    },
+    "AppendMessageRequest":{
+      "$ref":"#/definitions/AppendMessageRequest"
+    },
+    "AppendMessageResponse":{
+      "$ref":"#/definitions/AppendMessageResponse"
+    },
+    "ReadMessagesRequest": {
+      "$ref":"#/definitions/ReadMessagesRequest"
+    },
+    "ReadMessagesResponse": {
+      "$ref":"#/definitions/ReadMessagesResponse"
+    },
+    "StrategyOnFull": {
+      "$ref": "#/definitions/StrategyOnFull"
+    },
+    "ConnectRequest":{
+      "$ref": "#/definitions/ConnectRequest"
+    },
+    "ConnectResponse":{
+      "$ref": "#/definitions/ConnectResponse"
+    },
+    "Operation": {
+      "$ref": "#/definitions/Operation"
+    },
+    "ResponseStatusCode": {
+      "$ref": "#/definitions/ResponseStatusCode"
+    },
+    "ListStreamsRequest": {
+      "$ref": "#/definitions/ListStreamsRequest"
+    },
+    "ListStreamsResponse": {
+      "$ref": "#/definitions/ListStreamsResponse"
+    },
+    "ExportFormat": {
+      "$ref": "#/definitions/ExportFormat"
+    },
+    "S3ExportTaskDefinition": {
+      "$ref": "#/definitions/S3ExportTaskDefinition"
+    },
+    "Variant": {
+      "$ref": "#/definitions/Variant"
+    },
+    "PutAssetPropertyValueEntry": {
+      "$ref": "#/definitions/PutAssetPropertyValueEntry"
+    },
+    "StatusMessage": {
+      "$ref": "#/definitions/StatusMessage"
+    },
+    "StatusLevel": {
+      "$ref": "#/definitions/StatusLevel"
+    },
+    "EventType": {
+      "$ref": "#/definitions/EventType"
+    },
+    "Status": {
+      "$ref": "#/definitions/Status"
+    }
+  },
+  "definitions":{
+    "VersionInfo": {
+      "description": "(Internal Only) Version information.",
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.VersionInfo",
+      "type":"string",
+      "enum":["1.1.0"],
+      "javaEnumNames": ["PROTOCOL_VERSION"]
+    },
+    "StrategyOnFull": {
+      "description": "StrategyOnFull is used in the MessageStreamDefinition when creating a stream.\nIt defines the behavior when the stream has reached the maximum size.\nRejectNewData: any append message request after the stream is full will be rejected with an exception.\nOverwriteOldestData: the oldest stream segments will be deleted until there is room for the new message.",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.StrategyOnFull",
+      "type":"integer",
+      "enum":[0, 1],
+      "javaEnumNames": ["RejectNewData", "OverwriteOldestData"]
+    },
+    "ExportFormat": {
+      "description": "ExportFormat is used to define how messages are batched and formatted in the export payload.\nRAW_NOT_BATCHED: Each message in a batch will be sent as an individual HTTP POST with the payload as the body (even if batchSize is set).\nJSON_BATCHED: Each batch of messages will be sent as a JSON list of Message objects as the body.",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.ExportFormat",
+      "type":"integer",
+      "enum":[0, 1],
+      "javaEnumNames": ["RAW_NOT_BATCHED", "JSON_BATCHED"]
+    },
+    "Persistence": {
+      "description": "Stream persistence. If set to File, the file system will be used to persist messages long-term and is resilient to restarts.\nMemory should be used when performance matters more than durability as it only stores the stream in memory and never writes to the disk.",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.Persistence",
+      "type":"integer",
+      "enum":[0, 1],
+      "default": 0,
+      "javaEnumNames": ["File", "Memory"]
+    },
+    "StatusLevel": {
+      "description": "Defines the verbosity of status messages in a status-stream.",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.StatusLevel",
+      "type":"integer",
+      "enum":[0, 1, 2, 3, 4],
+      "default": 2,
+      "javaEnumNames": ["ERROR", "WARN", "INFO", "DEBUG", "TRACE"]
+    },
+    "EventType": {
+      "description": "The type of event, which determines how to interpret the status payload.",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.EventType",
+      "type":"integer",
+      "enum":[0],
+      "javaEnumNames": ["S3Task"]
+    },
+    "Status": {
+      "description": "The status of the event.",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.Status",
+      "type":"integer",
+      "enum":[0, 1, 2, 3, 4],
+      "default": 0,
+      "javaEnumNames": ["Success", "Failure", "InProgress", "Warning", "Canceled"]
+    },
+    "ConnectRequest": {
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.ConnectRequest",
+      "description": "(Internal Only) Request object to connect to the service.",
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "minLength":  1,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "protocolVersion": {
+          "type": "string"
+        },
+        "otherSupportedProtocolVersions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sdkVersion": {
+          "type": "string"
+        },
+        "authToken": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "requestId",
+        "protocolVersion"
+      ]
+    },
+    "ConnectResponse": {
+      "type": "object",
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.ConnectResponse",
+      "description": "Internal Only.",
+      "properties":{
+        "requestId":{
+          "type":"string",
+          "minLength":  1,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "status":{
+          "$ref": "#/definitions/ResponseStatusCode"
+        },
+        "errorMessage":{
+          "type":"string"
+        },
+        "protocolVersion": {
+          "type": "string"
+        },
+        "supportedProtocolVersions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "serverVersion": {
+          "type": "string"
+        },
+        "clientIdentifier": {
+          "type": "string"
+        }
+      },
+      "required":[
+        "status"
+      ],
+      "additionalProperties":false
+    },
+    "Operation": {
+      "description": "Internal Only.",
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.Operation",
+      "type": "integer",
+      "enum": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
+      "javaEnumNames": [
+        "Unknown",
+        "Connect",
+        "CreateMessageStream",
+        "DeleteMessageStream",
+        "AppendMessage",
+        "ReadMessages",
+        "ConnectResponse",
+        "CreateMessageStreamResponse",
+        "DeleteMessageStreamResponse",
+        "AppendMessageResponse",
+        "ReadMessagesResponse",
+        "ListStreams",
+        "ListStreamsResponse",
+        "DescribeMessageStream",
+        "DescribeMessageStreamResponse",
+        "UpdateMessageStream",
+        "UpdateMessageStreamResponse",
+        "UnknownOperationError"
+      ]
+    },
+    "ResponseStatusCode": {
+      "description": "(Internal Only) Enum defining possible response status codes from StreamManager server.\nSuccess: Request succeeded.\nUnknownFailure: Encountered unknown StreamManager server failure.\nUnauthorized: Client is not authorized to perform this request.\nInvalidRequest: Client request is invalid.\nRequestPayloadTooLarge: Request payload is too large.\nResourceNotFound: The requested resource does not exist.\nServerTimeout: Server took too long and timed out.\nResponsePayloadTooLarge: Server response exceeded the max allowed response payload size by the protocol.\nUnsupportedConnectVersion: Server does not support the Connect version presented by the Client.\nUnexpectedOperation: Operation presented was not expected by the Server.\nUnsupportedProtocolVersion: Protocol version presented by the Client is not compatible with the Server.\nInvalidProtocolVersion: Protocol version presented by the Client is not valid.\nFailedToConnect: Client failed to connect to the Server.\nNotEnoughMessages: There is not enough messages to return.\nMessageStoreReadError: Read messages encountered an error.\nOutOfMemoryError: Server ran out of memory.\nUpdateFailed: Update operation failed.\nUpdateNotAllowed: One or more fields are not allowed to be updated.\nUnknownOperation: Client request is not recognized by the server.",
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.ResponseStatusCode",
+      "type": "integer",
+      "enum": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+      "javaEnumNames": [
+        "Success",
+        "UnknownFailure",
+        "Unauthorized",
+        "InvalidRequest",
+        "RequestPayloadTooLarge",
+        "ResourceNotFound",
+        "ServerTimeout",
+        "ResponsePayloadTooLarge",
+        "UnsupportedConnectVersion",
+        "UnexpectedOperation",
+        "UnsupportedProtocolVersion",
+        "InvalidProtocolVersion",
+        "FailedToConnect",
+        "NotEnoughMessages",
+        "MessageStoreReadError",
+        "OutOfMemoryError",
+        "UpdateFailed",
+        "UpdateNotAllowed",
+        "UnknownOperation"
+      ]
+    },
+    "MessageFrame":{
+      "description": "Internal Only.",
+      "type":"object",
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.MessageFrame",
+      "properties": {
+        "operation": {
+          "$ref": "#/definitions/Operation"
+        },
+        "payload": {
+          "type": "string",
+          "media": {
+            "binaryEncoding":"base64"
+          }
+        }
+      },
+      "required": ["operation", "payload"]
+    },
+    "HTTPConfig": {
+      "type": "object",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.export.HTTPConfig",
+      "description": "This export destination is not supported! The interface may change at any time without notice and should not be relied on for any production use.\nThere are no guarantees around its correctness.\nThis configures an HTTP endpoint which sends a POST request to the provided URI. Each request contains a single message in the body of the request.",
+      "properties":{
+        "identifier":{
+          "description": "A unique identifier to identify this individual upload stream.\nMust be an alphanumeric string including spaces, commas, periods, hyphens, and underscores with length between 1 and 255.",
+          "type":"string",
+          "minLength":  1,
+          "maxLength": 255,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "uri":{
+          "description": "URL for HTTP endpoint which should receive the POST requests for export.",
+          "type":"string",
+          "minLength": 1
+        },
+        "batchSize":{
+          "description": "The maximum size of a batch to send to the destination. Messages will be queued until the batch size is reached, after which they will then be uploaded. If unspecified the default will be 500.\nIf both batchSize and batchIntervalMillis are specified, then messages will be eligible for upload when either condition is met.\nThe minimum batch size is 1 and the maximum is 500.",
+          "type":"integer",
+          "minimum": 1,
+          "maximum": 500,
+          "$comment": "Max is set to 500 because we've decided that's the max for HTTP."
+        },
+        "batchIntervalMillis":{
+          "description": "The time in milliseconds between the earliest un-uploaded message and the current time. If this time is exceeded, messages will be uploaded in the next batch. If unspecified messages will be eligible for upload immediately.\nIf both batchSize and batchIntervalMillis are specified, then messages will be eligible for upload when either condition is met.\nThe minimum value is 60000 milliseconds and the maximum is 9223372036854 milliseconds.",
+          "type":"integer",
+          "minimum": 60000,
+          "maximum": 9223372036854,
+          "$comment": "limit of 9223372036854 ms is used so that if a developer converts it to nano seconds, it can still fit in a long"
+        },
+        "priority": {
+          "type":"integer",
+          "description": "Priority for this upload stream. Lower values are higher priority. If not specified it will have the lowest priority.",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "startSequenceNumber": {
+          "description": "The sequence number of the message to use as the starting message in the export. Default is 0. The sequence number provided should be less than the newest sequence number in the stream, i.e., sequence number of the last messaged appended. To find the newest sequence number, describe the stream and then check the storage status of the returned MessageStreamInfo object.",
+          "type": "integer",
+          "minimum":  0,
+          "maximum": 9223372036854775807,
+          "$comment": "Max is set to Long.MAX_VALUE because we store the sequence numbers as a long"
+        },
+        "disabled": {
+          "description": "Enable or disable this export. Default is false.",
+          "type": "boolean"
+        },
+        "exportFormat":{
+          "$ref":"#/definitions/ExportFormat",
+          "description": "Defines how messages are batched and formatted in the export payload."
+        }
+      },
+      "required":[
+        "identifier",
+        "uri"
+      ],
+      "additionalProperties":false
+    },
+    "IoTAnalyticsConfig": {
+      "type":"object",
+      "description": "Configuration object for IoT Analytics export destination.",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.export.IoTAnalyticsConfig",
+      "properties":{
+        "identifier":{
+          "description": "A unique identifier to identify this individual upload stream.\nMust be an alphanumeric string including spaces, commas, periods, hyphens, and underscores with length between 1 and 255.",
+          "type":"string",
+          "minLength":  1,
+          "maxLength": 255,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "iotChannel":{
+          "description": "The name of the IoT Analytics Channel that this exporter should upload to.",
+          "type":"string",
+          "minLength": 1
+        },
+        "iotMsgIdPrefix":{
+          "description": "A string prefixed to each unique message id. After this prefix, StreamManager may append more data to make the message ID unique.\nThis prefix must be less than 32 characters.",
+          "type":"string",
+          "maxLength": 32
+        },
+        "batchSize":{
+          "description": "The maximum size of a batch to send to IoT Analytics. Messages will be queued until the batch size is reached, after which they will then be uploaded. If unspecified the default will be 100.\nIf both batchSize and batchIntervalMillis are specified, then messages will be eligible for upload when either condition is met.\nThe batch size must be between 1 and 100.",
+          "type":"integer",
+          "minimum": 1,
+          "maximum": 100,
+          "$comment": "Max is set to 100 because that is the max batch size of IoTA."
+        },
+        "batchIntervalMillis":{
+          "description": "The time in milliseconds between the earliest un-uploaded message and the current time. If this time is exceeded, messages will be uploaded in the next batch. If unspecified messages will be eligible for upload immediately.\nIf both batchSize and batchIntervalMillis are specified, then messages will be eligible for upload when either condition is met.\nThe minimum value is 60000 milliseconds and the maximum is 9223372036854 milliseconds.",
+          "type":"integer",
+          "minimum": 60000,
+          "maximum": 9223372036854,
+          "$comment": "limit of 9223372036854 ms is used so that if a developer converts it to nano seconds, it can still fit in a long."
+        },
+        "priority": {
+          "type":"integer",
+          "description": "Priority for this upload stream. Lower values are higher priority. If not specified it will have the lowest priority.",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "startSequenceNumber": {
+          "description": "The sequence number of the message to use as the starting message in the export. Default is 0. The sequence number provided should be less than the newest sequence number in the stream, i.e., sequence number of the last messaged appended. To find the newest sequence number, describe the stream and then check the storage status of the returned MessageStreamInfo object.",
+          "type": "integer",
+          "minimum":  0,
+          "maximum": 9223372036854775807,
+          "$comment": "Max is set to Long.MAX_VALUE because we store the sequence numbers as a long."
+        },
+        "disabled": {
+          "description": "Enable or disable this export. Default is false.",
+          "type": "boolean"
+        }
+      },
+      "required":[
+        "identifier",
+        "iotChannel"
+      ],
+      "additionalProperties":false
+    },
+    "KinesisConfig": {
+      "type":"object",
+      "description": "Configuration object for Kinesis data streams export destination.",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.export.KinesisConfig",
+      "properties":{
+        "identifier":{
+          "description": "A unique identifier to identify this individual upload stream.\nMust be an alphanumeric string including spaces, commas, periods, hyphens, and underscores with length between 1 and 255.",
+          "type":"string",
+          "minLength":  1,
+          "maxLength": 255,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "kinesisStreamName":{
+          "description": "The name of the Kinesis data stream that this exporter should upload to.",
+          "type":"string",
+          "minLength": 1
+        },
+        "batchSize":{
+          "description": "The maximum size of a batch to send to Kinesis. Messages will be queued until the batch size is reached, after which they will then be uploaded. If unspecified the default will be 500.\nIf both batchSize and batchIntervalMillis are specified, then messages will be eligible for upload when either condition is met.\nThe batch size must be between 1 and 500.",
+          "type":"integer",
+          "minimum": 1,
+          "maximum": 500,
+          "$comment": "Max is set to 500 because that is the max batch size for kinesis."
+        },
+        "batchIntervalMillis":{
+          "description": "The time in milliseconds between the earliest un-uploaded message and the current time. If this time is exceeded, messages will be uploaded in the next batch. If unspecified messages will be eligible for upload immediately.\nIf both batchSize and batchIntervalMillis are specified, then messages will be eligible for upload when either condition is met.\nThe minimum value is 60000 milliseconds and the maximum is 9223372036854 milliseconds.",
+          "type":"integer",
+          "minimum": 60000,
+          "maximum": 9223372036854,
+          "$comment": "limit of 9223372036854 ms is used so that if a developer converts it to nano seconds, it can still fit in a long."
+        },
+        "priority": {
+          "type":"integer",
+          "description": "Priority for this upload stream. Lower values are higher priority. If not specified it will have the lowest priority.",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "startSequenceNumber": {
+          "description": "The sequence number of the message to use as the starting message in the export. Default is 0. The sequence number provided should be less than the newest sequence number in the stream, i.e., sequence number of the last messaged appended. To find the newest sequence number, describe the stream and then check the storage status of the returned MessageStreamInfo object.",
+          "type": "integer",
+          "minimum":  0,
+          "maximum": 9223372036854775807,
+          "$comment": "Max is set to Long.MAX_VALUE because we store the sequence numbers as a long."
+        },
+        "disabled": {
+          "description": "Enable or disable this export. Default is false.",
+          "type": "boolean"
+        }
+      },
+      "required":[
+        "identifier",
+        "kinesisStreamName"
+      ],
+      "additionalProperties":false
+    },
+    "IoTSiteWiseConfig": {
+      "type": "object",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.export.IoTSiteWiseConfig",
+      "description": "Configuration object for IotSiteWise data streams export destination. Minimum version requirements: StreamManager server version 1.1 (or AWS IoT Greengrass Core 1.11.0)",
+      "properties":{
+        "identifier":{
+          "description": "A unique identifier to identify this individual upload stream.\nMust be an alphanumeric string including spaces, commas, periods, hyphens, and underscores with length between 1 and 255.",
+          "type":"string",
+          "minLength":  1,
+          "maxLength": 255,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "batchSize":{
+          "description": "The maximum size of a batch to send to the destination. Messages will be queued until the batch size is reached, after which they will then be uploaded. If unspecified the default will be 10.\nIf both batchSize and batchIntervalMillis are specified, then messages will be eligible for upload when either condition is met.\nThe minimum batch size is 1 and the maximum is 10.",
+          "type":"integer",
+          "minimum": 1,
+          "maximum": 10,
+          "$comment": "See the IOTSiteWiseDestination class for reasoning behind max batch size = 10"
+        },
+        "batchIntervalMillis":{
+          "description": "The time in milliseconds between the earliest un-uploaded message and the current time. If this time is exceeded, messages will be uploaded in the next batch. If unspecified messages will be eligible for upload immediately.\nIf both batchSize and batchIntervalMillis are specified, then messages will be eligible for upload when either condition is met.\nThe minimum value is 60000 milliseconds and the maximum is 9223372036854 milliseconds.",
+          "type":"integer",
+          "minimum": 60000,
+          "maximum": 9223372036854,
+          "$comment": "limit of 9223372036854 ms is used so that if a developer converts it to nano seconds, it can still fit in a long."
+        },
+        "priority": {
+          "type":"integer",
+          "description": "Priority for this upload stream. Lower values are higher priority. If not specified it will have the lowest priority.",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "startSequenceNumber": {
+          "description": "The sequence number of the message to use as the starting message in the export. Default is 0. The sequence number provided should be less than the newest sequence number in the stream, i.e., sequence number of the last messaged appended. To find the newest sequence number, describe the stream and then check the storage status of the returned MessageStreamInfo object.",
+          "type": "integer",
+          "minimum":  0,
+          "maximum": 9223372036854775807,
+          "$comment": "Max is set to Long.MAX_VALUE because we store the sequence numbers as a long."
+        },
+        "disabled": {
+          "description": "Enable or disable this export. Default is false.",
+          "type": "boolean"
+        }
+      },
+      "required":[
+        "identifier"
+      ],
+      "additionalProperties":false
+    },
+    "StatusConfig": {
+      "type": "object",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.StatusConfig",
+      "description": "Configuration for status in a status-stream.",
+      "properties":{
+        "statusLevel": {
+          "description": "Defines the verbosity of status messages in a status-stream.",
+          "$ref":"#/definitions/StatusLevel"
+        },
+        "statusStreamName": {
+          "type": "string",
+          "description": "The name of the stream to which status messages are appended.\nThe status-stream should be created before associating it with another stream.",
+          "minLength":  1,
+          "maxLength": 255,
+          "pattern": "^[\\w ,.\\-_]*$",
+          "$comment": "Must be an alphanumeric string including spaces, commas, periods, hyphens, and underscores with length between 1 and 255."
+        }
+      },
+      "additionalProperties":false
+    },
+    "S3ExportTaskExecutorConfig": {
+      "type": "object",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.export.S3ExportTaskExecutorConfig",
+      "description": "Configuration object for S3 export tasks executor.  Minimum version requirements: StreamManager server version 1.1 (or AWS IoT Greengrass Core 1.11.0)",
+      "properties":{
+        "identifier":{
+          "description": "A unique identifier to identify this individual upload task.\nMust be an alphanumeric string including spaces, commas, periods, hyphens, and underscores with length between 1 and 255.",
+          "type":"string",
+          "minLength":  1,
+          "maxLength": 255,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "sizeThresholdForMultipartUploadBytes":{
+          "description": "The size threshold in bytes for when to use multipart uploads. Uploads over this size will automatically use a multipart upload strategy, while uploads equal or smaller than this threshold will use a single connection to upload the whole object.",
+          "type":"integer",
+          "minimum": 5242880,
+          "$comment": "Minimum for the multipart upload threshold is set as 5 MB, as the minimum part size requirement on S3 is 5 MB. The minimum size threshold should be in bytes. Multipart uploads are easier to recover from and potentially faster than single part uploads, especially when the upload parts can be uploaded in parallel as with files. Due to additional network communication, small uploads should use a single connection for the upload."
+        },
+        "priority": {
+          "type":"integer",
+          "description": "Priority for this upload task. Lower values are higher priority. If not specified it will have the lowest priority.",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "disabled": {
+          "description": "Enable or disable this export. Default is false.",
+          "type": "boolean"
+        },
+        "statusConfig": {
+          "description": "Event status configuration that specifies the target status stream and verbosity.",
+          "$ref":"#/definitions/StatusConfig"
+        }
+      },
+      "required":[
+        "identifier"
+      ],
+      "additionalProperties":false
+    },
+    "ExportDefinition": {
+      "type":"object",
+      "description": "Defines how and where the stream is uploaded.",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.export.ExportDefinition",
+      "properties":{
+        "http":{
+          "type":"array",
+          "description": "Defines how the stream is uploaded to an HTTP endpoint.",
+          "items": {
+            "$ref": "#/definitions/HTTPConfig"
+          }
+        },
+        "iotAnalytics":{
+          "description": "Defines how the stream is uploaded to IoT Analytics.",
+          "type":"array",
+          "items":{
+            "$ref": "#/definitions/IoTAnalyticsConfig"
+          }
+        },
+        "kinesis":{
+          "description": "Defines how the stream is uploaded to Kinesis.",
+          "type":"array",
+          "items":{
+            "$ref": "#/definitions/KinesisConfig"
+          }
+        },
+        "IotSitewise": {
+          "description": "Defines how the stream is uploaded to IoT SiteWise.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/IoTSiteWiseConfig"
+          }
+        },
+        "s3TaskExecutor":{
+          "description": "Defines the list of configs for S3 task executors.",
+          "type":"array",
+          "items":{
+            "$ref": "#/definitions/S3ExportTaskExecutorConfig"
+          }
+        }
+      },
+      "additionalProperties":false
+    },
+    "MessageStreamDefinition":{
+      "description": "Object defining a message stream used in the CreateMessageStream and UpdateMessageStream API.",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.MessageStreamDefinition",
+      "type":"object",
+      "properties":{
+        "name":{
+          "type":"string",
+          "minLength":  1,
+          "maxLength": 255,
+          "pattern": "^[\\w ,.\\-_]*$",
+          "description": "The unique name of the stream.\nMust be an alphanumeric string including spaces, commas, periods, hyphens, and underscores with length between 1 and 255."
+        },
+        "maxSize":{
+          "type":"integer",
+          "minimum": 1024,
+          "maximum": 9223372036854775807,
+          "default": 268435456,
+          "description": "The maximum size in bytes for the entire stream. Set to 256MB by default with a minimum of 1KB and a maximum of 8192PB.",
+          "$comment": "Max is set to Long.MAX_VALUE because we store the size as a long."
+        },
+        "streamSegmentSize":{
+          "type":"integer",
+          "minimum": 1024,
+          "maximum": 2147483647,
+          "default": 16777216,
+          "description": "The size of each segment of the stream. Set to 16MB by default with a minimum of 1KB and a maximum of 2GB.\nData is only deleted segment by segment, so the segment size is the smallest amount of data which can be deleted.",
+          "$comment": "Max is set to Integer.MAX_VALUE because we store the size as an int."
+        },
+        "timeToLiveMillis":{
+          "type":"integer",
+          "minimum": 60000,
+          "maximum": 9223372036854,
+          "description": "Time to live for each message in milliseconds. Data may be deleted at any time after the TTL expires; deletion is not guaranteed to occur immediately when the TTL expires.\nThe minimum value is 60000 milliseconds and the maximum is 9223372036854 milliseconds.",
+          "$comment": "limit of 9223372036854 ms is used so that if a developer converts it to nano seconds, it can still fit in a long."
+        },
+        "strategyOnFull":{
+          "$ref":"#/definitions/StrategyOnFull",
+          "description":  "What to do when the maximum size of the stream is reached.\nRejectNewData: any append message request after the stream is full will be rejected with an exception.\nOverwriteOldestData: the oldest stream segments will be deleted until there is room for the new message."
+        },
+        "persistence": {
+          "$ref": "#/definitions/Persistence",
+          "description": "Stream persistence. If set to File, the file system will be used to persist messages long-term and is resilient to restarts.\nMemory should be used when performance matters more than durability as it only stores the stream in memory and never writes to the disk."
+        },
+        "flushOnWrite": {
+          "description": "This only applies when Persistence is set to File mode.\nWaits for the filesystem to complete the write for every message. This is safer, but slower. Default is false.",
+          "type": "boolean"
+        },
+        "exportDefinition":{
+          "$ref": "#/definitions/ExportDefinition",
+          "description": "Defines how and where the stream is uploaded. See the definition of the ExportDefinition object for more detail."
+        }
+      },
+      "required":[
+        "name",
+        "strategyOnFull"
+      ],
+      "additionalProperties":false
+    },
+    "MessageStreamInfo": {
+      "description": "Message stream information including its definition, storage status and export status.",
+      "type":"object",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.MessageStreamInfo",
+      "properties": {
+        "definition":{
+          "$ref":"#/definitions/MessageStreamDefinition"
+        },
+        "storageStatus" : {
+          "description": "Stream status including oldest/newest sequence number and total bytes.",
+          "type":"object",
+          "javaType": "com.amazonaws.greengrass.streammanager.model.StorageStatus",
+          "properties": {
+            "oldestSequenceNumber": {
+              "type":"integer",
+              "description": "The sequence number of the first message which is still accessible in the stream."
+            },
+            "newestSequenceNumber": {
+              "type":"integer",
+              "description": "The sequence number of the last appended message."
+            },
+            "totalBytes": {
+              "type":"integer",
+              "description": "The current total size of the stream in bytes."
+            }
+          },
+          "additionalProperties":false
+        },
+        "exportStatuses": {
+          "type":"array",
+          "items": {
+            "description": "Export status including the export identifier and the last exported sequence number for that export task.",
+            "type":"object",
+            "javaType": "com.amazonaws.greengrass.streammanager.model.export.ExportStatus",
+            "properties": {
+              "exportConfigIdentifier": {
+                "type":"string",
+                "description": "The unique export identifier."
+              },
+              "lastExportedSequenceNumber": {
+                "type":"integer",
+                "description": "The sequence number of the last message which was successfully exported."
+              },
+              "lastExportTime": {
+                "type":"integer",
+                "description": "The last time an export was attempted. Data is Unix epoch time in milliseconds."
+              },
+              "errorMessage": {
+                "type":"string",
+                "description": "Error message from the last export attempt if it failed."
+              },
+              "exportedBytesFromStream" : {
+                "type":"integer",
+                "description": "Total bytes exported from the stream for this Export Config. It does not include the failed export attempts or messages which are skipped because of some non-retryable error."
+              },
+              "exportedMessagesCount" : {
+                "type":"integer",
+                "description": "Total messages exported/processed."
+              }
+            },
+            "required": [
+              "identifier",
+              "lastExportedSequenceNumber"
+            ],
+            "additionalProperties":false
+          }
+        }
+      },
+      "required":[
+        "definition",
+        "storageStatus"
+      ],
+      "additionalProperties":false
+    },
+    "S3ExportTaskDefinition": {
+      "description": "S3 Task definition containing all the information necessary to export the data to S3. This will contain the S3 bucket and key as well as the file's URL where the data is stored.",
+      "javaInterfaces" : ["java.io.Serializable"],
+      "type": "object",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.S3ExportTaskDefinition",
+      "properties":{
+        "inputUrl":{
+          "type": "string",
+          "description": "The URL of the file that contains the data to upload. The file should be local on the disk."
+        },
+        "bucket":{
+          "type": "string",
+          "description": "The name of the S3 bucket that this file should be uploaded to.",
+          "minLength": 3,
+          "maxLength": 63,
+          "pattern": "(?=^.{3,63}$)(?!^(\\d+\\.)+\\d+$)(^(([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])\\.)*([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])$)"
+        },
+        "key":{
+          "type": "string",
+          "description": "The key for the S3 object that this file should be uploaded to.\nThe string can have placeholder expressions which are resolved at upload time. Valid expressions are strings that are valid Java DateTimeFormatter strings. See https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html\nExample: myKeyNamePrefix/!{timestamp:yyyy/MM/dd}/myKeyNameSuffix.",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "^([^\\\\\\{ \\}%\\`\\[\\]\\\"\\'\\>\\<\\~\\#\\^\\?\\|]|!\\{[a-zA-Z]+:[a-zA-Z\\/]+\\})*$",
+          "$comment": "Regex allows placeholder timestamp namespace, eg, !{timestamp:yyyy/MM/dd}"
+        },
+        "userMetadata": {
+          "type": "object",
+          "existingJavaType" : "java.util.Map<String,String>",
+          "description": "User metadata. For key of a user metadata, callers should not include the internal \"x-amz-meta-\" prefix. Keys are case insensitive and will appear as lowercase strings on S3, even if they were originally specified with uppercase strings. Reserved key names start with \"$aws-gg-\" prefix."
+        }
+      },
+      "required":[
+        "inputUrl",
+        "bucket",
+        "key"
+      ],
+      "additionalProperties":false
+    },
+    "StatusMessage": {
+      "description": "Status object appended to a status-stream.",
+      "type": "object",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.StatusMessage",
+      "properties": {
+        "eventType": {
+          "$ref": "#/definitions/EventType"
+        },
+        "statusLevel": {
+          "$ref": "#/definitions/StatusLevel"
+        },
+        "status": {
+          "$ref": "#/definitions/Status"
+        },
+        "statusContext": {
+          "$ref": "#/definitions/StatusContext"
+        },
+        "message": {
+          "type": "string",
+          "description": "String describing the status message."
+        },
+        "timestampEpochMs": {
+          "type": "integer",
+          "description": "The time this status was added to the status-stream (in milliseconds since epoch)."
+        }
+      },
+      "required": [
+        "eventType",
+        "status"
+      ]
+    },
+    "StatusContext": {
+      "description": "Context associated with a status message. Describes which stream, export config, message, the status is associated with.",
+      "type": "object",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.StatusContext",
+      "properties": {
+        "s3ExportTaskDefinition": {
+          "$ref": "#/definitions/S3ExportTaskDefinition",
+          "description": "The task definition of an S3 upload task if the status is associated with it, ie, if the eventType = S3Task."
+        },
+        "exportIdentifier": {
+          "type": "string",
+          "description": "The export identifier the status is associated with."
+        },
+        "streamName": {
+          "type": "string",
+          "description": "The name of the stream the status is associated with."
+        },
+        "sequenceNumber":{
+          "type":"integer",
+          "description": "The sequence number of the message the status is associated with."
+        }
+      }
+    },
+    "Message":{
+      "description": "Message object containing metadata and the user's payload.",
+      "type":"object",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.Message",
+      "properties":{
+        "streamName":{
+          "type":"string",
+          "description": "The name of the stream which this message is in."
+        },
+        "sequenceNumber":{
+          "type":"integer",
+          "description": "The sequence number of this message within the stream."
+        },
+        "ingestTime":{
+          "type":"integer",
+          "description": "The time that the message was ingested to Stream Manager. Data is Unix epoch time in milliseconds."
+        },
+        "payload":{
+          "type":"string",
+          "description": "The binary message data.",
+          "media":{
+            "binaryEncoding":"base64"
+          }
+        }
+      },
+      "required":[
+        "streamName",
+        "payload"
+      ],
+      "additionalProperties":false
+    },
+    "ReadMessagesOptions": {
+      "description": "Options for the ReadMessages API. All fields are optional.",
+      "type": "object",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.ReadMessagesOptions",
+      "properties": {
+        "desiredStartSequenceNumber": {
+          "description": "The desired beginning sequence number to start reading from. If the desired sequence number is less than the current minimum of the stream, then it will instead start reading from the current minimum.",
+          "type": "integer",
+          "minimum":  0,
+          "maximum": 9223372036854775807,
+          "$comment": "Max is set to Long.MAX_VALUE because we store the sequence numbers as a long."
+        },
+        "minMessageCount": {
+          "type": "integer",
+          "description": "The minimum number of messages that will be returned. If not enough messages are available for reading, then NotEnoughMessages exception will be thrown.\nThe minimum values is 1 and the maximum value is 2147483647.",
+          "minimum": 1,
+          "default": 1,
+          "maximum": 2147483647,
+          "$comment": "Max is set to Integer.MAX_VALUE because we use an ArrayList which only has integer indexing."
+        },
+        "maxMessageCount": {
+          "type": "integer",
+          "description": "The maximum number of messages that will be returned.\nThe minimum values is the value of the minimum message count and the maximum value is 2147483647.",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "$comment": "Max is set to Integer.MAX_VALUE because we use an ArrayList which only has integer indexing."
+        },
+        "readTimeoutMillis": {
+          "type": "integer",
+          "description": "The time to wait for messages in milliseconds. Default is 0, meaning that the server will not wait for messages.\nIf it can fulfill the minimum messages it will return them, but otherwise NotEnoughMessages exception will be thrown.\nIf the timeout is greater than zero, then the server will wait up to that time for more messages to be appended to the stream, waiting until the minimum number of messages is reached.\nThe maximum value is the value of the client timeout.",
+          "minimum": 0,
+          "default": 0,
+          "maximum": 9223372036854,
+          "$comment": "limit of 9223372036854 ms is used so that if a developer converts it to nano seconds, it can still fit in a long."
+        }
+      },
+      "additionalProperties": false
+    },
+    "TraceableRequest": {
+      "description": "(Internal Only) TraceableRequest that contains only requestId.",
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.TraceableRequest",
+      "type": "object",
+      "properties":{
+        "requestId":{
+          "type":"string",
+          "minLength":  1,
+          "pattern": "^[\\w ,.\\-_]*$"
+        }
+      },
+      "required":[
+        "requestId"
+      ],
+      "additionalProperties": false
+    },
+    "UnknownOperationError": {
+      "description": "(Internal Only) Response for UnknownOperationError.",
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.UnknownOperationError",
+      "type": "object",
+      "properties":{
+        "requestId":{
+          "type":"string",
+          "minLength":  1,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "status":{
+          "$ref": "#/definitions/ResponseStatusCode"
+        },
+        "errorMessage": {
+          "type": "string"
+        }
+      },
+      "required":[
+        "requestId",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "CreateMessageStreamRequest":{
+      "description": "(Internal Only) Request object for creating a message stream.",
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.CreateMessageStreamRequest",
+      "type":"object",
+      "properties":{
+        "requestId":{
+          "type":"string",
+          "minLength":  1,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "definition":{
+          "$ref":"#/definitions/MessageStreamDefinition"
+        }
+      },
+      "required":[
+        "requestId",
+        "definition"
+      ],
+      "additionalProperties":false
+    },
+    "CreateMessageStreamResponse":{
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.CreateMessageStreamResponse",
+      "type":"object",
+      "description": "Internal Only.",
+      "properties":{
+        "requestId":{
+          "type": "string",
+          "minLength":  1,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "status":{
+          "$ref": "#/definitions/ResponseStatusCode"
+        },
+        "errorMessage":{
+          "type": "string"
+        }
+      },
+      "required": [
+        "requestId",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "UpdateMessageStreamRequest":{
+      "description": "(Internal Only) Request object for updating a message stream.",
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.UpdateMessageStreamRequest",
+      "type":"object",
+      "properties":{
+        "requestId":{
+          "type":"string",
+          "minLength":  1,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "definition":{
+          "$ref":"#/definitions/MessageStreamDefinition"
+        }
+      },
+      "required":[
+        "requestId",
+        "definition"
+      ],
+      "additionalProperties":false
+    },
+    "UpdateMessageStreamResponse":{
+      "description": "(Internal Only) Response for UpdateMessageStreamRequest.",
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.UpdateMessageStreamResponse",
+      "type":"object",
+      "properties":{
+        "requestId":{
+          "type": "string",
+          "minLength":  1,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "status":{
+          "$ref": "#/definitions/ResponseStatusCode"
+        },
+        "errorMessage":{
+          "type": "string"
+        }
+      },
+      "required": [
+        "requestId",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "DeleteMessageStreamRequest":{
+      "description": "(Internal Only) Request object for deleting a message stream.",
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.DeleteMessageStreamRequest",
+      "type":"object",
+      "properties":{
+        "requestId":{
+          "type":"string",
+          "minLength":  1,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "name":{
+          "type":"string",
+          "minLength":  1,
+          "maxLength": 255,
+          "pattern": "^[\\w ,.\\-_]*$"
+        }
+      },
+      "required":[
+        "requestId",
+        "name"
+      ],
+      "additionalProperties":false
+    },
+    "DeleteMessageStreamResponse":{
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.DeleteMessageStreamResponse",
+      "type": "object",
+      "description": "Internal Only.",
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "minLength":  1,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "status": {
+          "$ref": "#/definitions/ResponseStatusCode"
+        },
+        "errorMessage": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "requestId",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "DescribeMessageStreamRequest":{
+      "description": "(Internal Only) Request object for describing a message stream.",
+      "type":"object",
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.DescribeMessageStreamRequest",
+      "properties":{
+        "requestId":{
+          "type":"string",
+          "minLength":  1,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "name":{
+          "type":"string",
+          "minLength":  1,
+          "maxLength": 255,
+          "pattern": "^[\\w ,.\\-_]*$"
+        }
+      },
+      "required":[
+        "requestId",
+        "name"
+      ],
+      "additionalProperties":false
+    },
+    "DescribeMessageStreamResponse": {
+      "description": "(Internal Only) Response object for describing a message stream.",
+      "type": "object",
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.DescribeMessageStreamResponse",
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "minLength":  1,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "status": {
+          "$ref": "#/definitions/ResponseStatusCode"
+        },
+        "errorMessage": {
+          "type": "string"
+        },
+        "messageStreamInfo": {
+          "$ref":"#/definitions/MessageStreamInfo"
+        }
+      },
+      "required": [
+        "requestId",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "AppendMessageRequest": {
+      "description": "(Internal Only) Request object for appending to a message stream.",
+      "type":"object",
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.AppendMessageRequest",
+      "properties":{
+        "requestId":{
+          "type":"string",
+          "minLength":  1,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "name":{
+          "type":"string",
+          "minLength":  1,
+          "maxLength": 255,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "payload":{
+          "type":"string",
+          "minLength":  1,
+          "$comment": "If we decide to support a zero-length payload, we should change the log segment repair logic. Currently, the repair logic will truncate headers with a payload. SIM: GG-30094.",
+          "media":{
+            "binaryEncoding":"base64"
+          }
+        }
+      },
+      "required":[
+        "requestId",
+        "name",
+        "payload"
+      ],
+      "additionalProperties":false
+    },
+    "AppendMessageResponse": {
+      "type": "object",
+      "description": "Internal Only.",
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.AppendMessageResponse",
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "minLength":  1,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "status": {
+          "$ref": "#/definitions/ResponseStatusCode"
+        },
+        "errorMessage": {
+          "type": "string"
+        },
+        "sequenceNumber": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "requestId",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "ReadMessagesRequest": {
+      "description": "(Internal Only) Request object for reading from a message stream. readMessagesOptions is optional.",
+      "type": "object",
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.ReadMessagesRequest",
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "minLength":  1,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "streamName":{
+          "type":"string",
+          "minLength":  1,
+          "maxLength": 255,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "readMessagesOptions": {
+          "$ref":"#/definitions/ReadMessagesOptions"
+        }
+      },
+      "required": [
+        "requestId",
+        "streamName"
+      ],
+      "additionalProperties": false
+    },
+    "ReadMessagesResponse": {
+      "type": "object",
+      "description": "Internal Only.",
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.ReadMessagesResponse",
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "minLength":  1,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "messages": {
+          "type":"array",
+          "items": {
+            "$ref":"#/definitions/Message"
+          }
+        },
+        "status": {
+          "$ref": "#/definitions/ResponseStatusCode"
+        },
+        "errorMessage": {
+          "type": "string"
+        }
+      }
+    },
+    "ListStreamsRequest": {
+      "type": "object",
+      "description": "(Internal Only) Request object to list all available streams. There are no options.",
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.ListStreamsRequest",
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "minLength":  1,
+          "pattern": "^[\\w ,.\\-_]*$"
+        }
+      },
+      "required": [
+        "requestId"
+      ],
+      "additionalProperties": false
+    },
+    "ListStreamsResponse": {
+      "type": "object",
+      "description": "Internal Only.",
+      "javaType": "com.amazonaws.greengrass.streammanager.protocol.ListStreamsResponse",
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "minLength":  1,
+          "pattern": "^[\\w ,.\\-_]*$"
+        },
+        "status": {
+          "$ref": "#/definitions/ResponseStatusCode"
+        },
+        "errorMessage": {
+          "type": "string"
+        },
+        "streams": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "requestId",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "PutAssetPropertyValueEntry":{
+      "description":"Contains a list of value updates for a IoTSiteWise asset property in the list of asset entries consumed by the BatchPutAssetPropertyValue API. See https://docs.aws.amazon.com/iot-sitewise/latest/APIReference/API_BatchPutAssetPropertyValue.html.",
+      "type":"object",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.sitewise.PutAssetPropertyValueEntry",
+      "required":[
+        "entryId",
+        "propertyValues"
+      ],
+      "properties":{
+        "entryId":{
+          "type":"string",
+          "maxLength":64,
+          "minLength":1,
+          "pattern":"^[a-zA-Z0-9_-]+$",
+          "description":"The user specified ID for the entry. You can use this ID to identify which entries failed."
+        },
+        "assetId":{
+          "type": "string",
+          "description":"The ID of the asset to update."
+        },
+        "propertyId":{
+          "type": "string",
+          "description":"The ID of the asset property for this entry."
+        },
+        "propertyAlias":{
+          "type":"string",
+          "maxLength":2048,
+          "minLength":1,
+          "pattern":"[^\\u0000-\\u001F\\u007F]+",
+          "description":"The property alias that identifies the property, such as an OPC-UA server data stream path (for example, /company/windfarm/3/turbine/7/temperature). For more information, see https://docs.aws.amazon.com/iot-sitewise/latest/userguide/connect-data-streams.html."
+        },
+        "propertyValues":{
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AssetPropertyValue"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "description":"The list of property values to upload. You can specify up to 10 values."
+        }
+      }
+    },
+    "Quality":{
+      "type":"string",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.sitewise.Quality",
+      "enum":[
+        "GOOD",
+        "BAD",
+        "UNCERTAIN"
+      ]
+    },
+    "AssetPropertyValue":{
+      "type":"object",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.sitewise.AssetPropertyValue",
+      "required":[
+        "value",
+        "timestamp"
+      ],
+      "properties":{
+        "value":{
+          "$ref": "#/definitions/Variant",
+          "description":"The value of the asset property."
+        },
+        "timestamp":{
+          "$ref": "#/definitions/TimeInNanos",
+          "description":"The timestamp of the asset property value."
+        },
+        "quality":{
+          "$ref": "#/definitions/Quality",
+          "description":"The quality of the asset property value."
+        }
+      },
+      "description":"Contains asset property value information."
+    },
+    "Variant":{
+      "type":"object",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.sitewise.Variant",
+      "properties":{
+        "stringValue":{
+          "type":"string",
+          "maxLength":1024,
+          "minLength":1,
+          "pattern":"[^\\u0000-\\u001F\\u007F]+",
+          "description":"Asset property data of type string (sequence of characters)."
+        },
+        "integerValue":{
+          "type":"integer",
+          "maximum":2147483647,
+          "minimum": 0,
+          "description":"Asset property data of type integer (whole number).",
+          "$comment": "SiteWise Data type model in integer"
+        },
+        "doubleValue":{
+          "type":"number",
+          "description":"Asset property data of type double (floating point number)."
+        },
+        "booleanValue":{
+          "type":"boolean",
+          "description":"Asset property data of type Boolean (true or false)."
+        }
+      },
+      "description":"Contains an asset property value (of a single type only)."
+    },
+    "TimeInNanos":{
+      "type":"object",
+      "javaType": "com.amazonaws.greengrass.streammanager.model.sitewise.TimeInNanos",
+      "required":["timeInSeconds"],
+      "properties":{
+        "timeInSeconds":{
+          "type":"integer",
+          "maximum":31556889864403199,
+          "minimum":1,
+          "description":"The timestamp date, in seconds, in the Unix epoch format. Fractional nanosecond data is provided by offsetInNanos."
+        },
+        "offsetInNanos":{
+          "type":"integer",
+          "maximum":999999999,
+          "minimum":0,
+          "description":"The nanosecond offset from timeInSeconds."
+        }
+      },
+      "description":"Contains a timestamp with optional nanosecond granularity."
+    }
+  }
+}
