@@ -538,6 +538,10 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
 
     @Override
     public boolean isUsernameAndPasswordValid(Pair<String, String> usernameAndPassword) {
+        if (consoleAuthDisabled()) {
+            return true;
+        }
+
         Topics passwordTopics = config.getRoot().findTopics(DEBUG_PASSWORD_NAMESPACE);
         if (passwordTopics == null || usernameAndPassword == null) {
             return false;
@@ -570,7 +574,15 @@ public class SimpleHttpServer extends PluginService implements Authenticator {
         return Instant.now().isBefore(Instant.ofEpochMilli(Coerce.toLong(expirationTopic)));
     }
 
+    private static boolean consoleAuthDisabled() {
+        // Set to true in development so you don't need to authenticate all the time.
+        return false;
+    }
+
     private Pair<String, String> getUsernameAndPassword(String authHeader) {
+        if (consoleAuthDisabled()) {
+            return new Pair<>("", "");
+        }
         if (Utils.isEmpty(authHeader)) {
             return null;
         }
