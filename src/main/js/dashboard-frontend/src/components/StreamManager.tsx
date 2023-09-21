@@ -266,56 +266,44 @@ function StreamManager() {
     }
 
 
-    function describeStream(streamName: string, index: number) {
-        SERVER.sendRequest({call: APICall.streamManagerDescribeStream, args: [streamName]}).then(
-            (response: StreamManagerResponseMessage) => {
-                if (response) {
-                    if (response.successful) {
-                        if (response.messageStreamInfo) {
-                            const item: Stream = {
-                                key: index,
-                                messageStreamInfo: response.messageStreamInfo
-                            };
-                            item.key = index;
-                            setStreamManagerStreamsList(prevList => [...prevList, item]);
-                            setRequestStreamsListInProgress(false);
-                        } else {
-                            setRequestStreamsListInProgress(false);
-                        }
-                    } else {
-                        setRequestStreamsListInProgress(false);
-                    }
-                } else {
-                    setRequestStreamsListInProgress(false);
-                }
-            },
-            () => {
-                setRequestStreamsListInProgress(false);
+    async function describeStream(streamName: string, index: number) {
+        try {
+            const response: StreamManagerResponseMessage = await SERVER.sendRequest({
+                call: APICall.streamManagerDescribeStream,
+                args: [streamName]
+            });
+            if (response && response.successful && response.messageStreamInfo) {
+                const item: Stream = {
+                    key: index,
+                    messageStreamInfo: response.messageStreamInfo
+                };
+                item.key = index;
+                setStreamManagerStreamsList(prevList => [...prevList, item]);
             }
-        );
+        } finally {
+            setRequestStreamsListInProgress(false);
+        }
     }
 
-    function deleteMessageStream(streamName: string) {
-        setRequestStreamsListInProgress(true);
-        SERVER.sendRequest({call: APICall.streamManagerDeleteMessageStream, args: [streamName]}).then(
-            (response: StreamManagerResponseMessage) => {
-                setRequestStreamsListInProgress(false);
-                defaultContext.addFlashItem!({
-                    type: response.successful ? 'success' : 'error',
-                    header: response.successful ? 'Deleted ' + streamName + ' successfully' : 'Error deleting ' + streamName,
-                    content: response.errorMsg
-                });
-                listStreams();
-            },
-            (reason) => {
-                setRequestStreamsListInProgress(false);
-                defaultContext.addFlashItem!({
-                    type: 'error',
-                    header: 'Error deleting ' + streamName,
-                    content: reason
-                });
-            }
-        )
+    async function deleteMessageStream(streamName: string) {
+        try {
+            const response: StreamManagerResponseMessage = await SERVER.sendRequest({
+                call: APICall.streamManagerDeleteMessageStream,
+                args: [streamName]
+            });
+            defaultContext.addFlashItem!({
+                type: response.successful ? 'success' : 'error',
+                header: response.successful ? 'Deleted ' + streamName + ' successfully' : 'Error deleting ' + streamName,
+                content: response.errorMsg
+            });
+            listStreams();
+        } catch (e) {
+            defaultContext.addFlashItem!({
+                type: 'error',
+                header: 'Error deleting ' + streamName,
+                content: e
+            });
+        }
     }
 
     async function listStreams() {
@@ -342,9 +330,7 @@ function StreamManager() {
         }
     }
 
-    const onClickRefresh = () => {
-        listStreams();
-    }
+    const onClickRefresh = listStreams;
 
     const onClickDelete = () => {
         setViewConfirmDelete(true)
@@ -369,27 +355,24 @@ function StreamManager() {
         setViewConfirmCreateStream(true);
     }
 
-    const confirmCreateStream = () => {
-        SERVER.sendRequest({call: APICall.streamManagerCreateMessageStream, args: [JSON.stringify(newStream)]}).then(
-            (response: StreamManagerResponseMessage) => {
-                if (response.successful) {
-                    setViewConfirmCreateStream(false);
-                    defaultContext.addFlashItem!({
-                        type: 'success',
-                        header: 'Created ' + newStream.name + " successfully",
-                        content: response.errorMsg
-                    });
-                    dispatch({type: 'clear', callbackError: setCreateStreamErrorText});
-                    setCreateStreamErrorText('');
-                    listStreams();
-                } else {
-                    setCreateStreamErrorText(response.errorMsg ? response.errorMsg : 'Unknown error');
-                }
-            },
-            (reason) => {
-                console.log(reason);
-            }
-        );
+    const confirmCreateStream = async () => {
+        const response: StreamManagerResponseMessage = await SERVER.sendRequest({
+            call: APICall.streamManagerCreateMessageStream,
+            args: [JSON.stringify(newStream)]
+        });
+        if (response.successful) {
+            setViewConfirmCreateStream(false);
+            defaultContext.addFlashItem!({
+                type: 'success',
+                header: 'Created ' + newStream.name + " successfully",
+                content: response.errorMsg
+            });
+            dispatch({type: 'clear', callbackError: setCreateStreamErrorText});
+            setCreateStreamErrorText('');
+            listStreams();
+        } else {
+            setCreateStreamErrorText(response.errorMsg ? response.errorMsg : 'Unknown error');
+        }
     }
 
     function OnPageIndexChangedHandler(pageIndex: number) {
@@ -481,9 +464,7 @@ function StreamManager() {
                                     <Button
                                         ariaDescribedby={"refresh"}
                                         ariaLabel="Refresh"
-                                        onClick={() => {
-                                            onClickRefresh();
-                                        }}
+                                        onClick={onClickRefresh}
                                         iconName="refresh"
                                         wrapText={false}
                                         disabled={false}
@@ -492,9 +473,7 @@ function StreamManager() {
                                     <Button
                                         ariaDescribedby={"Create stream"}
                                         ariaLabel="Create stream"
-                                        onClick={() => {
-                                            onClickCreateStream();
-                                        }}
+                                        onClick={onClickCreateStream}
                                         wrapText={false}
                                         iconName="add-plus"
                                         disabled={requestStreamsListInProgress}
@@ -504,9 +483,7 @@ function StreamManager() {
                                     <Button
                                         ariaDescribedby={"Delete stream"}
                                         ariaLabel="Delete stream"
-                                        onClick={() => {
-                                            onClickDelete();
-                                        }}
+                                        onClick={onClickDelete}
                                         wrapText={false}
                                         iconName="remove"
                                         disabled={!selectedStream?.length}
