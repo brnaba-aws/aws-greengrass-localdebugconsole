@@ -426,7 +426,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                                            label: "Export definitions",
                                                            id: "exportDefinitions"
                                                        },
-                                                       {editable: true, label: "messages", id: "messages"},
+                                                       {editable: true, label: "Messages", id: "messages"},
                                                    ]
                                                }]
                                            }}
