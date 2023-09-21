@@ -68,11 +68,9 @@ public class StreamManagerHelper {
             this.client = StreamManagerClientFactory.standard().withClientConfig(config).build();
             this.isConnected = true;
         } catch (StreamManagerException exception) {
-            logger.error("StreamManagerHelper.connect", exception);
             this.isConnected = false;
             throw exception;
         } catch (IllegalAccessException | NoSuchFieldException e) {
-            logger.error("StreamManagerHelper.connect", e);
             this.isConnected = false;
             throw new StreamManagerException(e);
         }
