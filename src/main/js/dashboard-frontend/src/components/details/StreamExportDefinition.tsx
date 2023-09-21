@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, {useContext, useEffect, useReducer, useState} from "react";
+import React, {useContext, useReducer, useState} from "react";
 import {
     Box,
     Button,
@@ -189,7 +189,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
             {
                 id: "disabled",
                 header: "Disabled",
-                cell: (e: KinesisConfig) => (e.disabled && e.disabled === true) ? 'True' : 'False'
+                cell: (e: KinesisConfig) => (e.disabled) ? 'True' : 'False'
             }
         ],
         IotSitewise: [
@@ -221,7 +221,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
             {
                 id: "disabled",
                 header: "Disabled",
-                cell: (e: IoTSiteWiseConfig) => (e.disabled && e.disabled === true) ? 'True' : 'False'
+                cell: (e: IoTSiteWiseConfig) => (e.disabled) ? 'True' : 'False'
             }
         ],
         iotAnalytics: [
@@ -263,7 +263,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
             {
                 id: "disabled",
                 header: "Disabled",
-                cell: (e: IoTAnalyticsConfig) => (e.disabled && e.disabled === true) ? 'True' : 'False'
+                cell: (e: IoTAnalyticsConfig) => (e.disabled) ? 'True' : 'False'
             }
         ],
         http: [
@@ -305,7 +305,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
             {
                 id: "disabled",
                 header: "Disabled",
-                cell: (e: HTTPConfig) => (e.disabled && e.disabled === true) ? 'True' : 'False'
+                cell: (e: HTTPConfig) => (e.disabled) ? 'True' : 'False'
             }
         ],
         s3TaskExecutor: [
@@ -329,7 +329,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                 header: "Status config stream name",
                 cell: (e: S3ExportTaskExecutorConfig) => <Link
                     href={`${STREAM_MANAGER_ROUTE_HREF_PREFIX}${e.statusConfig.statusStreamName}`}
-                    onFollow={(f) => describeStreamCallbackPros(e.statusConfig.statusStreamName)}>{e.statusConfig.statusStreamName}</Link>
+                    onFollow={() => describeStreamCallbackPros(e.statusConfig.statusStreamName)}>{e.statusConfig.statusStreamName}</Link>
 
             },
             {
@@ -340,7 +340,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
             {
                 id: "disabled",
                 header: "Disabled",
-                cell: (e: S3ExportTaskExecutorConfig) => (e.disabled && e.disabled === true) ? 'True' : 'False'
+                cell: (e: S3ExportTaskExecutorConfig) => (e.disabled) ? 'True' : 'False'
             }
         ],
     };
@@ -398,7 +398,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
         }
     }
 
-    const updateMessageStream = (exportType: string, exportDefinition: any, actionType: ExportDefinitionActionType) => {
+    const updateMessageStream = async (exportType: string, exportDefinition: any, actionType: ExportDefinitionActionType) => {
         const messageStream: MessageStreamDefinition = {
             name: streamProps.messageStreamInfo.definition.name,
             maxSize: streamProps.messageStreamInfo.definition.maxSize,
@@ -658,38 +658,26 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
             }
         }
 
-        SERVER.sendRequest({
+        const response: StreamManagerResponseMessage = await SERVER.sendRequest({
             call: APICall.streamManagerUpdateMessageStream,
             args: [JSON.stringify(messageStream)]
-        }).then(
-            (response: StreamManagerResponseMessage) => {
-                if (response.successful === true) {
-                    defaultContext.addFlashItem!({
-                        type: response.successful === true ? 'success' : 'error',
-                        header: response.successful === true ? streamProps.messageStreamInfo.definition.name + 'has been updated' : 'Failed to update ' + streamProps.messageStreamInfo.definition.name,
-                        content: response.errorMsg
-                    });
-                    setErrorUpdateStreamFeedback('');
-                    onDismiss();
-                    describeStreamCallbackPros(streamProps.messageStreamInfo.definition.name);
-                } else {
-                    if (response.errorMsg) {
-                        setErrorUpdateStreamFeedback(response.errorMsg);
-                    }
-                }
-            },
-            (reason) => {
-            }
-        );
+        });
+        if (response.successful) {
+            defaultContext.addFlashItem!({
+                type: response.successful ? 'success' : 'error',
+                header: response.successful ? streamProps.messageStreamInfo.definition.name + 'has been updated' : 'Failed to update ' + streamProps.messageStreamInfo.definition.name,
+                content: response.errorMsg
+            });
+            setErrorUpdateStreamFeedback('');
+            onDismiss();
+            describeStreamCallbackPros(streamProps.messageStreamInfo.definition.name);
+        } else if (response.errorMsg) {
+            setErrorUpdateStreamFeedback(response.errorMsg);
+        }
     }
 
-    const onClickConfirmUpdateExportDefinition = (isNewDefinition: boolean) => {
-
-        if (isNewDefinition) {
-            updateMessageStream(activeTab, updateExportDefinition[activeTab], ExportDefinitionActionType.ADD);
-        } else {
-            updateMessageStream(activeTab, updateExportDefinition[activeTab], ExportDefinitionActionType.UPDATE);
-        }
+    const onClickConfirmUpdateExportDefinition = async (isNewDefinition: boolean) => {
+        return await updateMessageStream(activeTab, updateExportDefinition[activeTab], isNewDefinition ? ExportDefinitionActionType.ADD : ExportDefinitionActionType.UPDATE);
     }
 
     function setUpdateExportDefinition(exportType: string, exportDefinitionSelected: any) {
@@ -705,7 +693,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                         type: key,
                         payload: {[exportType]: {[key]: exportDefinitionSelected[key] || typeProperties[key]}},
                     });
-                } else {
                 }
             }
         } else {
@@ -778,9 +765,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
         setViewModalAddExportDefinition(false);
         setSelectedItems(initialSelectedItems);
     }
-
-    useEffect(() => {
-    }, [activeTab, streamProps]);
 
     function reducer(state: any, action: any) {
         const typeMappings: any = {
@@ -898,9 +882,9 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                                     variant="primary"
                                     ariaDescribedby={"Update"}
                                     ariaLabel="Update"
-                                    onClick={(e: any) => onClickConfirmUpdateExportDefinition(isNewDefinition)}
+                                    onClick={() => onClickConfirmUpdateExportDefinition(isNewDefinition)}
                                 >
-                                    {isNewDefinition === true ? 'Add' : 'Update'}
+                                    {isNewDefinition ? 'Add' : 'Update'}
                                 </Button>
                             </SpaceBetween>
                         }
@@ -912,7 +896,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                             >
                                 <Input
                                     value={exportDefinition.identifier}
-                                    disabled={isNewDefinition === true ? false : true}
+                                    disabled={!isNewDefinition}
                                     onChange={(event) => setUpdateExportDefinition(exportType, {'identifier': event.detail.value})}
                                 />
                             </FormField>
@@ -1031,7 +1015,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                             )}
                             {/* Common form fields */}
                             {
-                                isS3TaskExecutor === false && (
+                                !isS3TaskExecutor && (
                                     <>
                                         <FormField
                                             label="Batch size"
@@ -1101,7 +1085,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                                         label: "True",
                                         value: "0"
                                     } : {label: "False", value: "1"}}
-                                    onChange={({detail}) => setUpdateExportDefinition(exportType, {'disabled': detail.selectedOption.label === 'True' ? true : false})}
+                                    onChange={({detail}) => setUpdateExportDefinition(exportType, {'disabled': detail.selectedOption.label === 'True'})}
                                     disabled={false}
                                 />
                             </FormField>
@@ -1179,7 +1163,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
         return (
             <Modal
                 key={"deleteExportDefinition"}
-                onDismiss={(e) => onDismiss()}
+                onDismiss={onDismiss}
                 visible={viewModalConfirmExportDelete}
                 size="medium"
                 footer={

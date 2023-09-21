@@ -240,9 +240,6 @@ export interface MessageStreamDefinition {
   exportDefinition: ExportDefinition,
 }
 
-export function validateMessageStreamDefinition(messageStreamDefinition:MessageStreamDefinition, setErrorcallbackError:any){
-  
-}
 export function StreamManagerReducer(state:any, action:any) {
   switch (action.type) {
       case "set_name":
@@ -295,7 +292,7 @@ export function StreamManagerReducer(state:any, action:any) {
       case "set_flushOnWrite":
           return {
               ...state,
-              flushOnWrite: parseInt(action.payload)===0?true:false
+              flushOnWrite: parseInt(action.payload) === 0
           };
       case "clear":
           action.callbackError('');

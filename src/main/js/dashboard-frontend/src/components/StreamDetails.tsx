@@ -228,7 +228,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
         },
     ];
 
-    function OnPageIndexChangedHanlder(pageIndex: number) {
+    function OnPageIndexChangedHandler(pageIndex: number) {
         setCurrentPageIndex(pageIndex);
     }
 
@@ -661,7 +661,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                 numberOfItems={(streamDetails?.messageStreamInfo.storageStatus.newestSequenceNumber || 0) - (streamDetails?.messageStreamInfo.storageStatus.oldestSequenceNumber || 0) + 1}
                                 numberOfItemPerPage={preferencesMessages.pageSize || 1}
                                 pageIndex={currentPageIndex}
-                                onPageIndexChanged={(pageIndex: any) => OnPageIndexChangedHanlder(pageIndex)}
+                                onPageIndexChanged={(pageIndex: any) => OnPageIndexChangedHandler(pageIndex)}
                             />
                         }
                     />
