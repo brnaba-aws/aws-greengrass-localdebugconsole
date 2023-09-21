@@ -81,20 +81,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>2.10.1</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.aws.greengrass</groupId>
+            <groupId>com.amazonaws.greengrass</groupId>
             <artifactId>streammanager</artifactId>
             <version>1.1.0</version>
-        </dependency>
-        <dependency>
-            <groupId>javax.validation</groupId>
-            <artifactId>validation-api</artifactId>
-            <version>1.0.0.GA</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
