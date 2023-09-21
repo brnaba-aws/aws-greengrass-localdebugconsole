@@ -3,44 +3,44 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useContext, useEffect, useReducer, useState } from "react";
+import React, {useContext, useEffect, useReducer, useState} from "react";
 import {withRouter} from "react-router-dom";
 import {
-    ContentLayout,
-    Header,
-    Container,
-    Tabs, TabsProps,
-    ColumnLayout,
-    SpaceBetween, 
     Box,
-    Table,TableProps,
-    TextFilter,
-    CollectionPreferences, CollectionPreferencesProps,
     Button,
+    CollectionPreferences,
+    CollectionPreferencesProps,
+    ColumnLayout,
+    Container,
+    ContentLayout,
+    Form,
+    FormField,
+    Header,
+    Input,
     Link,
     Modal,
-    FormField,
-    Input,
     Select,
-    Form,
-    
+    SpaceBetween,
+    Table,
+    TableProps,
+    Tabs,
+    TabsProps,
+    TextFilter,
 } from "@cloudscape-design/components";
 
-import { ConfigMessage } from "../util/CommUtils";
+import {APICall, ConfigMessage} from "../util/CommUtils";
 
 import {
-    StrategyOnFull, 
-    formatBytes, 
+    formatBytes,
     getExportDefinitionType,
-    Stream, 
-    StreamManagerComponentConfiguration, 
-    StreamManagerReducer,
-    Persistence
+    Persistence,
+    StrategyOnFull,
+    Stream,
+    StreamManagerComponentConfiguration,
+    StreamManagerReducer
 } from "../util/StreamManagerUtils";
-import { SERVER, DefaultContext } from "../index";
-import { APICall } from "../util/CommUtils";
-import { ComponentItem } from "../util/ComponentItem";
-import { STREAM_MANAGER_ROUTE_HREF_PREFIX } from "../util/constNames";
+import {DefaultContext, SERVER} from "../index";
+import {STREAM_MANAGER_ROUTE_HREF_PREFIX} from "../util/constNames";
 import PaginationRendering from "../util/PaginationRendering";
 import StreamManagerResponseMessage from "../util/StreamManagerResponseMessage";
 
@@ -54,14 +54,14 @@ function StreamManager() {
     const [createStreamErrorText, setCreateStreamErrorText] = useState("");
     const [newStream, dispatch] = useReducer(StreamManagerReducer, {
         name: "new-stream",
-        maxSize: 256*1024*1024,
-        streamSegmentSize: 16*1024*1024,
+        maxSize: 256 * 1024 * 1024,
+        streamSegmentSize: 16 * 1024 * 1024,
         strategyOnFull: StrategyOnFull.OverwriteOldestData,
-        persistence: Persistence.File, 
+        persistence: Persistence.File,
         flushOnWrite: false,
         exportDefinition: {
-            kinesis:[],
-            http:[],
+            kinesis: [],
+            http: [],
             iotAnalytics: [],
             IotSitewise: [],
             s3TaskExecutor: []
@@ -101,9 +101,9 @@ function StreamManager() {
                 field: "Export Max Bandwidth",
                 value: streamManagerComponentConfiguration.STREAM_MANAGER_EXPORTER_MAX_BANDWIDTH,
             },
-            { 
-                field: "Export Thread Pool Size", 
-                value: streamManagerComponentConfiguration.STREAM_MANAGER_EXPORTER_THREAD_POOL_SIZE 
+            {
+                field: "Export Thread Pool Size",
+                value: streamManagerComponentConfiguration.STREAM_MANAGER_EXPORTER_THREAD_POOL_SIZE
             },
             {
                 field: "Export S3 Upload Min Part Size",
@@ -126,197 +126,183 @@ function StreamManager() {
         ],
     ];
     const columnDefinitions: TableProps.ColumnDefinition<Stream>[] = [
-            {
-                id: "key",
-                header: "key",
-                cell: (e:Stream) => e.messageStreamInfo.definition.name
-            },
-            {
-                id: "name",
-                header: "Name",
-                cell: (e:Stream) => <Link href={`${STREAM_MANAGER_ROUTE_HREF_PREFIX}${e.messageStreamInfo.definition.name}`}>{e.messageStreamInfo.definition.name}</Link>
-            },
-            {
-                id: "maxSize",
-                header: "Max Size",
-                cell: (e:Stream) => formatBytes(e.messageStreamInfo.definition.maxSize)
-            },
-            {
-                id: "streamSegmentSize",
-                header: "Segment Size",
-                cell: (e:Stream) => formatBytes(e.messageStreamInfo.definition.streamSegmentSize)
-            },
-            {
-                id: "totalBytes",
-                header: "Total Size",
-                cell: (e:Stream) => formatBytes(e.messageStreamInfo.storageStatus.totalBytes)
-            },
-            {
-                id: "persistence",
-                header: "Persistence",
-                cell: (e:Stream) => (e.messageStreamInfo.definition.persistence === 0 ? "File":"Memory")
-            },
-            {
-                id: "strategyOnFull",
-                header: "Strategy",
-                cell: (e:Stream) => (e.messageStreamInfo.definition.strategyOnFull === 0 ? "RejectNewData":"OverwriteOldestData")
-            },
-            {
-                id: "oldestSequenceNumber",
-                header: "Oldest sequence number",
-                cell: (e:Stream) => e.messageStreamInfo.storageStatus.oldestSequenceNumber
-            },
-            {
-                id: "newestSequenceNumber",
-                header: "Newest sequence number",
-                cell: (e:Stream) => e.messageStreamInfo.storageStatus.newestSequenceNumber
-            },
-            {
-                id: "timeToLiveMillis",
-                header: "TTL on message",
-                cell: (e:Stream) => (!e.messageStreamInfo.definition.timeToLiveMillis?'None':e.messageStreamInfo.definition.timeToLiveMillis)
-            },
-            {
-                id: "flushOnWrite",
-                header: "Flush on write",
-                cell: (e:Stream) => (e.messageStreamInfo.definition.flushOnWrite?'true':'false')
-            },
-            {
-                id: "exportDefinition",
-                header: "Export definition",
-                cell: e => getExportDefinitionType(e.messageStreamInfo.definition.exportDefinition || {
-                                                                                                        kinesis:[],
-                                                                                                        http:[],
-                                                                                                        iotAnalytics: [],
-                                                                                                        IotSitewise: [],
-                                                                                                        s3TaskExecutor: []
-                                                                                                    }
-                                                    )
+        {
+            id: "key",
+            header: "key",
+            cell: (e: Stream) => e.messageStreamInfo.definition.name
+        },
+        {
+            id: "name",
+            header: "Name",
+            cell: (e: Stream) => <Link
+                href={`${STREAM_MANAGER_ROUTE_HREF_PREFIX}${e.messageStreamInfo.definition.name}`}>{e.messageStreamInfo.definition.name}</Link>
+        },
+        {
+            id: "maxSize",
+            header: "Max Size",
+            cell: (e: Stream) => formatBytes(e.messageStreamInfo.definition.maxSize)
+        },
+        {
+            id: "streamSegmentSize",
+            header: "Segment Size",
+            cell: (e: Stream) => formatBytes(e.messageStreamInfo.definition.streamSegmentSize)
+        },
+        {
+            id: "totalBytes",
+            header: "Total Size",
+            cell: (e: Stream) => formatBytes(e.messageStreamInfo.storageStatus.totalBytes)
+        },
+        {
+            id: "persistence",
+            header: "Persistence",
+            cell: (e: Stream) => (e.messageStreamInfo.definition.persistence === 0 ? "File" : "Memory")
+        },
+        {
+            id: "strategyOnFull",
+            header: "Strategy",
+            cell: (e: Stream) => (e.messageStreamInfo.definition.strategyOnFull === 0 ? "RejectNewData" : "OverwriteOldestData")
+        },
+        {
+            id: "oldestSequenceNumber",
+            header: "Oldest sequence number",
+            cell: (e: Stream) => e.messageStreamInfo.storageStatus.oldestSequenceNumber
+        },
+        {
+            id: "newestSequenceNumber",
+            header: "Newest sequence number",
+            cell: (e: Stream) => e.messageStreamInfo.storageStatus.newestSequenceNumber
+        },
+        {
+            id: "timeToLiveMillis",
+            header: "TTL on message",
+            cell: (e: Stream) => (!e.messageStreamInfo.definition.timeToLiveMillis ? 'None' : e.messageStreamInfo.definition.timeToLiveMillis)
+        },
+        {
+            id: "flushOnWrite",
+            header: "Flush on write",
+            cell: (e: Stream) => (e.messageStreamInfo.definition.flushOnWrite ? 'true' : 'false')
+        },
+        {
+            id: "exportDefinition",
+            header: "Export definition",
+            cell: e => getExportDefinitionType(e.messageStreamInfo.definition.exportDefinition || {
+                kinesis: [],
+                http: [],
+                iotAnalytics: [],
+                IotSitewise: [],
+                s3TaskExecutor: []
             }
+            )
+        }
     ];
 
     let storedPreference = localStorage.getItem('streamPreferences');
-    if (!storedPreference){
-        storedPreference =  JSON.stringify({
+    if (!storedPreference) {
+        storedPreference = JSON.stringify({
             pageSize: 10,
             visibleContent: ["name", "persistence", "strategyOnFull", "maxSize", "exportDefinition"]
         })
     }
     const [preferences, setPreferences] = useState<CollectionPreferencesProps.Preferences>(JSON.parse(storedPreference));
 
-    useEffect(() => {   
+    useEffect(() => {
         getStreamManagerComponentConfiguration();
         listStreams();
-    },[currentPageIndex, preferences]);
+    }, [currentPageIndex, preferences]);
 
 
-    function getStreamManagerComponentConfiguration () {
-        SERVER.sendRequest({ call: APICall.getDeviceDetails, args: [] }).then((response) => 
-            {
-                if (response){
-                    const rootPath = response.rootPath;
-                    SERVER.sendRequest({call: APICall.getComponent, args: ["aws.greengrass.StreamManager"]}).then(
-                        (getComponentResponse:ComponentItem) => 
-                        {
-                            if (getComponentResponse) 
-                            {
-                                SERVER.sendRequest({call: APICall.getConfig, args: ["aws.greengrass.StreamManager"]}).then(
-                                (response:ConfigMessage) => 
-                                    {
-                                        let streamManagerServerPort = "";
-                                        let streamManagerAuthenticateClient = "";
-                                        let logLevel = "";
-                                        let jvmArgs = "";
-                                        let streamManagerExporterMaxBandwidth = "";
-                                        let streamManagerS3UploadMinPart = "";
-                                        let streamManagerThreadPoolSize = "";
-                                        let streamManagerStoreRootDir = "";
-    
-                                        if (response.successful === true){
-                                            streamManagerServerPort = response.yaml.match(/STREAM_MANAGER_SERVER_PORT:\s+"(\d+)"/)?.[1] || "-";
-                                            streamManagerAuthenticateClient = response.yaml.match(/STREAM_MANAGER_AUTHENTICATE_CLIENT:\s+"(\w+)"/)?.[1] || "";
-                                            logLevel = response.yaml.match(/LOG_LEVEL:\s+"(\w+)"/)?.[1] || "";
-                                            jvmArgs = response.yaml.match(/JVM_ARGS:\s+"(\w+)"/)?.[1] || "";
-                                            streamManagerExporterMaxBandwidth = response.yaml.match(/STREAM_MANAGER_EXPORTER_MAX_BANDWIDTH:\s+"(\d+)"/)?.[1] || "";
-                                            streamManagerS3UploadMinPart = response.yaml.match(/STREAM_MANAGER_EXPORTER_S3_DESTINATION_MULTIPART_UPLOAD_MIN_PART_SIZE_BYTES:\s+"(\d+)"/)?.[1] || "";
-                                            streamManagerThreadPoolSize = response.yaml.match(/STREAM_MANAGER_EXPORTER_THREAD_POOL_SIZE:\s+"(\d+)"/)?.[1] || "";
-                                            streamManagerStoreRootDir = response.yaml.match(/STREAM_MANAGER_STORE_ROOT_DIR:\s+"([^"]+)"/)?.[1] || "";
-        
-                                            if (streamManagerStoreRootDir === '.')
-                                            {
-                                                streamManagerStoreRootDir = rootPath + '/work/aws.greengrass.StreamManager'
-                                            }
-                                        } 
+    async function getStreamManagerComponentConfiguration() {
+        const deviceDetailsResponse = await SERVER.sendRequest({call: APICall.getDeviceDetails, args: []});
+        if (deviceDetailsResponse) {
+            const rootPath = deviceDetailsResponse.rootPath;
+            const getComponentResponse = await SERVER.sendRequest({
+                call: APICall.getComponent,
+                args: ["aws.greengrass.StreamManager"]
+            });
 
-                                        setStreamManagerComponentConfiguration({
-                                            Version: getComponentResponse?.version,
-                                            JVM_ARGS: jvmArgs,
-                                            LOG_LEVEL: logLevel,
-                                            STREAM_MANAGER_AUTHENTICATE_CLIENT: streamManagerAuthenticateClient,
-                                            STREAM_MANAGER_EXPORTER_MAX_BANDWIDTH: formatBytes(parseInt(streamManagerExporterMaxBandwidth || "0", 10)),
-                                            STREAM_MANAGER_EXPORTER_S3_DESTINATION_MULTIPART_UPLOAD_MIN_PART_SIZE_BYTES: formatBytes(parseInt(streamManagerS3UploadMinPart || "0", 10)),
-                                            STREAM_MANAGER_SERVER_PORT: streamManagerServerPort,
-                                            STREAM_MANAGER_STORE_ROOT_DIR: streamManagerStoreRootDir,
-                                            STREAM_MANAGER_EXPORTER_THREAD_POOL_SIZE:streamManagerThreadPoolSize
-                                        })
-                                    },
-                                    (reason) => {
-                                    }
-                                );
-                            }
-                        },
-                        (reason) => {
-                        }
-                      );
+            if (getComponentResponse) {
+                const configMessage: ConfigMessage = await SERVER.sendRequest({
+                    call: APICall.getConfig,
+                    args: ["aws.greengrass.StreamManager"]
+                });
+
+                let streamManagerServerPort = "";
+                let streamManagerAuthenticateClient = "";
+                let logLevel = "";
+                let jvmArgs = "";
+                let streamManagerExporterMaxBandwidth = "";
+                let streamManagerS3UploadMinPart = "";
+                let streamManagerThreadPoolSize = "";
+                let streamManagerStoreRootDir = "";
+
+                if (configMessage.successful) {
+                    streamManagerServerPort = configMessage.yaml.match(/STREAM_MANAGER_SERVER_PORT:\s+"(\d+)"/)?.[1] || "-";
+                    streamManagerAuthenticateClient = configMessage.yaml.match(/STREAM_MANAGER_AUTHENTICATE_CLIENT:\s+"(\w+)"/)?.[1] || "";
+                    logLevel = configMessage.yaml.match(/LOG_LEVEL:\s+"(\w+)"/)?.[1] || "";
+                    jvmArgs = configMessage.yaml.match(/JVM_ARGS:\s+"(\w+)"/)?.[1] || "";
+                    streamManagerExporterMaxBandwidth = configMessage.yaml.match(/STREAM_MANAGER_EXPORTER_MAX_BANDWIDTH:\s+"(\d+)"/)?.[1] || "";
+                    streamManagerS3UploadMinPart = configMessage.yaml.match(/STREAM_MANAGER_EXPORTER_S3_DESTINATION_MULTIPART_UPLOAD_MIN_PART_SIZE_BYTES:\s+"(\d+)"/)?.[1] || "";
+                    streamManagerThreadPoolSize = configMessage.yaml.match(/STREAM_MANAGER_EXPORTER_THREAD_POOL_SIZE:\s+"(\d+)"/)?.[1] || "";
+                    streamManagerStoreRootDir = configMessage.yaml.match(/STREAM_MANAGER_STORE_ROOT_DIR:\s+"([^"]+)"/)?.[1] || "";
+
+                    if (streamManagerStoreRootDir === '.') {
+                        streamManagerStoreRootDir = rootPath + '/work/aws.greengrass.StreamManager'
+                    }
                 }
-            },
-            (reason) => {
+
+                setStreamManagerComponentConfiguration({
+                    Version: getComponentResponse?.version,
+                    JVM_ARGS: jvmArgs,
+                    LOG_LEVEL: logLevel,
+                    STREAM_MANAGER_AUTHENTICATE_CLIENT: streamManagerAuthenticateClient,
+                    STREAM_MANAGER_EXPORTER_MAX_BANDWIDTH: formatBytes(parseInt(streamManagerExporterMaxBandwidth || "0", 10)),
+                    STREAM_MANAGER_EXPORTER_S3_DESTINATION_MULTIPART_UPLOAD_MIN_PART_SIZE_BYTES: formatBytes(parseInt(streamManagerS3UploadMinPart || "0", 10)),
+                    STREAM_MANAGER_SERVER_PORT: streamManagerServerPort,
+                    STREAM_MANAGER_STORE_ROOT_DIR: streamManagerStoreRootDir,
+                    STREAM_MANAGER_EXPORTER_THREAD_POOL_SIZE: streamManagerThreadPoolSize
+                })
             }
-        );
+        }
     }
 
-    
 
-    function describeStream(streamName:string, index:number){
-        SERVER.sendRequest({ call: APICall.streamManagerDescribeStream, args: [streamName] }).then(
-            (response:StreamManagerResponseMessage) => {
+    function describeStream(streamName: string, index: number) {
+        SERVER.sendRequest({call: APICall.streamManagerDescribeStream, args: [streamName]}).then(
+            (response: StreamManagerResponseMessage) => {
                 if (response) {
-                    if (response.successful){
-                        if (response.messageStreamInfo){
-                            const item:Stream = {
-                                key: index, 
+                    if (response.successful) {
+                        if (response.messageStreamInfo) {
+                            const item: Stream = {
+                                key: index,
                                 messageStreamInfo: response.messageStreamInfo
                             };
                             item.key = index;
                             setStreamManagerStreamsList(prevList => [...prevList, item]);
                             setRequestStreamsListInProgress(false);
-                        }
-                        else{
+                        } else {
                             setRequestStreamsListInProgress(false);
                         }
-                    }
-                    else{
+                    } else {
                         setRequestStreamsListInProgress(false);
                     }
-                }
-                else {
+                } else {
                     setRequestStreamsListInProgress(false);
                 }
             },
-            (reason) => {
-              setRequestStreamsListInProgress(false);
+            () => {
+                setRequestStreamsListInProgress(false);
             }
-          );
+        );
     }
 
-    function deleteMessageStream(streamName:string){
+    function deleteMessageStream(streamName: string) {
         setRequestStreamsListInProgress(true);
-        SERVER.sendRequest({ call: APICall.streamManagerDeleteMessageStream, args: [streamName] }).then(
-            (response:StreamManagerResponseMessage) => {
+        SERVER.sendRequest({call: APICall.streamManagerDeleteMessageStream, args: [streamName]}).then(
+            (response: StreamManagerResponseMessage) => {
                 setRequestStreamsListInProgress(false);
                 defaultContext.addFlashItem!({
-                    type: response.successful === true?'success':'error',
-                    header: response.successful === true?'Deleted ' + streamName + ' successfully':'Error deleting ' + streamName,
+                    type: response.successful ? 'success' : 'error',
+                    header: response.successful ? 'Deleted ' + streamName + ' successfully' : 'Error deleting ' + streamName,
                     content: response.errorMsg
                 });
                 listStreams();
@@ -332,36 +318,28 @@ function StreamManager() {
         )
     }
 
-    function listStreams() {
+    async function listStreams() {
         setStreamManagerStreamsList([]);
         setRequestStreamsListInProgress(true);
-        SERVER.sendRequest({ call: APICall.streamManagerListStreams, args: [] }).then(
-            (response:StreamManagerResponseMessage) => {
-                if (response){
-                    if (response.successful){
-                        response.streamsList.forEach( (item:string, index:number) => {
-                            describeStream(item, index); 
-                        });
-                    }
-                    else {
-                        defaultContext.addFlashItem!({
-                            type: 'error',
-                            header: 'Error',
-                            content: response.errorMsg
-                        });
-                        setRequestStreamsListInProgress(false);
-                    }
+        try {
+            const response: StreamManagerResponseMessage = await SERVER.sendRequest({
+                call: APICall.streamManagerListStreams,
+                args: []
+            });
+            if (response) {
+                if (response.successful) {
+                    response.streamsList.forEach(describeStream);
+                } else {
+                    defaultContext.addFlashItem!({
+                        type: 'error',
+                        header: 'Error',
+                        content: response.errorMsg
+                    });
                 }
-                else {
-                    setRequestStreamsListInProgress(false);
-                }
-            },
-            (reason) => {
-              setRequestStreamsListInProgress(false);
             }
-        ).catch((reason)=>{
+        } finally {
             setRequestStreamsListInProgress(false);
-        });
+        }
     }
 
     const onClickRefresh = () => {
@@ -372,15 +350,15 @@ function StreamManager() {
         setViewConfirmDelete(true)
     }
 
-    const onDismiss = (e:any) => {
+    const onDismiss = () => {
         setViewConfirmDelete(false);
         setViewConfirmCreateStream(false);
-        dispatch({type:'clear', callbackError:setCreateStreamErrorText});
+        dispatch({type: 'clear', callbackError: setCreateStreamErrorText});
         setCreateStreamErrorText('');
     }
 
     const confirmDelete = () => {
-        if (selectedStream){
+        if (selectedStream) {
             deleteMessageStream(selectedStream[0].messageStreamInfo.definition.name)
             setViewConfirmDelete(false);
             setSelectedStream([]);
@@ -392,31 +370,29 @@ function StreamManager() {
     }
 
     const confirmCreateStream = () => {
-        SERVER.sendRequest({ call: APICall.streamManagerCreateMessageStream, args: [JSON.stringify(newStream)] }).then(
-            (response:StreamManagerResponseMessage) => {
-                if (response.successful) 
-                {
+        SERVER.sendRequest({call: APICall.streamManagerCreateMessageStream, args: [JSON.stringify(newStream)]}).then(
+            (response: StreamManagerResponseMessage) => {
+                if (response.successful) {
                     setViewConfirmCreateStream(false);
                     defaultContext.addFlashItem!({
                         type: 'success',
                         header: 'Created ' + newStream.name + " successfully",
                         content: response.errorMsg
                     });
-                    dispatch({type: 'clear', callbackError:setCreateStreamErrorText});
+                    dispatch({type: 'clear', callbackError: setCreateStreamErrorText});
                     setCreateStreamErrorText('');
                     listStreams();
-                }
-                else {
-                    setCreateStreamErrorText(response.errorMsg?response.errorMsg:'Unknown error');
+                } else {
+                    setCreateStreamErrorText(response.errorMsg ? response.errorMsg : 'Unknown error');
                 }
             },
             (reason) => {
                 console.log(reason);
             }
-          );
+        );
     }
 
-    function OnPageIndexChangedHanlder (pageIndex:number) {
+    function OnPageIndexChangedHandler(pageIndex: number) {
         setCurrentPageIndex(pageIndex);
     }
 
@@ -430,7 +406,7 @@ function StreamManager() {
                         <Box textAlign="center" color="inherit">
                             <b>No stream</b>
                             <Box
-                                padding={{ bottom: "s" }}
+                                padding={{bottom: "s"}}
                                 variant="p"
                                 color="inherit"
                             >
@@ -442,7 +418,7 @@ function StreamManager() {
                         <TextFilter
                             filteringPlaceholder="Find stream"
                             filteringText={filteringText}
-                            onChange={({detail}) =>setFilteringText(detail.filteringText)}
+                            onChange={({detail}) => setFilteringText(detail.filteringText)}
                         />
                     }
                     selectionType="single"
@@ -450,9 +426,9 @@ function StreamManager() {
                     loading={requestStreamsListInProgress}
                     selectedItems={selectedStream}
                     loadingText="Loading streams"
-                    items={streamManagerStreamsList.slice((currentPageIndex-1)*(preferences.pageSize || 10),(currentPageIndex-1)*(preferences.pageSize || 10) + (preferences.pageSize || 10)).filter((s:Stream) => s.messageStreamInfo.definition.name.toLowerCase().includes(filteringText.toLowerCase()))}
+                    items={streamManagerStreamsList.slice((currentPageIndex - 1) * (preferences.pageSize || 10), (currentPageIndex - 1) * (preferences.pageSize || 10) + (preferences.pageSize || 10)).filter((s: Stream) => s.messageStreamInfo.definition.name.toLowerCase().includes(filteringText.toLowerCase()))}
                     onSelectionChange={(e: any) => {
-                        setSelectedStream(streamManagerStreamsList.filter((s:Stream) => s.messageStreamInfo.definition.name === e.detail.selectedItems[0].messageStreamInfo.definition.name))
+                        setSelectedStream(streamManagerStreamsList.filter((s: Stream) => s.messageStreamInfo.definition.name === e.detail.selectedItems[0].messageStreamInfo.definition.name))
                     }}
                     columnDefinitions={columnDefinitions}
                     visibleColumns={preferences.visibleContent}
@@ -487,149 +463,164 @@ function StreamManager() {
                             confirmLabel={"Ok"}
                             cancelLabel={"Cancel"}
                             preferences={preferences}
-                            onConfirm={({detail}) => {setPreferences(detail); localStorage.setItem("streamPreferences",JSON.stringify(detail))}}
+                            onConfirm={({detail}) => {
+                                setPreferences(detail);
+                                localStorage.setItem("streamPreferences", JSON.stringify(detail))
+                            }}
                         />
                     }
-                header={
-                    <Header
-                        counter=
-                        {
-                            "(" + streamManagerStreamsList.length +")"
-                        }
-
-                    actions={            
-                        <SpaceBetween direction="horizontal"  size="xs">
-                            <Button     
-                                ariaDescribedby={"refresh"}
-                                ariaLabel="Refresh"
-                                onClick = {() => {
-                                    onClickRefresh();
-                                }}
-                                iconName="refresh" 
-                                wrapText={false}
-                                disabled={false}
-                            >
-                            </Button>
-                            <Button     
-                                ariaDescribedby={"Create stream"}
-                                ariaLabel="Create stream"
-                                onClick = {() => {
-                                    onClickCreateStream();
-                                }}
-                                wrapText={false}
-                                iconName="add-plus"
-                                disabled={requestStreamsListInProgress}
-                            >
-                                Create stream
-                            </Button>
-                            <Button     
-                                ariaDescribedby={"Delete stream"}
-                                ariaLabel="Delete stream"
-                                onClick = {() => {
-                                    onClickDelete();
-                                }}
-                                wrapText={false}
-                                iconName="remove"
-                                disabled={selectedStream?.length? false:true}
-                            >
-                                Delete
-                            </Button>
-                            <Modal
-                                key={"deleteStream"}
-                                onDismiss={ (e) => onDismiss(e)}
-                                visible={viewConfirmDelete}
-                                size="medium"
-                                footer={
-                                    <Box float="right">
-                                    <SpaceBetween direction="horizontal" size="xs">
-                                        <Button 
-                                            variant="link" 
-                                            onClick={onDismiss}
-                                            ariaDescribedby={"Cancel"}
-                                            ariaLabel="Cancel"
-                                        >
-                                            Cancel
-                                        </Button>
-                                        <Button 
-                                            variant="primary"
-                                            onClick={confirmDelete}
-                                            ariaDescribedby={"Delete"}
-                                            ariaLabel="Delete"
-                                        >
-                                            Delete
-                                        </Button>
-                                    </SpaceBetween>
-                                    </Box>
+                    header={
+                        <Header
+                            counter=
+                                {
+                                    "(" + streamManagerStreamsList.length + ")"
                                 }
-                                header={selectedStream?.length? 'Delete ' + selectedStream[0].messageStreamInfo.definition.name : ''}
-                                >
-                                Are you sure you want to delete the stream?
-                            </Modal>
-                            <Modal
-                                key={"createStream"}
-                                onDismiss={onDismiss}
-                                visible={viewConfirmCreateStream}
-                                size="medium"
-                                header={"Create new stream"}
-                                >
-                                    <Form
-                                        variant="embedded"
-                                        actions={
-                                            <SpaceBetween direction="horizontal" size="xs">
-                                                <Button 
-                                                    formAction="none"
-                                                    variant="link"
-                                                    ariaDescribedby={"Cancel"}
-                                                    ariaLabel="Cancel"
-                                                    onClick={(e) => onDismiss(e)}
-                                                >
-                                                    Cancel
-                                                </Button>
-                                                <Button 
-                                                    loading={false} 
-                                                    disabled={createStreamErrorText.length !== 0}
-                                                    variant="primary"
-                                                    ariaDescribedby={"Create"}
-                                                    ariaLabel="Create"
-                                                    onClick={(e) => confirmCreateStream()}
-                                                >
-                                                    Create
-                                                </Button>
-                                            </SpaceBetween>
-                                        }
-                                        errorText={createStreamErrorText !== ''? createStreamErrorText: false}
+
+                            actions={
+                                <SpaceBetween direction="horizontal" size="xs">
+                                    <Button
+                                        ariaDescribedby={"refresh"}
+                                        ariaLabel="Refresh"
+                                        onClick={() => {
+                                            onClickRefresh();
+                                        }}
+                                        iconName="refresh"
+                                        wrapText={false}
+                                        disabled={false}
                                     >
+                                    </Button>
+                                    <Button
+                                        ariaDescribedby={"Create stream"}
+                                        ariaLabel="Create stream"
+                                        onClick={() => {
+                                            onClickCreateStream();
+                                        }}
+                                        wrapText={false}
+                                        iconName="add-plus"
+                                        disabled={requestStreamsListInProgress}
+                                    >
+                                        Create stream
+                                    </Button>
+                                    <Button
+                                        ariaDescribedby={"Delete stream"}
+                                        ariaLabel="Delete stream"
+                                        onClick={() => {
+                                            onClickDelete();
+                                        }}
+                                        wrapText={false}
+                                        iconName="remove"
+                                        disabled={!selectedStream?.length}
+                                    >
+                                        Delete
+                                    </Button>
+                                    <Modal
+                                        key={"deleteStream"}
+                                        onDismiss={onDismiss}
+                                        visible={viewConfirmDelete}
+                                        size="medium"
+                                        footer={
+                                            <Box float="right">
+                                                <SpaceBetween direction="horizontal" size="xs">
+                                                    <Button
+                                                        variant="link"
+                                                        onClick={onDismiss}
+                                                        ariaDescribedby={"Cancel"}
+                                                        ariaLabel="Cancel"
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                    <Button
+                                                        variant="primary"
+                                                        onClick={confirmDelete}
+                                                        ariaDescribedby={"Delete"}
+                                                        ariaLabel="Delete"
+                                                    >
+                                                        Delete
+                                                    </Button>
+                                                </SpaceBetween>
+                                            </Box>
+                                        }
+                                        header={selectedStream?.length ? 'Delete ' + selectedStream[0].messageStreamInfo.definition.name : ''}
+                                    >
+                                        Are you sure you want to delete the stream?
+                                    </Modal>
+                                    <Modal
+                                        key={"createStream"}
+                                        onDismiss={onDismiss}
+                                        visible={viewConfirmCreateStream}
+                                        size="medium"
+                                        header={"Create new stream"}
+                                    >
+                                        <Form
+                                            variant="embedded"
+                                            actions={
+                                                <SpaceBetween direction="horizontal" size="xs">
+                                                    <Button
+                                                        formAction="none"
+                                                        variant="link"
+                                                        ariaDescribedby={"Cancel"}
+                                                        ariaLabel="Cancel"
+                                                        onClick={onDismiss}
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                    <Button
+                                                        loading={false}
+                                                        disabled={createStreamErrorText.length !== 0}
+                                                        variant="primary"
+                                                        ariaDescribedby={"Create"}
+                                                        ariaLabel="Create"
+                                                        onClick={() => confirmCreateStream()}
+                                                    >
+                                                        Create
+                                                    </Button>
+                                                </SpaceBetween>
+                                            }
+                                            errorText={createStreamErrorText !== '' ? createStreamErrorText : false}
+                                        >
                                             <SpaceBetween direction="vertical" size="l">
-                                                <FormField 
+                                                <FormField
                                                     label="Stream Name"
                                                     constraintText="Must be an alphanumeric string including spaces, commas, periods, hyphens, and underscores with length between 1 and 255."
                                                 >
                                                     <Input
                                                         value={newStream.name || ''}
-                                                        onChange={(event) => dispatch({type: 'set_name', payload: event.detail.value, callbackError:setCreateStreamErrorText})}
+                                                        onChange={(event) => dispatch({
+                                                            type: 'set_name',
+                                                            payload: event.detail.value,
+                                                            callbackError: setCreateStreamErrorText
+                                                        })}
                                                         disabled={false}
                                                     />
                                                 </FormField>
-                                                <FormField 
+                                                <FormField
                                                     label="Stream Max Size (in bytes)"
                                                     constraintText="Set to 256MB by default with a minimum of 1KB and a maximum of 8192PB."
                                                 >
                                                     <Input
                                                         value={newStream.maxSize}
-                                                        onChange={(event) => dispatch({type: 'set_maxSize', payload: event.detail.value, callbackError:setCreateStreamErrorText})}
+                                                        onChange={(event) => dispatch({
+                                                            type: 'set_maxSize',
+                                                            payload: event.detail.value,
+                                                            callbackError: setCreateStreamErrorText
+                                                        })}
                                                         disabled={false}
                                                         step={1024}
                                                         inputMode="decimal"
                                                         type="number"
                                                     />
                                                 </FormField>
-                                                <FormField 
+                                                <FormField
                                                     constraintText="Set to 16MB by default with a minimum of 1KB and a maximum of 2GB."
                                                     label="Stream Segment Size (in bytes)"
                                                 >
                                                     <Input
                                                         value={newStream.streamSegmentSize}
-                                                        onChange={(event) => dispatch({type: 'set_streamSegmentSize', payload: event.detail.value, callbackError:setCreateStreamErrorText})}
+                                                        onChange={(event) => dispatch({
+                                                            type: 'set_streamSegmentSize',
+                                                            payload: event.detail.value,
+                                                            callbackError: setCreateStreamErrorText
+                                                        })}
                                                         disabled={false}
                                                         step={1024}
                                                         inputMode="decimal"
@@ -639,93 +630,114 @@ function StreamManager() {
                                                 <FormField label="Strategy on full">
                                                     <Select
                                                         options={[
-                                                            { label: "OverwriteOldestData", value: "1" },
-                                                            { label: "RejectNewData", value: "0" }
+                                                            {label: "OverwriteOldestData", value: "1"},
+                                                            {label: "RejectNewData", value: "0"}
                                                         ]}
-                                                        selectedOption={newStream.strategyOnFull===StrategyOnFull.OverwriteOldestData?{ label: "OverwriteOldestData", value: "1" }:{ label: "RejectNewData", value: "0" }}
-                                                        onChange={({ detail }) => dispatch({type: 'set_strategyOnFull', payload: detail.selectedOption.value, callbackError:setCreateStreamErrorText})}
+                                                        selectedOption={newStream.strategyOnFull === StrategyOnFull.OverwriteOldestData ? {
+                                                            label: "OverwriteOldestData",
+                                                            value: "1"
+                                                        } : {label: "RejectNewData", value: "0"}}
+                                                        onChange={({detail}) => dispatch({
+                                                            type: 'set_strategyOnFull',
+                                                            payload: detail.selectedOption.value,
+                                                            callbackError: setCreateStreamErrorText
+                                                        })}
                                                         disabled={false}
                                                     />
                                                 </FormField>
-                                                <FormField 
+                                                <FormField
                                                     label="Persistence"
                                                     constraintText="If set to File, the file system will be used to persist messages long-term and is resilient to restarts.
                                                     Memory should be used when performance matters more than durability as it only stores the stream in memory and never writes to the disk."
                                                 >
                                                     <Select
                                                         options={[
-                                                            { label: "File", value: "0" },
-                                                            { label: "Memory", value: "1" }
+                                                            {label: "File", value: "0"},
+                                                            {label: "Memory", value: "1"}
                                                         ]}
-                                                        selectedOption={newStream.persistence===Persistence.File?{ label: "File", value: "0" }:{ label: "Memory", value: "1" }}
-                                                        onChange={({ detail }) => dispatch({type: 'set_persistence', payload: detail.selectedOption.value, callbackError:setCreateStreamErrorText})}
+                                                        selectedOption={newStream.persistence === Persistence.File ? {
+                                                            label: "File",
+                                                            value: "0"
+                                                        } : {label: "Memory", value: "1"}}
+                                                        onChange={({detail}) => dispatch({
+                                                            type: 'set_persistence',
+                                                            payload: detail.selectedOption.value,
+                                                            callbackError: setCreateStreamErrorText
+                                                        })}
                                                         disabled={false}
                                                     />
                                                 </FormField>
-                                                {newStream.persistence===Persistence.File && <FormField 
-                                                    label="Flush on write" 
+                                                {newStream.persistence === Persistence.File && <FormField
+                                                    label="Flush on write"
                                                     constraintText="Waits for the filesystem to complete the write for every message. This is safer, but slower. Default is false."
                                                 >
                                                     <Select
                                                         options={[
-                                                            { label: "True", value: "0" },
-                                                            { label: "False", value: "1" }
+                                                            {label: "True", value: "0"},
+                                                            {label: "False", value: "1"}
                                                         ]}
-                                                        selectedOption={newStream.flushOnWrite===true?{ label: "True", value: "0" }:{ label: "False", value: "1" }}
-                                                        onChange={({ detail }) =>  dispatch({type: 'set_flushOnWrite', payload: detail.selectedOption.value, callbackError:setCreateStreamErrorText})}
+                                                        selectedOption={newStream.flushOnWrite === true ? {
+                                                            label: "True",
+                                                            value: "0"
+                                                        } : {label: "False", value: "1"}}
+                                                        onChange={({detail}) => dispatch({
+                                                            type: 'set_flushOnWrite',
+                                                            payload: detail.selectedOption.value,
+                                                            callbackError: setCreateStreamErrorText
+                                                        })}
                                                         disabled={false}
                                                     />
                                                 </FormField>}
                                             </SpaceBetween>
-                                    </Form>
-                            </Modal>
-                        </SpaceBetween>
+                                        </Form>
+                                    </Modal>
+                                </SpaceBetween>
+                            }
+                        >
+                            Streams
+                        </Header>
                     }
-                    >
-                        Streams
-                    </Header>
-                }
-                pagination={
-                    <PaginationRendering 
-                        numberOfItems={streamManagerStreamsList.length}
-                        numberOfItemPerPage={preferences.pageSize || 1}
-                        pageIndex={currentPageIndex}
-                        onPageIndexChanged={ (pageIndex:any) => OnPageIndexChangedHanlder(pageIndex)}
-                    />
-                }
-                variant="borderless"
+                    pagination={
+                        <PaginationRendering
+                            numberOfItems={streamManagerStreamsList.length}
+                            numberOfItemPerPage={preferences.pageSize || 1}
+                            pageIndex={currentPageIndex}
+                            onPageIndexChanged={(pageIndex: any) => OnPageIndexChangedHandler(pageIndex)}
+                        />
+                    }
+                    variant="borderless"
                 />
             ),
         },
         {
             id: "tab2",
-                label: "Configuration",
-                content: (
-                    <ColumnLayout columns={componentConfigurationItems.length} variant="text-grid">
-                        {componentConfigurationItems.map((group, index) => (
-                            <SpaceBetween size="xs" key={index}>
-                                {group.map((item) => (
-                                    <div key={item.field}>
-                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label" color="text-label">{item.field}</Box>
+            label: "Configuration",
+            content: (
+                <ColumnLayout columns={componentConfigurationItems.length} variant="text-grid">
+                    {componentConfigurationItems.map((group, index) => (
+                        <SpaceBetween size="xs" key={index}>
+                            {group.map((item) => (
+                                <div key={item.field}>
+                                    <Box margin={{bottom: "xxxs"}} variant="awsui-key-label"
+                                         color="text-label">{item.field}</Box>
                                     <div>{item.value}</div>
-                                    </div>
-                                ))}
-                            </SpaceBetween>
-                        ))}
-                    </ColumnLayout>
-                ),
+                                </div>
+                            ))}
+                        </SpaceBetween>
+                    ))}
+                </ColumnLayout>
+            ),
         }
     ];
 
-    
 
-  return (
-    <ContentLayout header={<Header variant={"h1"}>Stream Manager</Header>}>
-        <Container>
-            <Tabs tabs={tabs}></Tabs>
-        </Container>
-    </ContentLayout>
-  );
+    return (
+        <ContentLayout header={<Header variant={"h1"}>Stream Manager</Header>}>
+            <Container>
+                <Tabs tabs={tabs}></Tabs>
+            </Container>
+        </ContentLayout>
+    );
 }
 
 export default withRouter(StreamManager);
