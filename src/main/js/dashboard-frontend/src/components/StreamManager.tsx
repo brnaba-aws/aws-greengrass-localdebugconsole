@@ -50,10 +50,8 @@ import DeleteModal from "./StreamManagerDeleteModal";
 const model = model1.definitions;
 
 function StreamManager() {
-
     const [filteringText, setFilteringText] = useState("")
     const [streamManagerStreamsList, setStreamManagerStreamsList] = useState<Stream[]>([])
-    const [requestStreamsListInProgress, setRequestStreamsListInProgress] = useState(false)
     const [viewConfirmDelete, setViewConfirmDelete] = useState(false);
     const [viewConfirmCreateStream, setViewConfirmCreateStream] = useState(false);
     const [createStreamErrorText, setCreateStreamErrorText] = useState("");
@@ -266,26 +264,6 @@ function StreamManager() {
         }
     }
 
-
-    async function describeStream(streamName: string, index: number) {
-        try {
-            const response: StreamManagerResponseMessage = await SERVER.sendRequest({
-                call: APICall.streamManagerDescribeStream,
-                args: [streamName]
-            });
-            if (response && response.successful && response.messageStreamInfo) {
-                const item: Stream = {
-                    key: index,
-                    messageStreamInfo: response.messageStreamInfo
-                };
-                item.key = index;
-                setStreamManagerStreamsList(prevList => [...prevList, item]);
-            }
-        } finally {
-            setRequestStreamsListInProgress(false);
-        }
-    }
-
     async function deleteMessageStream(streamName: string) {
         try {
             const response: StreamManagerResponseMessage = await SERVER.sendRequest({
@@ -308,26 +286,33 @@ function StreamManager() {
     }
 
     async function listStreams() {
-        setStreamManagerStreamsList([]);
-        setRequestStreamsListInProgress(true);
-        try {
-            const response: StreamManagerResponseMessage = await SERVER.sendRequest({
-                call: APICall.streamManagerListStreams,
-                args: []
-            });
-            if (response) {
-                if (response.successful) {
-                    response.streamsList.forEach(describeStream);
-                } else {
-                    defaultContext.addFlashItem!({
-                        type: 'error',
-                        header: 'Error',
-                        content: response.errorMsg
+        const response: StreamManagerResponseMessage = await SERVER.sendRequest({
+            call: APICall.streamManagerListStreams,
+            args: []
+        });
+        if (response) {
+            if (response.successful) {
+                const streams: Stream[] = [];
+                for (const [index, streamName] of response.streamsList.entries()) {
+                    const response: StreamManagerResponseMessage = await SERVER.sendRequest({
+                        call: APICall.streamManagerDescribeStream,
+                        args: [streamName]
                     });
+                    if (response && response.successful && response.messageStreamInfo) {
+                        streams.push({
+                            key: index,
+                            messageStreamInfo: response.messageStreamInfo
+                        });
+                    }
                 }
+                setStreamManagerStreamsList(streams);
+            } else {
+                defaultContext.addFlashItem!({
+                    type: 'error',
+                    header: 'Error',
+                    content: response.errorMsg
+                });
             }
-        } finally {
-            setRequestStreamsListInProgress(false);
         }
     }
 
@@ -413,7 +398,6 @@ function StreamManager() {
                     }
                     selectionType="single"
                     trackBy="key"
-                    loading={requestStreamsListInProgress}
                     selectedItems={selectedStream}
                     loadingText="Loading streams"
                     items={streamManagerStreamsList.slice((currentPageIndex - 1) * (preferences.pageSize || 10), (currentPageIndex - 1) * (preferences.pageSize || 10) + (preferences.pageSize || 10)).filter((s: Stream) => s.messageStreamInfo.definition.name.toLowerCase().includes(filteringText.toLowerCase()))}
@@ -461,11 +445,7 @@ function StreamManager() {
                     }
                     header={
                         <Header
-                            counter=
-                                {
-                                    `(${streamManagerStreamsList.length})`
-                                }
-
+                            counter={`(${streamManagerStreamsList.length})`}
                             actions={
                                 <SpaceBetween direction="horizontal" size="xs">
                                     <Button
@@ -479,7 +459,6 @@ function StreamManager() {
                                         onClick={onClickCreateStream}
                                         wrapText={false}
                                         iconName="add-plus"
-                                        disabled={requestStreamsListInProgress}
                                     >
                                         Create stream
                                     </Button>
@@ -575,7 +554,8 @@ function StreamManager() {
                                                         type="number"
                                                     />
                                                 </FormField>
-                                                <FormField label="Strategy on full" constraintText={model.MessageStreamDefinition.properties.strategyOnFull.description}>
+                                                <FormField label="Strategy on full"
+                                                           constraintText={model.MessageStreamDefinition.properties.strategyOnFull.description}>
                                                     <Select
                                                         options={[
                                                             {label: "OverwriteOldestData", value: "1"},
