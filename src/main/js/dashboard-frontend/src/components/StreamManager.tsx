@@ -294,14 +294,14 @@ function StreamManager() {
             });
             defaultContext.addFlashItem!({
                 type: response.successful ? 'success' : 'error',
-                header: response.successful ? 'Deleted ' + streamName + ' successfully' : 'Error deleting ' + streamName,
+                header: response.successful ? `Deleted ${streamName} successfully` : `Error deleting ${streamName}`,
                 content: response.errorMsg
             });
             listStreams();
         } catch (e) {
             defaultContext.addFlashItem!({
                 type: 'error',
-                header: 'Error deleting ' + streamName,
+                header: `Error deleting ${streamName}`,
                 content: e
             });
         }
@@ -355,7 +355,7 @@ function StreamManager() {
     const onClickCreateStream = () => {
         dispatch({
             type: 'set_name',
-            payload: newStream.name + '-'+generateRandom4DigitNumber().toString(),
+            payload: `${newStream.name}-${generateRandom4DigitNumber()}`,
             callbackError: setCreateStreamErrorText
         })
         setViewConfirmCreateStream(true);
@@ -370,7 +370,7 @@ function StreamManager() {
             setViewConfirmCreateStream(false);
             defaultContext.addFlashItem!({
                 type: 'success',
-                header: 'Created ' + newStream.name + " successfully",
+                header: `Created ${newStream.name} successfully`,
                 content: response.errorMsg
             });
             dispatch({type: 'clear', callbackError: setCreateStreamErrorText});
@@ -463,7 +463,7 @@ function StreamManager() {
                         <Header
                             counter=
                                 {
-                                    "(" + streamManagerStreamsList.length + ")"
+                                    `(${streamManagerStreamsList.length})`
                                 }
 
                             actions={
@@ -492,7 +492,9 @@ function StreamManager() {
                                         Delete
                                     </Button>
                                     {
-                                        <DeleteModal isVisible={viewConfirmDelete} header={selectedStream?.length ? 'Delete ' + selectedStream[0].messageStreamInfo.definition.name : ''} onDismiss={onDismiss} confirmDelete={confirmDelete}/>
+                                        <DeleteModal isVisible={viewConfirmDelete}
+                                                     header={selectedStream?.length ? `Delete ${selectedStream[0].messageStreamInfo.definition.name}` : ''}
+                                                     onDismiss={onDismiss} confirmDelete={confirmDelete}/>
                                     }
                                     <Modal
                                         key={"createStream"}
