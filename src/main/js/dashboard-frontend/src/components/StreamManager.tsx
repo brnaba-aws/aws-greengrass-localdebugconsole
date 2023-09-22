@@ -33,6 +33,7 @@ import {APICall, ConfigMessage} from "../util/CommUtils";
 
 import {
     formatBytes,
+    generateRandom4DigitNumber,
     getExportDefinitionType,
     Persistence,
     StrategyOnFull,
@@ -352,6 +353,11 @@ function StreamManager() {
     }
 
     const onClickCreateStream = () => {
+        dispatch({
+            type: 'set_name',
+            payload: newStream.name + '-'+generateRandom4DigitNumber().toString(),
+            callbackError: setCreateStreamErrorText
+        })
         setViewConfirmCreateStream(true);
     }
 

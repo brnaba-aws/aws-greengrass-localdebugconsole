@@ -22,6 +22,7 @@ import {
     ExportDefinition,
     ExportFormat,
     formatBytes,
+    generateRandom4DigitNumber,
     HTTPConfig,
     IoTAnalyticsConfig,
     IoTSiteWiseConfig,
@@ -357,6 +358,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
 
     function onClickAddExportDefinition() {
         setUpdateExportDefinition(activeTab, defaultExportDefinition[activeTab]);
+        setUpdateExportDefinition(activeTab, {'identifier': updateExportDefinition[activeTab].identifier + '-'+generateRandom4DigitNumber().toString()})
         setViewModalAddExportDefinition(true);
     }
 
@@ -1094,6 +1096,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
 
         const exportType: string = 'kinesis';
         const headerText: string = 'Update Kinesis export definition';
+
         return (
             generateExportDefinitionModal(exportType, isVisble, headerText, false, updateExportDefinition[exportType], "", onClickConfirmUpdateExportDefinition, onDismiss)
         );
