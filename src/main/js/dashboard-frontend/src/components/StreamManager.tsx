@@ -44,6 +44,7 @@ import {DefaultContext, SERVER} from "../index";
 import {STREAM_MANAGER_ROUTE_HREF_PREFIX} from "../util/constNames";
 import PaginationRendering from "../util/PaginationRendering";
 import StreamManagerResponseMessage from "../util/StreamManagerResponseMessage";
+import DeleteModal from "./StreamManagerDeleteModal";
 
 const model = model1.definitions;
 
@@ -206,6 +207,7 @@ function StreamManager() {
     useEffect(() => {
         getStreamManagerComponentConfiguration();
         listStreams();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentPageIndex, preferences]);
 
 
@@ -375,6 +377,7 @@ function StreamManager() {
 
     function OnPageIndexChangedHandler(pageIndex: number) {
         setCurrentPageIndex(pageIndex);
+        listStreams();
     }
 
     const tabs: TabsProps.Tab[] = [
@@ -482,32 +485,9 @@ function StreamManager() {
                                     >
                                         Delete
                                     </Button>
-                                    <Modal
-                                        onDismiss={onDismiss}
-                                        visible={viewConfirmDelete}
-                                        size="medium"
-                                        footer={
-                                            <Box float="right">
-                                                <SpaceBetween direction="horizontal" size="xs">
-                                                    <Button
-                                                        variant="link"
-                                                        onClick={onDismiss}
-                                                    >
-                                                        Cancel
-                                                    </Button>
-                                                    <Button
-                                                        variant="primary"
-                                                        onClick={confirmDelete}
-                                                    >
-                                                        Delete
-                                                    </Button>
-                                                </SpaceBetween>
-                                            </Box>
-                                        }
-                                        header={selectedStream?.length ? 'Delete ' + selectedStream[0].messageStreamInfo.definition.name : ''}
-                                    >
-                                        Are you sure you want to delete the stream?
-                                    </Modal>
+                                    {
+                                        <DeleteModal isVisible={viewConfirmDelete} header={selectedStream?.length ? 'Delete ' + selectedStream[0].messageStreamInfo.definition.name : ''} onDismiss={onDismiss} confirmDelete={confirmDelete}/>
+                                    }
                                     <Modal
                                         key={"createStream"}
                                         onDismiss={onDismiss}

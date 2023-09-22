@@ -41,6 +41,7 @@ import {STREAM_MANAGER_ROUTE_HREF_PREFIX} from "../util/constNames";
 import PaginationRendering from "../util/PaginationRendering";
 import StreamExportDefinition from "./details/StreamExportDefinition"
 import StreamManagerResponseMessage from "../util/StreamManagerResponseMessage";
+import DeleteModal from "./StreamManagerDeleteModal";
 
 const model = model1.definitions;
 
@@ -60,10 +61,12 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
     const [filteringText, setFilteringText] = useState("");
     const [viewAppendMessage, setViewAppendMessage] = useState(false);
     const [viewUpdateDefinition, setViewUpdateDefinition] = useState(false);
+    const [viewDelete, setViewDeleteStream] = useState(false);
     const [messageToAppend, setMessageToAppend] = useState("");
     const defaultContext = useContext(DefaultContext);
     const [updateStreamErrorText, setUpdateStreamErrorText] = useState("");
-    let streamName = useHistory().location.pathname.substring(STREAM_MANAGER_ROUTE_HREF_PREFIX.length - 1);
+    let history = useHistory();
+    let streamName = history.location.pathname.substring(STREAM_MANAGER_ROUTE_HREF_PREFIX.length - 1);
     const [updateStream, dispatch] = useReducer(StreamManagerReducer, {
         name: "",
         maxSize: model.MessageStreamDefinition.properties.maxSize.minimum,
@@ -270,6 +273,9 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     }, callbackError: setUpdateStreamErrorText
                 });
                 break;
+            case 'ds': 
+                setViewDeleteStream(true);
+            break;
         }
     }
 
@@ -335,7 +341,26 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
         setViewAppendMessage(false);
         setMessageToAppend("");
         setViewUpdateDefinition(false)
+        setViewDeleteStream(false);
     }
+
+    const confirmDeleteStream = async () => {
+        const response: StreamManagerResponseMessage = await SERVER.sendRequest({
+            call: APICall.streamManagerDeleteMessageStream,
+            args: [streamName]
+        });
+        if (response) {
+            defaultContext.addFlashItem!({
+                type: response.successful ? 'success' : 'error',
+                header: response.successful ? streamName + " has been deleted.": 'Failed to delete ' + streamName,
+                content: response.errorMsg
+            });
+            if (response.successful){
+                history.push(`${STREAM_MANAGER_ROUTE_HREF_PREFIX.substring(1)}`);
+            }
+        }
+        setViewDeleteStream(false);
+    };
 
     const appendMessageClick = async () => {
         setAppendMessageRequest(true);
@@ -381,6 +406,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
         } else {
             describeStream(streamName, 0);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentPageIndex]);
 
     return (
@@ -403,6 +429,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                 items={[
                                     {text: "Update definition", id: "ud", disabled: false},
                                     {text: "Add message", id: "am", disabled: false},
+                                    {text: "Delete stream", id: "ds", disabled: false},
                                 ]}
                                 onItemClick={(e) => onItemClick(e.detail.id)}
                             >
@@ -769,6 +796,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     </SpaceBetween>
                 </Form>
             </Modal>
+            <DeleteModal isVisible={viewDelete} header={'Delete ' + streamName} onDismiss={onDismiss} confirmDelete={confirmDeleteStream}/>
         </ContentLayout>
     );
 }
