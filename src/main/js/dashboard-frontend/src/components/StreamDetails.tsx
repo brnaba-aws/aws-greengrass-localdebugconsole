@@ -18,8 +18,6 @@ import {
     StatusIndicator,
     Table,
     TableProps,
-    Tabs,
-    TabsProps,
     Textarea,
     TextFilter,
 } from "@cloudscape-design/components";
@@ -205,30 +203,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                 value: (streamDetails?.messageStreamInfo.definition.timeToLiveMillis),
             },
         ]
-    ];
-
-    const tabsStreamDefinition: TabsProps.Tab[] = [
-        {
-            id: "tabsStreamDefinition",
-            label: "Stream definition",
-            content: (
-                describeStreamRequestInProgress ?
-                    <StatusIndicator type="loading"> Loading </StatusIndicator> :
-                    <ColumnLayout columns={items.length} variant="text-grid">
-                        {items.map((group, index) => (
-                            <SpaceBetween size="xs" key={index}>
-                                {group.map((item) => (
-                                    <div key={item.field}>
-                                        <Box margin={{bottom: "xxxs"}} variant="awsui-key-label"
-                                             color="text-label">{item.field}</Box>
-                                        <div>{item.value}</div>
-                                    </div>
-                                ))}
-                            </SpaceBetween>
-                        ))}
-                    </ColumnLayout>
-            ),
-        },
     ];
 
     function OnPageIndexChangedHandler(pageIndex: number) {
@@ -471,9 +445,28 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                 {
                     (preferenceStreamDetailsPage.visibleContent?.some((e: string) => e === "details") !== false) &&
                     <Container>
-                        <Tabs
-                            tabs={tabsStreamDefinition}
-                        />
+                        <SpaceBetween direction="vertical" size="l">
+                            <Header>Stream definition</Header>
+                            {/* <Tabs
+                                tabs={tabsStreamDefinition}
+                            /> */}
+                            {describeStreamRequestInProgress ?
+                            <StatusIndicator type="loading"> Loading </StatusIndicator> :
+                            <ColumnLayout columns={items.length} variant="text-grid">
+                                {items.map((group, index) => (
+                                    <SpaceBetween size="xs" key={index}>
+                                        {group.map((item) => (
+                                            <div key={item.field}>
+                                                <Box margin={{bottom: "xxxs"}} variant="awsui-key-label"
+                                                    color="text-label">{item.field}</Box>
+                                                <div>{item.value}</div>
+                                            </div>
+                                        ))}
+                                    </SpaceBetween>
+                                ))}
+                            </ColumnLayout>
+                            }   
+                        </SpaceBetween>
                     </Container>
                 }
                 {
