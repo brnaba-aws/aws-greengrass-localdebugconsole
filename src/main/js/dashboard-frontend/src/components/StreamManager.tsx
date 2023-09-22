@@ -27,6 +27,7 @@ import {
     TabsProps,
     TextFilter,
 } from "@cloudscape-design/components";
+import model1 from "../static/streammanagerModel.json"
 
 import {APICall, ConfigMessage} from "../util/CommUtils";
 
@@ -44,6 +45,8 @@ import {STREAM_MANAGER_ROUTE_HREF_PREFIX} from "../util/constNames";
 import PaginationRendering from "../util/PaginationRendering";
 import StreamManagerResponseMessage from "../util/StreamManagerResponseMessage";
 
+const model = model1.definitions;
+
 function StreamManager() {
 
     const [filteringText, setFilteringText] = useState("")
@@ -54,19 +57,17 @@ function StreamManager() {
     const [createStreamErrorText, setCreateStreamErrorText] = useState("");
     const [newStream, dispatch] = useReducer(StreamManagerReducer, {
         name: "new-stream",
-        maxSize: 256 * 1024 * 1024,
-        streamSegmentSize: 16 * 1024 * 1024,
+        maxSize: model.MessageStreamDefinition.properties.maxSize.default,
+        streamSegmentSize: model.MessageStreamDefinition.properties.streamSegmentSize.default,
         strategyOnFull: StrategyOnFull.OverwriteOldestData,
         persistence: Persistence.File,
         flushOnWrite: false,
-        exportDefinition: {
-            kinesis: [],
-            http: [],
-            iotAnalytics: [],
-            IotSitewise: [],
-            s3TaskExecutor: []
-        }
+        exportDefinition: Object.keys(model.ExportDefinition.properties).reduce((prev: any, id) => {
+            prev[id] = [];
+            return prev;
+        }, {})
     });
+
     const defaultContext = useContext(DefaultContext);
     const [currentPageIndex, setCurrentPageIndex] = useState(1)
     const [streamManagerComponentConfiguration, setStreamManagerComponentConfiguration] = useState<StreamManagerComponentConfiguration>({
@@ -185,13 +186,10 @@ function StreamManager() {
         {
             id: "exportDefinition",
             header: "Export definition",
-            cell: e => getExportDefinitionType(e.messageStreamInfo.definition.exportDefinition || {
-                kinesis: [],
-                http: [],
-                iotAnalytics: [],
-                IotSitewise: [],
-                s3TaskExecutor: []
-            }
+            cell: e => getExportDefinitionType(e.messageStreamInfo.definition.exportDefinition || Object.keys(model.ExportDefinition.properties).reduce((prev: any, id) => {
+                prev[id] = [];
+                return prev;
+            }, {})
             )
         }
     ];
@@ -462,8 +460,6 @@ function StreamManager() {
                             actions={
                                 <SpaceBetween direction="horizontal" size="xs">
                                     <Button
-                                        ariaDescribedby={"refresh"}
-                                        ariaLabel="Refresh"
                                         onClick={onClickRefresh}
                                         iconName="refresh"
                                         wrapText={false}
@@ -471,8 +467,6 @@ function StreamManager() {
                                     >
                                     </Button>
                                     <Button
-                                        ariaDescribedby={"Create stream"}
-                                        ariaLabel="Create stream"
                                         onClick={onClickCreateStream}
                                         wrapText={false}
                                         iconName="add-plus"
@@ -481,8 +475,6 @@ function StreamManager() {
                                         Create stream
                                     </Button>
                                     <Button
-                                        ariaDescribedby={"Delete stream"}
-                                        ariaLabel="Delete stream"
                                         onClick={onClickDelete}
                                         wrapText={false}
                                         iconName="remove"
@@ -491,7 +483,6 @@ function StreamManager() {
                                         Delete
                                     </Button>
                                     <Modal
-                                        key={"deleteStream"}
                                         onDismiss={onDismiss}
                                         visible={viewConfirmDelete}
                                         size="medium"
@@ -501,16 +492,12 @@ function StreamManager() {
                                                     <Button
                                                         variant="link"
                                                         onClick={onDismiss}
-                                                        ariaDescribedby={"Cancel"}
-                                                        ariaLabel="Cancel"
                                                     >
                                                         Cancel
                                                     </Button>
                                                     <Button
                                                         variant="primary"
                                                         onClick={confirmDelete}
-                                                        ariaDescribedby={"Delete"}
-                                                        ariaLabel="Delete"
                                                     >
                                                         Delete
                                                     </Button>
@@ -535,8 +522,6 @@ function StreamManager() {
                                                     <Button
                                                         formAction="none"
                                                         variant="link"
-                                                        ariaDescribedby={"Cancel"}
-                                                        ariaLabel="Cancel"
                                                         onClick={onDismiss}
                                                     >
                                                         Cancel
@@ -545,9 +530,7 @@ function StreamManager() {
                                                         loading={false}
                                                         disabled={createStreamErrorText.length !== 0}
                                                         variant="primary"
-                                                        ariaDescribedby={"Create"}
-                                                        ariaLabel="Create"
-                                                        onClick={() => confirmCreateStream()}
+                                                        onClick={confirmCreateStream}
                                                     >
                                                         Create
                                                     </Button>
@@ -558,7 +541,7 @@ function StreamManager() {
                                             <SpaceBetween direction="vertical" size="l">
                                                 <FormField
                                                     label="Stream Name"
-                                                    constraintText="Must be an alphanumeric string including spaces, commas, periods, hyphens, and underscores with length between 1 and 255."
+                                                    constraintText={model.MessageStreamDefinition.properties.name.description}
                                                 >
                                                     <Input
                                                         value={newStream.name || ''}
@@ -572,7 +555,7 @@ function StreamManager() {
                                                 </FormField>
                                                 <FormField
                                                     label="Stream Max Size (in bytes)"
-                                                    constraintText="Set to 256MB by default with a minimum of 1KB and a maximum of 8192PB."
+                                                    constraintText={model.MessageStreamDefinition.properties.maxSize.description}
                                                 >
                                                     <Input
                                                         value={newStream.maxSize}
@@ -588,7 +571,7 @@ function StreamManager() {
                                                     />
                                                 </FormField>
                                                 <FormField
-                                                    constraintText="Set to 16MB by default with a minimum of 1KB and a maximum of 2GB."
+                                                    constraintText={model.MessageStreamDefinition.properties.streamSegmentSize.description}
                                                     label="Stream Segment Size (in bytes)"
                                                 >
                                                     <Input
@@ -604,7 +587,7 @@ function StreamManager() {
                                                         type="number"
                                                     />
                                                 </FormField>
-                                                <FormField label="Strategy on full">
+                                                <FormField label="Strategy on full" constraintText={model.MessageStreamDefinition.properties.strategyOnFull.description}>
                                                     <Select
                                                         options={[
                                                             {label: "OverwriteOldestData", value: "1"},
@@ -624,8 +607,7 @@ function StreamManager() {
                                                 </FormField>
                                                 <FormField
                                                     label="Persistence"
-                                                    constraintText="If set to File, the file system will be used to persist messages long-term and is resilient to restarts.
-                                                    Memory should be used when performance matters more than durability as it only stores the stream in memory and never writes to the disk."
+                                                    constraintText={model.MessageStreamDefinition.properties.persistence.description}
                                                 >
                                                     <Select
                                                         options={[
@@ -646,7 +628,7 @@ function StreamManager() {
                                                 </FormField>
                                                 {newStream.persistence === Persistence.File && <FormField
                                                     label="Flush on write"
-                                                    constraintText="Waits for the filesystem to complete the write for every message. This is safer, but slower. Default is false."
+                                                    constraintText={model.MessageStreamDefinition.properties.flushOnWrite.description}
                                                 >
                                                     <Select
                                                         options={[

@@ -19,6 +19,7 @@ import {
     Tabs
 } from "@cloudscape-design/components";
 import {
+    ExportDefinition,
     ExportFormat,
     formatBytes,
     HTTPConfig,
@@ -31,10 +32,13 @@ import {
     statusLevelText,
     Stream,
 } from "../../util/StreamManagerUtils";
+import model1 from "../../static/streammanagerModel.json"
 import {DefaultContext, SERVER} from "../../index";
 import {APICall} from "../../util/CommUtils";
 import StreamManagerResponseMessage from "../../util/StreamManagerResponseMessage"
 import {STREAM_MANAGER_ROUTE_HREF_PREFIX} from "../../util/constNames";
+
+const model = model1.definitions;
 
 interface StreamDefinitionProps {
     loadingFlagProps: boolean
@@ -53,37 +57,33 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
 
     const {streamProps, loadingFlagProps, describeStreamCallbackPros} = props
     const defaultContext = useContext(DefaultContext);
-    const optionsStatusLevel: any = [
-        {label: "Error", value: "0"},
-        {label: "Warning", value: "1"},
-        {label: "Information", value: "2"},
-        {label: "Debug", value: "3"},
-        {label: "Trace", value: "4"}
-    ];
+    const optionsStatusLevel = model.StatusLevel.javaEnumNames.map((v, i) => {
+        return {label: v, value: i + ""}
+    });
 
     const defaultKinesisExportDefinition = {
         identifier: "kinesis-id",
         kinesisStreamName: "",
-        batchSize: 500,
-        batchIntervalMillis: 60000,
-        priority: 10,
-        startSequenceNumber: 0,
+        batchSize: model.KinesisConfig.properties.batchSize.maximum,
+        batchIntervalMillis: model.KinesisConfig.properties.batchIntervalMillis.minimum,
+        priority: model.KinesisConfig.properties.priority.maximum,
+        startSequenceNumber: model.KinesisConfig.properties.startSequenceNumber.minimum,
         disabled: false
     };
     const defaultIotSitewiseExportDefinition = {
         identifier: "iot-sitewise-id",
-        batchSize: 10,
-        batchIntervalMillis: 60000,
-        priority: 10,
-        startSequenceNumber: 0,
+        batchSize: model.IoTSiteWiseConfig.properties.batchSize.maximum,
+        batchIntervalMillis: model.IoTSiteWiseConfig.properties.batchIntervalMillis.minimum,
+        priority: model.IoTSiteWiseConfig.properties.priority.maximum,
+        startSequenceNumber: model.IoTSiteWiseConfig.properties.startSequenceNumber.minimum,
         disabled: false
     };
     const defaultIotAnalyticsExportDefinition = {
         identifier: "iot-analytics-id",
-        batchSize: 500,
-        batchIntervalMillis: 60000,
-        priority: 10,
-        startSequenceNumber: 0,
+        batchSize: model.IoTAnalyticsConfig.properties.batchSize.maximum,
+        batchIntervalMillis: model.IoTAnalyticsConfig.properties.batchIntervalMillis.minimum,
+        priority: model.IoTAnalyticsConfig.properties.priority.maximum,
+        startSequenceNumber: model.IoTAnalyticsConfig.properties.startSequenceNumber.minimum,
         disabled: false,
         iotChannel: "iot-analytics-ch",
         iotMsgIdPrefix: "iot-analytics-prefix",
@@ -91,20 +91,20 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
     const defaultHttpExportDefinition = {
         identifier: "http-id",
         uri: "",
-        batchSize: 500,
-        batchIntervalMillis: 60000,
-        priority: 10,
-        startSequenceNumber: 0,
+        batchSize: model.HTTPConfig.properties.batchSize.maximum,
+        batchIntervalMillis: model.HTTPConfig.properties.batchIntervalMillis.minimum,
+        priority: model.HTTPConfig.properties.priority.maximum,
+        startSequenceNumber: model.HTTPConfig.properties.startSequenceNumber.minimum,
         disabled: false,
         exportFormat: ExportFormat.RAW_NOT_BATCHED
     };
     const defaultS3ExportDefinition = {
         identifier: "s3-id",
-        sizeThresholdForMultipartUploadBytes: 5242880,
-        priority: 10,
+        sizeThresholdForMultipartUploadBytes: model.S3ExportTaskExecutorConfig.properties.sizeThresholdForMultipartUploadBytes.minimum,
+        priority: model.S3ExportTaskExecutorConfig.properties.priority.maximum,
         disabled: false,
         statusConfig: {
-            statusLevel: StatusLevel.ERROR,
+            statusLevel: StatusLevel.INFO,
             statusStreamName: ''
         }
     };
@@ -123,15 +123,18 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
 
     const [errorUpdateStreamFeedback, setErrorUpdateStreamFeedback] = useState('');
 
-    const exportTypes = [{id: "kinesis", name: 'Kinesis'}, {
-        id: "IotSitewise",
-        name: "IoT Sitewise"
-    }, {id: "iotAnalytics", name: 'IoT Analytics'}, {id: "http", name: 'HTTP'}, {id: "s3TaskExecutor", name: "S3"}];
+    const exportTypes: { [p in keyof ExportDefinition]: string } = {
+        "kinesis": 'Kinesis',
+        "IotSitewise": "IoT Sitewise",
+        "iotAnalytics": 'IoT Analytics',
+        "http": 'HTTP',
+        "s3TaskExecutor": "S3"
+    };
 
     // Usage example
     const initialSelectedItems: any = {};
-    exportTypes.forEach((exportType: any) => {
-        initialSelectedItems[exportType.id] = [];
+    Object.keys(exportTypes).forEach((id) => {
+        initialSelectedItems[id] = [];
     });
 
     const [viewModalExportDefinitionKinesis, setViewModalExportDefinitionKinesis] = useState(false);
@@ -158,7 +161,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
         kinesis: [
             {
                 id: "identifier",
-                header: "Identifider",
+                header: "Identifier",
                 cell: (e: KinesisConfig) => e.identifier
             },
             {
@@ -195,7 +198,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
         IotSitewise: [
             {
                 id: "identifier",
-                header: "Identifider",
+                header: "Identifier",
                 cell: (e: IoTSiteWiseConfig) => e.identifier
             },
             {
@@ -227,7 +230,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
         iotAnalytics: [
             {
                 id: "identifier",
-                header: "Identifider",
+                header: "Identifier",
                 cell: (e: IoTAnalyticsConfig) => e.identifier
             },
             {
@@ -269,7 +272,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
         http: [
             {
                 id: "identifier",
-                header: "Identifider",
+                header: "Identifier",
                 cell: (e: HTTPConfig) => e.identifier
             },
             {
@@ -311,7 +314,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
         s3TaskExecutor: [
             {
                 id: "identifier",
-                header: "Identifider",
+                header: "Identifier",
                 cell: (e: S3ExportTaskExecutorConfig) => e.identifier
             },
             {
@@ -345,13 +348,11 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
         ],
     };
 
-
-    const initialActiveTab = 'kinesis';
-    const [activeTab, setActiveTab] = useState(initialActiveTab);
-    const exportTabs = exportTypes.map((exportType: any) => ({
-        id: `${exportType.id}`,
-        content: generateExportContent(exportType.id),
-        label: exportType.name,
+    const [activeTab, setActiveTab] = useState(Object.keys(exportTypes)[0] as keyof typeof exportTypes);
+    const exportTabs = Object.entries(exportTypes).map(([id, name]) => ({
+        id: `${id}`,
+        content: generateExportContent(id as keyof ExportDefinition),
+        label: name,
     }));
 
     function onClickAddExportDefinition() {
@@ -398,7 +399,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
         }
     }
 
-    const updateMessageStream = async (exportType: string, exportDefinition: any, actionType: ExportDefinitionActionType) => {
+    const updateMessageStream = async (exportType: keyof ExportDefinition, exportDefinition: any, actionType: ExportDefinitionActionType) => {
         const messageStream: MessageStreamDefinition = {
             name: streamProps.messageStreamInfo.definition.name,
             maxSize: streamProps.messageStreamInfo.definition.maxSize,
@@ -406,13 +407,10 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
             strategyOnFull: streamProps.messageStreamInfo.definition.strategyOnFull,
             persistence: streamProps.messageStreamInfo.definition.persistence,
             flushOnWrite: streamProps.messageStreamInfo.definition.flushOnWrite,
-            exportDefinition: {
-                kinesis: [],
-                http: [],
-                iotAnalytics: [],
-                IotSitewise: [],
-                s3TaskExecutor: []
-            }
+            exportDefinition: Object.keys(model.ExportDefinition.properties).reduce((prev: any, id) => {
+                prev[id] = [];
+                return prev;
+            }, {})
         }
 
         if (actionType !== ExportDefinitionActionType.ADD) {
@@ -641,21 +639,10 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                 }
             }
         } else {
-            const exportTypeToProperty: any = {
-                kinesis: 'kinesis',
-                IotSitewise: 'IotSitewise',
-                iotAnalytics: 'iotAnalytics',
-                http: 'http',
-                s3TaskExecutor: 's3TaskExecutor',
+            messageStream.exportDefinition = {
+                ...streamProps.messageStreamInfo.definition.exportDefinition,
+                [exportType]: [...streamProps.messageStreamInfo.definition.exportDefinition[exportType], exportDefinition],
             };
-            const exportProperty = exportTypeToProperty[exportType];
-
-            if (exportProperty) {
-                messageStream.exportDefinition = {
-                    ...streamProps.messageStreamInfo.definition.exportDefinition,
-                    [exportProperty]: [...streamProps.messageStreamInfo.definition.exportDefinition[exportProperty], exportDefinition],
-                };
-            }
         }
 
         const response: StreamManagerResponseMessage = await SERVER.sendRequest({
@@ -701,7 +688,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
         }
     }
 
-    function generateExportContent(exportType: string) {
+    function generateExportContent(exportType: keyof ExportDefinition) {
         if (streamProps.messageStreamInfo.definition.exportDefinition) {
             const exportData = streamProps.messageStreamInfo.definition.exportDefinition[exportType];
 
@@ -709,7 +696,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                 return (
                     <Table
                         variant="borderless"
-                        key={`columnDefinitionsExportDefinition${exportType}`}
                         columnDefinitions={columnDefinitionsExportDefinition[exportType]}
                         sortingDisabled
                         loading={loadingFlagProps}
@@ -720,7 +706,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                             setUpdateExportDefinition(exportType, e.detail.selectedItems[0]);
                             setSelectedItems({
                                 ...selectedItems,
-                                [exportType]: streamProps.messageStreamInfo.definition.exportDefinition[exportType].filter((s: any) => s.identifier === e.detail.selectedItems[0].identifier),
+                                [exportType]: (streamProps.messageStreamInfo.definition.exportDefinition[exportType] as any[]).filter((s: any) => s.identifier === e.detail.selectedItems[0].identifier),
                             });
                         }}
                         items={exportData}
@@ -858,7 +844,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
         try {
             return (
                 <Modal
-                    key={`ModalUpdateExportDefinition${exportType}${headerText}`}
                     onDismiss={onDismiss}
                     visible={isVisible}
                     size="medium"
@@ -870,8 +855,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                                 <Button
                                     formAction="none"
                                     variant="link"
-                                    ariaDescribedby={"Cancel"}
-                                    ariaLabel="Cancel"
                                     onClick={onDismiss}
                                 >
                                     Cancel
@@ -880,8 +863,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                                     loading={false}
                                     disabled={false}
                                     variant="primary"
-                                    ariaDescribedby={"Update"}
-                                    ariaLabel="Update"
                                     onClick={() => onClickConfirmUpdateExportDefinition(isNewDefinition)}
                                 >
                                     {isNewDefinition ? 'Add' : 'Update'}
@@ -893,6 +874,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                         <SpaceBetween direction="vertical" size="l">
                             <FormField
                                 label="Export identifier"
+                                constraintText={model.KinesisConfig.properties.identifier.description}
                             >
                                 <Input
                                     value={exportDefinition.identifier}
@@ -906,6 +888,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                                 <>
                                     <FormField
                                         label="Kinesis stream name"
+                                        constraintText={model.KinesisConfig.properties.kinesisStreamName.description}
                                     >
                                         <Input
                                             value={exportDefinition.kinesisStreamName}
@@ -920,6 +903,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                                 <>
                                     <FormField
                                         label="IoT Analytics channel"
+                                        constraintText={model.IoTAnalyticsConfig.properties.iotChannel.description}
                                     >
                                         <Input
                                             value={exportDefinition.iotChannel}
@@ -929,6 +913,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                                     </FormField>
                                     <FormField
                                         label="IoT message id prefix"
+                                        constraintText={model.IoTAnalyticsConfig.properties.iotMsgIdPrefix.description}
                                     >
                                         <Input
                                             value={exportDefinition.iotMsgIdPrefix}
@@ -943,6 +928,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                                 <>
                                     <FormField
                                         label="HTTP Uri"
+                                        constraintText={model.HTTPConfig.properties.uri.description}
                                     >
                                         <Input
                                             value={exportDefinition.uri}
@@ -952,6 +938,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                                     </FormField>
                                     <FormField
                                         label="Export format"
+                                        constraintText={model.HTTPConfig.properties.exportFormat.description}
                                     >
                                         <Select
                                             options={[
@@ -972,6 +959,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                                 <>
                                     <FormField
                                         label="Size threshold For multipart upload (bytes)"
+                                        constraintText={model.S3ExportTaskExecutorConfig.properties.sizeThresholdForMultipartUploadBytes.description}
                                     >
                                         <Input
                                             value={exportDefinition.sizeThresholdForMultipartUploadBytes}
@@ -982,6 +970,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                                     </FormField>
                                     <FormField
                                         label="Status stream name"
+                                        constraintText={model.StatusConfig.properties.statusStreamName.description}
                                     >
                                         <Input
                                             value={exportDefinition.statusConfig.statusStreamName}
@@ -996,6 +985,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                                     </FormField>
                                     <FormField
                                         label="Status level"
+                                        constraintText={model.StatusConfig.properties.statusLevel.description}
                                     >
                                         <Select
                                             options={optionsStatusLevel}
@@ -1162,7 +1152,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
     function generateModalContentDeleteExport() {
         return (
             <Modal
-                key={"deleteExportDefinition"}
                 onDismiss={onDismiss}
                 visible={viewModalConfirmExportDelete}
                 size="medium"
@@ -1172,16 +1161,12 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                             <Button
                                 variant="link"
                                 onClick={onDismiss}
-                                ariaDescribedby={"Cancel"}
-                                ariaLabel="Cancel"
                             >
                                 Cancel
                             </Button>
                             <Button
                                 variant="primary"
                                 onClick={onConfirmDeleteExportDefinition}
-                                ariaDescribedby={"Delete"}
-                                ariaLabel="Delete"
                             >
                                 Delete
                             </Button>
@@ -1200,27 +1185,18 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
     return (
         <>
             <Header
-                key={"ExportDefinitionCounterHeader"}
                 actions={
-                    <SpaceBetween key={"SpaceBetween1"} direction="horizontal" size="xs">
+                    <SpaceBetween direction="horizontal" size="xs">
                         <Button
-                            ariaDescribedby={"Add export"}
-                            ariaLabel="Add export"
-                            key={"AddExportButtonHeader"}
                             onClick={() => {
                                 onClickAddExportDefinition();
                             }}
                             iconName="add-plus"
                             wrapText={false}
                             disabled={loadingFlagProps}
-                        >
-                            Add export
-                        </Button>
+                        >{`Add ${exportTypes[activeTab]} export`}</Button>
 
                         <Button
-                            ariaDescribedby={"Update export"}
-                            ariaLabel="Update export"
-                            key={"UpdateExportButtonHeader"}
                             onClick={() => {
                                 onClickUpdateExportDefinition();
                             }}
@@ -1234,9 +1210,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                             ((streamProps.messageStreamInfo.definition.exportDefinition.IotSitewise.length + streamProps.messageStreamInfo.definition.exportDefinition.kinesis.length +
                                 streamProps.messageStreamInfo.definition.exportDefinition.http.length + streamProps.messageStreamInfo.definition.exportDefinition.iotAnalytics.length + streamProps.messageStreamInfo.definition.exportDefinition.s3TaskExecutor.length) > 0)
                             && <Button
-                                ariaDescribedby={"Delete export"}
-                                ariaLabel="Delete export"
-                                key={"DeleteExportButtonHeader"}
                                 onClick={() => {
                                     onClickDeleteExportDefinition();
                                 }}

@@ -23,6 +23,7 @@ import {
     Textarea,
     TextFilter,
 } from "@cloudscape-design/components";
+import model1 from "../static/streammanagerModel.json"
 import {RouteComponentProps, useHistory, withRouter} from "react-router-dom";
 import {
     formatBytes,
@@ -40,6 +41,8 @@ import {STREAM_MANAGER_ROUTE_HREF_PREFIX} from "../util/constNames";
 import PaginationRendering from "../util/PaginationRendering";
 import StreamExportDefinition from "./details/StreamExportDefinition"
 import StreamManagerResponseMessage from "../util/StreamManagerResponseMessage";
+
+const model = model1.definitions;
 
 interface StreamManagerProps extends RouteComponentProps {
 }
@@ -63,18 +66,15 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
     let streamName = useHistory().location.pathname.substring(STREAM_MANAGER_ROUTE_HREF_PREFIX.length - 1);
     const [updateStream, dispatch] = useReducer(StreamManagerReducer, {
         name: "",
-        maxSize: 0,
-        streamSegmentSize: 0,
-        strategyOnFull: StrategyOnFull.OverwriteOldestData,
+        maxSize: model.MessageStreamDefinition.properties.maxSize.minimum,
+        streamSegmentSize: model.MessageStreamDefinition.properties.streamSegmentSize.minimum,
+        strategyOnFull: StrategyOnFull.RejectNewData,
         persistence: Persistence.File,
         flushOnWrite: false,
-        exportDefinition: {
-            kinesis: [],
-            http: [],
-            iotAnalytics: [],
-            IotSitewise: [],
-            s3TaskExecutor: []
-        }
+        exportDefinition: Object.keys(model.ExportDefinition.properties).reduce((prev: any, id) => {
+            prev[id] = [];
+            return prev;
+        }, {})
     });
     const columnDefinitionsMessages: TableProps.ColumnDefinition<Message>[] = [
         {
@@ -177,15 +177,15 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
         [
             {
                 field: "Persistence",
-                value: (streamDetails?.messageStreamInfo.definition.persistence === 0 ? "File" : "Memory")
+                value: (model.Persistence.javaEnumNames[streamDetails?.messageStreamInfo.definition.persistence || 0])
             },
             {
                 field: "Strategy",
-                value: (streamDetails?.messageStreamInfo.definition.strategyOnFull === 0 ? "RejectNewData" : "OverwriteOldestData"),
+                value: (model.StrategyOnFull.javaEnumNames[streamDetails?.messageStreamInfo.definition.strategyOnFull || 0]),
             },
             {
                 field: "Flush on write",
-                value: (streamDetails?.messageStreamInfo.definition.flushOnWrite ? 'true' : 'false'),
+                value: (streamDetails?.messageStreamInfo.definition.flushOnWrite + ""),
             },
         ],
         [
@@ -211,7 +211,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
             content: (
                 describeStreamRequestInProgress ?
                     <StatusIndicator type="loading"> Loading </StatusIndicator> :
-                    <ColumnLayout key={"tabsStreamDefinition"} columns={items.length} variant="text-grid">
+                    <ColumnLayout columns={items.length} variant="text-grid">
                         {items.map((group, index) => (
                             <SpaceBetween size="xs" key={index}>
                                 {group.map((item) => (
@@ -384,74 +384,67 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
     }, [currentPageIndex]);
 
     return (
-        <ContentLayout key={"streamDetails"}
-                       header={
-                           <Header
-                               variant={"h1"}
-                               actions={
-                                   <SpaceBetween key={"SpaceBetweenButtonsStreamDetails"} direction="horizontal"
-                                                 size="xs">
-                                       <Button
-                                           ariaDescribedby={"refresh"}
-                                           ariaLabel="Refresh"
-                                           key={"Refresh"}
-                                           onClick={() => {
-                                               onClickRefresh();
-                                           }}
-                                           iconName="refresh"
-                                           wrapText={false}
-                                           disabled={describeStreamRequestInProgress || readMessagesStreamRequestInProgress}
-                                       >
-                                       </Button>
-                                       <ButtonDropdown
-                                           disabled={describeStreamRequestInProgress || readMessagesStreamRequestInProgress}
-                                           items={[
-                                               {text: "Update definition", id: "ud", disabled: false},
-                                               {text: "Add message", id: "am", disabled: false},
-                                           ]}
-                                           onItemClick={(e) => onItemClick(e.detail.id)}
-                                       >
-                                           Actions
-                                       </ButtonDropdown>
-                                       <CollectionPreferences
-                                           key={"CollectionPreferencesStream"}
-                                           visibleContentPreference={{
-                                               title: "Visible items",
-                                               options: [{
-                                                   label: "", options: [
-                                                       {editable: true, label: "Stream details", id: "details"},
-                                                       {editable: true, label: "Export statuses", id: "exportStatuses"},
-                                                       {
-                                                           editable: true,
-                                                           label: "Export definitions",
-                                                           id: "exportDefinitions"
-                                                       },
-                                                       {editable: true, label: "Messages", id: "messages"},
-                                                   ]
-                                               }]
-                                           }}
-                                           title={"Preferences"}
-                                           confirmLabel={"Ok"}
-                                           cancelLabel={"Cancel"}
-                                           preferences={preferenceStreamDetailsPage}
-                                           onConfirm={({detail}) => {
-                                               setPreferenceStreamDetailsPage(detail);
-                                               localStorage.setItem("streamDetailsPreferencesView", JSON.stringify(detail))
-                                           }}
-                                       />
-                                   </SpaceBetween>
-                               }
-                           >
-                               {streamName}
-                           </Header>
-                       }
+        <ContentLayout
+            header={
+                <Header
+                    variant={"h1"}
+                    actions={
+                        <SpaceBetween direction="horizontal"
+                                      size="xs">
+                            <Button
+                                onClick={onClickRefresh}
+                                iconName="refresh"
+                                wrapText={false}
+                                disabled={describeStreamRequestInProgress || readMessagesStreamRequestInProgress}
+                            >
+                            </Button>
+                            <ButtonDropdown
+                                disabled={describeStreamRequestInProgress || readMessagesStreamRequestInProgress}
+                                items={[
+                                    {text: "Update definition", id: "ud", disabled: false},
+                                    {text: "Add message", id: "am", disabled: false},
+                                ]}
+                                onItemClick={(e) => onItemClick(e.detail.id)}
+                            >
+                                Actions
+                            </ButtonDropdown>
+                            <CollectionPreferences
+                                visibleContentPreference={{
+                                    title: "Visible items",
+                                    options: [{
+                                        label: "", options: [
+                                            {editable: true, label: "Stream details", id: "details"},
+                                            {editable: true, label: "Export statuses", id: "exportStatuses"},
+                                            {
+                                                editable: true,
+                                                label: "Export definitions",
+                                                id: "exportDefinitions"
+                                            },
+                                            {editable: true, label: "Messages", id: "messages"},
+                                        ]
+                                    }]
+                                }}
+                                title={"Preferences"}
+                                confirmLabel={"Ok"}
+                                cancelLabel={"Cancel"}
+                                preferences={preferenceStreamDetailsPage}
+                                onConfirm={({detail}) => {
+                                    setPreferenceStreamDetailsPage(detail);
+                                    localStorage.setItem("streamDetailsPreferencesView", JSON.stringify(detail))
+                                }}
+                            />
+                        </SpaceBetween>
+                    }
+                >
+                    {streamName}
+                </Header>
+            }
         >
-            <SpaceBetween key={"SpaceBetweenStreamDetails"} direction="vertical" size="l">
+            <SpaceBetween direction="vertical" size="l">
                 {
                     (preferenceStreamDetailsPage.visibleContent?.some((e: string) => e === "details") !== false) &&
-                    <Container key={"Container"}>
+                    <Container>
                         <Tabs
-                            key={"tabsStreamDefinition"}
                             tabs={tabsStreamDefinition}
                         />
                     </Container>
@@ -472,7 +465,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                 {
                     (preferenceStreamDetailsPage.visibleContent?.some((e: string) => e === "exportStatuses") !== false) &&
                     <Table
-                        key={"ExportStatusesTable"}
                         columnDefinitions={columnDefinitionsExportStatuses}
                         sortingDisabled
                         loading={describeStreamRequestInProgress}
@@ -492,7 +484,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         }
                         header={
                             <Header
-                                key={"counterHeader"}
                                 counter=
                                     {
                                         "(" + (streamDetails?.messageStreamInfo.exportStatuses.length || 0) + ")"
@@ -506,23 +497,16 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                 {
                     (preferenceStreamDetailsPage.visibleContent?.some((e: string) => e === "messages") !== false) &&
                     <Table
-                        key={"messageTable"}
                         empty={
-                            <Box key={"box1"} textAlign="center" color="inherit">
+                            <Box textAlign="center" color="inherit">
                                 <b>No messages</b>
                                 <Box
-                                    key={"box1-1"}
                                     padding={{bottom: "s"}}
                                     variant="p"
                                     color="inherit"
                                 >
                                     <Button
-                                        ariaDescribedby={"Add message"}
-                                        ariaLabel="Add message"
-                                        key={"Append"}
-                                        onClick={() => {
-                                            onClickAppend();
-                                        }}
+                                        onClick={onClickAppend}
                                         iconName="add-plus"
                                         wrapText={false}
                                         disabled={appendMessageRequest}
@@ -539,7 +523,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         items={messagesList.filter((m: Message) => atob(m.payload?.toString() || '').includes(filteringText.toLowerCase())).slice(0, preferencesMessages.pageSize || 100)}
                         filter={
                             <TextFilter
-                                key={"findMessageTextFilter"}
                                 filteringPlaceholder="Find message(s)"
                                 filteringText={filteringText}
                                 onChange={({detail}) => setFilteringText(detail.filteringText)}
@@ -549,7 +532,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         visibleColumns={preferencesMessages.visibleContent}
                         preferences={
                             <CollectionPreferences
-                                key={"CollectionPreferences"}
                                 visibleContentPreference={{
                                     title: "Visible columns",
                                     options: [{
@@ -579,21 +561,15 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         }
                         header={
                             <Header
-                                key={"counterHeader"}
                                 counter=
                                     {
                                         "(" + messageCount + ")"
                                     }
 
                                 actions={
-                                    <SpaceBetween key={"SpaceBetween1"} direction="horizontal" size="xs">
+                                    <SpaceBetween direction="horizontal" size="xs">
                                         {messageCount > 0 && <Button
-                                            ariaDescribedby={"Add message"}
-                                            ariaLabel="Add message"
-                                            key={"Append2"}
-                                            onClick={() => {
-                                                onClickAppend();
-                                            }}
+                                            onClick={onClickAppend}
                                             iconName="add-plus"
                                             wrapText={false}
                                             disabled={appendMessageRequest || describeStreamRequestInProgress || readMessagesStreamRequestInProgress}
@@ -601,29 +577,22 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                             Add Message
                                         </Button>}
                                         <Modal
-                                            key={"ModalAppendMessage"}
                                             onDismiss={onDismiss}
                                             visible={viewAppendMessage}
                                             size="medium"
                                             footer={
-                                                <Box key={"1"} float="right">
-                                                    <SpaceBetween key={"SpaceBetween2"} direction="horizontal"
+                                                <Box float="right">
+                                                    <SpaceBetween direction="horizontal"
                                                                   size="xs">
                                                         <Button
-                                                            key={"ModalAppendMessageCancelButton"}
                                                             variant="link"
                                                             onClick={onDismiss}
-                                                            ariaDescribedby={"Cancel"}
-                                                            ariaLabel="Cancel"
                                                         >
                                                             Cancel
                                                         </Button>
                                                         <Button
-                                                            key={"ModalAppendMessageAddButton"}
                                                             variant="primary"
                                                             onClick={appendMessageClick}
-                                                            ariaDescribedby={"Add"}
-                                                            ariaLabel="Add"
                                                         >
                                                             Add
                                                         </Button>
@@ -633,12 +602,10 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                             header={'Add message to ' + streamName}
                                         >
                                             <Form
-                                                key={"FormAddMessage"}
                                                 variant="embedded"
                                                 header={<Header variant="h1"></Header>}
                                             >
                                                 <Textarea
-                                                    key={"TextareaAddMessage"}
                                                     onChange={({detail}) => {
                                                         setMessageToAppend(detail.value)
                                                     }}
@@ -657,7 +624,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         }
                         pagination={
                             <PaginationRendering
-                                key={"paginatinoRendering"}
                                 numberOfItems={(streamDetails?.messageStreamInfo.storageStatus.newestSequenceNumber || 0) - (streamDetails?.messageStreamInfo.storageStatus.oldestSequenceNumber || 0) + 1}
                                 numberOfItemPerPage={preferencesMessages.pageSize || 1}
                                 pageIndex={currentPageIndex}
@@ -668,7 +634,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                 }
             </SpaceBetween>
             <Modal
-                key={"ModalUpdateDefinition"}
                 onDismiss={onDismiss}
                 visible={viewUpdateDefinition}
                 size="medium"
@@ -681,8 +646,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                             <Button
                                 formAction="none"
                                 variant="link"
-                                ariaDescribedby={"Cancel"}
-                                ariaLabel="Cancel"
                                 onClick={onDismiss}
                             >
                                 Cancel
@@ -691,8 +654,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                 loading={false}
                                 disabled={updateStreamErrorText.length !== 0}
                                 variant="primary"
-                                ariaDescribedby={"Update"}
-                                ariaLabel="Update"
                                 onClick={onClickUpdate}
                             >
                                 Update
@@ -704,7 +665,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     <SpaceBetween direction="vertical" size="l">
                         <FormField
                             label="Stream Name"
-                            constraintText="Must be an alphanumeric string including spaces, commas, periods, hyphens, and underscores with length between 1 and 255."
+                            constraintText={model.MessageStreamDefinition.properties.name.description}
                         >
                             <Input
                                 value={updateStream.name || ''}
@@ -713,7 +674,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         </FormField>
                         <FormField
                             label="Stream Max Size (in bytes)"
-                            constraintText="Set to 256MB by default with a minimum of 1KB and a maximum of 8192PB."
+                            constraintText={model.MessageStreamDefinition.properties.maxSize.description}
                         >
                             <Input
                                 value={updateStream.maxSize.toString() || ''}
@@ -729,7 +690,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                             />
                         </FormField>
                         <FormField
-                            constraintText="Set to 16MB by default with a minimum of 1KB and a maximum of 2GB."
+                            constraintText={model.MessageStreamDefinition.properties.streamSegmentSize.description}
                             label="Stream Segment Size (in bytes)"
                         >
                             <Input
@@ -745,7 +706,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                 type="number"
                             />
                         </FormField>
-                        <FormField label="Strategy on full">
+                        <FormField label="Strategy on full" constraintText={model.MessageStreamDefinition.properties.strategyOnFull.description}>
                             <Select
                                 options={[
                                     {label: "OverwriteOldestData", value: "1"},
@@ -765,8 +726,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         </FormField>
                         <FormField
                             label="Persistence"
-                            constraintText="If set to File, the file system will be used to persist messages long-term and is resilient to restarts.
-                                Memory should be used when performance matters more than durability as it only stores the stream in memory and never writes to the disk."
+                            constraintText={model.MessageStreamDefinition.properties.persistence.description}
                         >
                             <Select
                                 options={[
@@ -787,7 +747,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         </FormField>
                         {updateStream.persistence === Persistence.File && <FormField
                             label="Flush on write"
-                            constraintText="Waits for the filesystem to complete the write for every message. This is safer, but slower. Default is false."
+                            constraintText={model.MessageStreamDefinition.properties.flushOnWrite.description}
                         >
                             <Select
                                 options={[
