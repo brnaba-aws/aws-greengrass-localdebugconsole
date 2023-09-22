@@ -352,7 +352,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
         if (response) {
             defaultContext.addFlashItem!({
                 type: response.successful ? 'success' : 'error',
-                header: response.successful ? streamName + " has been deleted.": 'Failed to delete ' + streamName,
+                header: response.successful ? `${streamName} has been deleted`: `Failed to delete ${streamName}`,
                 content: response.errorMsg
             });
             if (response.successful){
@@ -372,7 +372,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
             setAppendMessageRequest(false);
             defaultContext.addFlashItem!({
                 type: response.successful ? 'success' : 'error',
-                header: response.successful ? 'Message has been added to ' + streamName : 'Failed to add the message to ' + streamName,
+                header: response.successful ? `Message has been added to ${streamName}` : `Failed to add the message to ${streamName}`,
                 content: response.errorMsg
             });
             describeStream(streamName, 0);
@@ -390,7 +390,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
             if (response) {
                 defaultContext.addFlashItem!({
                     type: response.successful ? 'success' : 'error',
-                    header: response.successful ? streamName + ' has been updated' : 'Failed to update ' + streamName,
+                    header: response.successful ? `${streamName} has been updated` : `Failed to update ${streamName}`,
                     content: response.errorMsg
                 });
                 describeStream(streamName, 0);
@@ -513,7 +513,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                             <Header
                                 counter=
                                     {
-                                        "(" + (streamDetails?.messageStreamInfo.exportStatuses.length || 0) + ")"
+                                        `(${streamDetails?.messageStreamInfo.exportStatuses.length || 0})`
                                     }
                             >
                                 Export statuses
@@ -590,7 +590,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                             <Header
                                 counter=
                                     {
-                                        "(" + messageCount + ")"
+                                        `(${messageCount})`
                                     }
 
                                 actions={
@@ -626,7 +626,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                                     </SpaceBetween>
                                                 </Box>
                                             }
-                                            header={'Add message to ' + streamName}
+                                            header={`Add message to ${streamName}`}
                                         >
                                             <Form
                                                 variant="embedded"
@@ -664,7 +664,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                 onDismiss={onDismiss}
                 visible={viewUpdateDefinition}
                 size="medium"
-                header={'Update ' + streamName + ' definition'}
+                header={`Update ${streamName} definition`}
             >
                 <Form
                     variant="embedded"
@@ -796,7 +796,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     </SpaceBetween>
                 </Form>
             </Modal>
-            <DeleteModal isVisible={viewDelete} header={'Delete ' + streamName} onDismiss={onDismiss} confirmDelete={confirmDeleteStream}/>
+            <DeleteModal isVisible={viewDelete} header={`Delete ${streamName}`} onDismiss={onDismiss} confirmDelete={confirmDeleteStream}/>
         </ContentLayout>
     );
 }

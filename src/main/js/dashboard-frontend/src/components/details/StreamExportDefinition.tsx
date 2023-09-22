@@ -132,11 +132,10 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
         "s3TaskExecutor": "S3"
     };
 
-    // Usage example
-    const initialSelectedItems: any = {};
-    Object.keys(exportTypes).forEach((id) => {
-        initialSelectedItems[id] = [];
-    });
+    const initialSelectedItems: { [p in keyof ExportDefinition]: string[] } = Object.keys(exportTypes).reduce((prev: any, id) => {
+        prev[id] = [];
+        return prev;
+    }, {});
 
     const [viewModalExportDefinitionKinesis, setViewModalExportDefinitionKinesis] = useState(false);
     const [viewModalExportDefinitionIotSiteWise, setViewModalExportDefinitionIotSiteWise] = useState(false);
@@ -358,7 +357,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
 
     function onClickAddExportDefinition() {
         setUpdateExportDefinition(activeTab, defaultExportDefinition[activeTab]);
-        setUpdateExportDefinition(activeTab, {'identifier': updateExportDefinition[activeTab].identifier + '-'+generateRandom4DigitNumber().toString()})
+        setUpdateExportDefinition(activeTab, {'identifier': `${updateExportDefinition[activeTab].identifier}-${generateRandom4DigitNumber()}`})
         setViewModalAddExportDefinition(true);
     }
 
@@ -375,15 +374,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
     }
 
     function onClickUpdateExportDefinition() {
-        const tabToModalMap: any =
-            {
-                kinesis: 'kinesis',
-                IotSitewise: 'IotSitewise',
-                iotAnalytics: 'iotAnalytics',
-                http: 'http',
-                s3TaskExecutor: 's3TaskExecutor',
-            };
-
         const tabToModalMapSetter: any = {
             kinesis: setViewModalExportDefinitionKinesis,
             IotSitewise: setViewModalExportDefinitionIotSiteWise,
@@ -392,8 +382,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
             s3TaskExecutor: setViewModalExportDefinitions3TaskExecutor,
         };
 
-        const activeTabKey = tabToModalMap[activeTab];
-        if (selectedItems[activeTabKey]?.[0]) {
+        if (selectedItems[activeTab]?.[0]) {
             const modalSetter: any = tabToModalMapSetter[activeTab];
             if (modalSetter && selectedItems[activeTab]?.[0]) {
                 modalSetter(true);
@@ -469,9 +458,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                         if (actionType === ExportDefinitionActionType.UPDATE) {
                             // push the update export definition
                             messageStream.exportDefinition?.kinesis.push(updatedKinesisExportDefinition);
-                        } else if (actionType === ExportDefinitionActionType.DELETE) {
-                            //don't push anything
-                        } else {
                         }
                     } else {
                         // If the identifier doesn't match, push the original entity
@@ -509,9 +495,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                         if (actionType === ExportDefinitionActionType.UPDATE) {
                             // push the update export definition
                             messageStream.exportDefinition?.IotSitewise.push(updatedIoTSitewiseExportDefinition);
-                        } else if (actionType === ExportDefinitionActionType.DELETE) {
-                            //don't push anything
-                        } else {
                         }
                     } else {
                         // If the identifier doesn't match, push the original entity
@@ -551,9 +534,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                         if (actionType === ExportDefinitionActionType.UPDATE) {
                             // push the update export definition
                             messageStream.exportDefinition.iotAnalytics.push(updatedIotAnalyticsExportDefinition);
-                        } else if (actionType === ExportDefinitionActionType.DELETE) {
-                            //don't push anything
-                        } else {
                         }
                     } else {
                         // If the identifier doesn't match, push the original entity
@@ -593,9 +573,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                         if (actionType === ExportDefinitionActionType.UPDATE) {
                             // push the update export definition
                             messageStream.exportDefinition?.http.push(updatedHttpExportDefinition);
-                        } else if (actionType === ExportDefinitionActionType.DELETE) {
-                            //don't push anything
-                        } else {
                         }
                     } else {
                         // If the identifier doesn't match, push the original entity
@@ -630,9 +607,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                         if (actionType === ExportDefinitionActionType.UPDATE) {
                             // push the update export definition
                             messageStream.exportDefinition.s3TaskExecutor.push(updatedS3ExportDefinition);
-                        } else if (actionType === ExportDefinitionActionType.DELETE) {
-                            //don't push anything
-                        } else {
                         }
                     } else {
                         // If the identifier doesn't match, push the original entity
@@ -654,7 +628,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
         if (response.successful) {
             defaultContext.addFlashItem!({
                 type: response.successful ? 'success' : 'error',
-                header: response.successful ? streamProps.messageStreamInfo.definition.name + 'has been updated' : 'Failed to update ' + streamProps.messageStreamInfo.definition.name,
+                header: response.successful ? `${streamProps.messageStreamInfo.definition.name} has been updated` : `Failed to update ${streamProps.messageStreamInfo.definition.name}`,
                 content: response.errorMsg
             });
             setErrorUpdateStreamFeedback('');
@@ -829,7 +803,7 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
     }
 
 
-    const generateExportDefinitionModal = (exportType: string,
+    const generateExportDefinitionModal = (exportType: keyof ExportDefinition,
                                            isVisible: boolean,
                                            headerText: string,
                                            isNewDefinition: boolean,
@@ -843,308 +817,303 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
         const isIotAnalytics = exportType === 'iotAnalytics';
         const isHttp = exportType === 'http';
 
-        try {
-            return (
-                <Modal
-                    onDismiss={onDismiss}
-                    visible={isVisible}
-                    size="medium"
-                    header={headerText}>
-                    <Form
-                        variant="embedded"
-                        actions={
-                            <SpaceBetween direction="horizontal" size="xs">
-                                <Button
-                                    formAction="none"
-                                    variant="link"
-                                    onClick={onDismiss}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    loading={false}
-                                    disabled={false}
-                                    variant="primary"
-                                    onClick={() => onClickConfirmUpdateExportDefinition(isNewDefinition)}
-                                >
-                                    {isNewDefinition ? 'Add' : 'Update'}
-                                </Button>
-                            </SpaceBetween>
-                        }
-                        errorText={errorUpdateStreamFeedback !== '' ? errorUpdateStreamFeedback : false}
-                    >
-                        <SpaceBetween direction="vertical" size="l">
-                            <FormField
-                                label="Export identifier"
-                                constraintText={model.KinesisConfig.properties.identifier.description}
+        return (
+            <Modal
+                onDismiss={onDismiss}
+                visible={isVisible}
+                size="medium"
+                header={headerText}>
+                <Form
+                    variant="embedded"
+                    actions={
+                        <SpaceBetween direction="horizontal" size="xs">
+                            <Button
+                                formAction="none"
+                                variant="link"
+                                onClick={onDismiss}
                             >
-                                <Input
-                                    value={exportDefinition.identifier}
-                                    disabled={!isNewDefinition}
-                                    onChange={(event) => setUpdateExportDefinition(exportType, {'identifier': event.detail.value})}
-                                />
-                            </FormField>
-
-                            {/* Conditional form fields for Kinesis */}
-                            {isKinesis && (
-                                <>
-                                    <FormField
-                                        label="Kinesis stream name"
-                                        constraintText={model.KinesisConfig.properties.kinesisStreamName.description}
-                                    >
-                                        <Input
-                                            value={exportDefinition.kinesisStreamName}
-                                            onChange={(event) => setUpdateExportDefinition(exportType, {'kinesisStreamName': event.detail.value})}
-                                            disabled={false}
-                                        />
-                                    </FormField>
-                                </>
-                            )}
-                            {/* Conditional form fields for IoT Analytics*/}
-                            {isIotAnalytics && (
-                                <>
-                                    <FormField
-                                        label="IoT Analytics channel"
-                                        constraintText={model.IoTAnalyticsConfig.properties.iotChannel.description}
-                                    >
-                                        <Input
-                                            value={exportDefinition.iotChannel}
-                                            onChange={(event) => setUpdateExportDefinition(exportType, {'iotChannel': event.detail.value})}
-                                            disabled={false}
-                                        />
-                                    </FormField>
-                                    <FormField
-                                        label="IoT message id prefix"
-                                        constraintText={model.IoTAnalyticsConfig.properties.iotMsgIdPrefix.description}
-                                    >
-                                        <Input
-                                            value={exportDefinition.iotMsgIdPrefix}
-                                            onChange={(event) => setUpdateExportDefinition(exportType, {'iotMsgIdPrefix': event.detail.value})}
-                                            disabled={false}
-                                        />
-                                    </FormField>
-                                </>
-                            )}
-                            {/* Conditional form fields for IoT Analytics*/}
-                            {isHttp && (
-                                <>
-                                    <FormField
-                                        label="HTTP Uri"
-                                        constraintText={model.HTTPConfig.properties.uri.description}
-                                    >
-                                        <Input
-                                            value={exportDefinition.uri}
-                                            onChange={(event) => setUpdateExportDefinition(exportType, {'uri': event.detail.value})}
-                                            disabled={false}
-                                        />
-                                    </FormField>
-                                    <FormField
-                                        label="Export format"
-                                        constraintText={model.HTTPConfig.properties.exportFormat.description}
-                                    >
-                                        <Select
-                                            options={[
-                                                {label: "RAW NOT BATCHED", value: "0"},
-                                                {label: "JSON BATCHED", value: "1"}
-                                            ]}
-                                            selectedOption={exportDefinition.exportFormat === ExportFormat.RAW_NOT_BATCHED ? {
-                                                label: "RAW NOT BATCHED",
-                                                value: "0"
-                                            } : {label: "JSON BATCHED", value: "1"}}
-                                            onChange={({detail}) => setUpdateExportDefinition(exportType, {'exportFormat': detail.selectedOption.value === "0" ? ExportFormat.RAW_NOT_BATCHED : ExportFormat.JSON_BATCHED})}
-                                            disabled={false}
-                                        />
-                                    </FormField>
-                                </>
-                            )}
-                            {isS3TaskExecutor && (
-                                <>
-                                    <FormField
-                                        label="Size threshold For multipart upload (bytes)"
-                                        constraintText={model.S3ExportTaskExecutorConfig.properties.sizeThresholdForMultipartUploadBytes.description}
-                                    >
-                                        <Input
-                                            value={exportDefinition.sizeThresholdForMultipartUploadBytes}
-                                            onChange={(event) => setUpdateExportDefinition(exportType, {'sizeThresholdForMultipartUploadBytes': event.detail.value})}
-                                            disabled={false}
-                                            step={1024}
-                                        />
-                                    </FormField>
-                                    <FormField
-                                        label="Status stream name"
-                                        constraintText={model.StatusConfig.properties.statusStreamName.description}
-                                    >
-                                        <Input
-                                            value={exportDefinition.statusConfig.statusStreamName}
-                                            onChange={(event) => setUpdateExportDefinition(exportType, {
-                                                'statusConfig': {
-                                                    statusLevel: updateExportDefinition[activeTab].statusConfig.statusLevel,
-                                                    statusStreamName: event.detail.value
-                                                }
-                                            })}
-                                            disabled={false}
-                                        />
-                                    </FormField>
-                                    <FormField
-                                        label="Status level"
-                                        constraintText={model.StatusConfig.properties.statusLevel.description}
-                                    >
-                                        <Select
-                                            options={optionsStatusLevel}
-                                            selectedOption={optionsStatusLevel.filter((e: any) => e.value === exportDefinition.statusConfig.statusLevel.toString())[0]}
-                                            onChange={({detail}) => setUpdateExportDefinition(exportType, {
-                                                'statusConfig': {
-                                                    statusStreamName: updateExportDefinition[activeTab].statusConfig.statusStreamName,
-                                                    statusLevel: parseInt(detail.selectedOption.value || "0")
-                                                }
-                                            })}
-                                            disabled={false}
-                                        />
-
-                                    </FormField>
-
-                                </>
-                            )}
-                            {/* Common form fields */}
-                            {
-                                !isS3TaskExecutor && (
-                                    <>
-                                        <FormField
-                                            label="Batch size"
-                                        >
-                                            <Input
-                                                value={exportDefinition.batchSize.toString() || '500'}
-                                                onChange={(event) => setUpdateExportDefinition(exportType, {'batchSize': parseInt(event.detail.value)})}
-                                                disabled={false}
-                                                step={1}
-                                                inputMode="decimal"
-                                                type="number"
-                                            />
-                                        </FormField>
-
-                                        <FormField
-                                            constraintText="The time in milliseconds between the earliest un-uploaded message and the current time."
-                                            label="Batch interval in ms"
-                                        >
-                                            <Input
-                                                value={exportDefinition.batchIntervalMillis.toString() || '0'}
-                                                onChange={(event) => setUpdateExportDefinition(exportType, {'batchIntervalMillis': parseInt(event.detail.value)})}
-                                                disabled={false}
-                                                step={1}
-                                                inputMode="decimal"
-                                                type="number"
-                                            />
-                                        </FormField>
-                                        <FormField
-                                            constraintText="The sequence number of the message to use as the starting message in the export. Default is 0."
-                                            label="Start sequence number"
-                                        >
-                                            <Input
-                                                value={exportDefinition.startSequenceNumber.toString() || '0'}
-                                                onChange={(event) => setUpdateExportDefinition(exportType, {'startSequenceNumber': parseInt(event.detail.value)})}
-                                                disabled={false}
-                                                step={1}
-                                                inputMode="decimal"
-                                                type="number"
-                                            />
-                                        </FormField>
-                                    </>
-                                )
-                            }
-
-                            <FormField
-                                constraintText="Priority for this upload stream. Lower values are higher priority."
-                                label="Priority"
+                                Cancel
+                            </Button>
+                            <Button
+                                loading={false}
+                                disabled={false}
+                                variant="primary"
+                                onClick={() => onClickConfirmUpdateExportDefinition(isNewDefinition)}
                             >
-                                <Input
-                                    value={exportDefinition.priority.toString() || '10'}
-                                    onChange={(event) => setUpdateExportDefinition(exportType, {'priority': parseInt(event.detail.value)})}
-                                    disabled={false}
-                                    step={1}
-                                    inputMode="decimal"
-                                    type="number"
-                                />
-                            </FormField>
-                            <FormField
-                                label="Disabled"
-                            >
-                                <Select
-                                    options={[
-                                        {label: "True", value: "0"},
-                                        {label: "False", value: "1"}
-                                    ]}
-                                    selectedOption={exportDefinition.disabled === true ? {
-                                        label: "True",
-                                        value: "0"
-                                    } : {label: "False", value: "1"}}
-                                    onChange={({detail}) => setUpdateExportDefinition(exportType, {'disabled': detail.selectedOption.label === 'True'})}
-                                    disabled={false}
-                                />
-                            </FormField>
+                                {isNewDefinition ? 'Add' : 'Update'}
+                            </Button>
                         </SpaceBetween>
-                    </Form>
-                </Modal>
-            );
+                    }
+                    errorText={errorUpdateStreamFeedback !== '' ? errorUpdateStreamFeedback : false}
+                >
+                    <SpaceBetween direction="vertical" size="l">
+                        <FormField
+                            label="Export identifier"
+                            constraintText={model.KinesisConfig.properties.identifier.description}
+                        >
+                            <Input
+                                value={exportDefinition.identifier}
+                                disabled={!isNewDefinition}
+                                onChange={(event) => setUpdateExportDefinition(exportType, {'identifier': event.detail.value})}
+                            />
+                        </FormField>
 
-        } catch (error) {
-        }
+                        {/* Conditional form fields for Kinesis */}
+                        {isKinesis && (
+                            <>
+                                <FormField
+                                    label="Kinesis stream name"
+                                    constraintText={model.KinesisConfig.properties.kinesisStreamName.description}
+                                >
+                                    <Input
+                                        value={exportDefinition.kinesisStreamName}
+                                        onChange={(event) => setUpdateExportDefinition(exportType, {'kinesisStreamName': event.detail.value})}
+                                        disabled={false}
+                                    />
+                                </FormField>
+                            </>
+                        )}
+                        {/* Conditional form fields for IoT Analytics*/}
+                        {isIotAnalytics && (
+                            <>
+                                <FormField
+                                    label="IoT Analytics channel"
+                                    constraintText={model.IoTAnalyticsConfig.properties.iotChannel.description}
+                                >
+                                    <Input
+                                        value={exportDefinition.iotChannel}
+                                        onChange={(event) => setUpdateExportDefinition(exportType, {'iotChannel': event.detail.value})}
+                                        disabled={false}
+                                    />
+                                </FormField>
+                                <FormField
+                                    label="IoT message id prefix"
+                                    constraintText={model.IoTAnalyticsConfig.properties.iotMsgIdPrefix.description}
+                                >
+                                    <Input
+                                        value={exportDefinition.iotMsgIdPrefix}
+                                        onChange={(event) => setUpdateExportDefinition(exportType, {'iotMsgIdPrefix': event.detail.value})}
+                                        disabled={false}
+                                    />
+                                </FormField>
+                            </>
+                        )}
+                        {/* Conditional form fields for IoT Analytics*/}
+                        {isHttp && (
+                            <>
+                                <FormField
+                                    label="HTTP Uri"
+                                    constraintText={model.HTTPConfig.properties.uri.description}
+                                >
+                                    <Input
+                                        value={exportDefinition.uri}
+                                        onChange={(event) => setUpdateExportDefinition(exportType, {'uri': event.detail.value})}
+                                        disabled={false}
+                                    />
+                                </FormField>
+                                <FormField
+                                    label="Export format"
+                                    constraintText={model.HTTPConfig.properties.exportFormat.description}
+                                >
+                                    <Select
+                                        options={[
+                                            {label: "RAW NOT BATCHED", value: "0"},
+                                            {label: "JSON BATCHED", value: "1"}
+                                        ]}
+                                        selectedOption={exportDefinition.exportFormat === ExportFormat.RAW_NOT_BATCHED ? {
+                                            label: "RAW NOT BATCHED",
+                                            value: "0"
+                                        } : {label: "JSON BATCHED", value: "1"}}
+                                        onChange={({detail}) => setUpdateExportDefinition(exportType, {'exportFormat': detail.selectedOption.value === "0" ? ExportFormat.RAW_NOT_BATCHED : ExportFormat.JSON_BATCHED})}
+                                        disabled={false}
+                                    />
+                                </FormField>
+                            </>
+                        )}
+                        {isS3TaskExecutor && (
+                            <>
+                                <FormField
+                                    label="Size threshold For multipart upload (bytes)"
+                                    constraintText={model.S3ExportTaskExecutorConfig.properties.sizeThresholdForMultipartUploadBytes.description}
+                                >
+                                    <Input
+                                        value={exportDefinition.sizeThresholdForMultipartUploadBytes}
+                                        onChange={(event) => setUpdateExportDefinition(exportType, {'sizeThresholdForMultipartUploadBytes': event.detail.value})}
+                                        disabled={false}
+                                        step={1024}
+                                    />
+                                </FormField>
+                                <FormField
+                                    label="Status stream name"
+                                    constraintText={model.StatusConfig.properties.statusStreamName.description}
+                                >
+                                    <Input
+                                        value={exportDefinition.statusConfig.statusStreamName}
+                                        onChange={(event) => setUpdateExportDefinition(exportType, {
+                                            'statusConfig': {
+                                                statusLevel: updateExportDefinition[activeTab].statusConfig.statusLevel,
+                                                statusStreamName: event.detail.value
+                                            }
+                                        })}
+                                        disabled={false}
+                                    />
+                                </FormField>
+                                <FormField
+                                    label="Status level"
+                                    constraintText={model.StatusConfig.properties.statusLevel.description}
+                                >
+                                    <Select
+                                        options={optionsStatusLevel}
+                                        selectedOption={optionsStatusLevel.filter((e: any) => e.value === exportDefinition.statusConfig.statusLevel.toString())[0]}
+                                        onChange={({detail}) => setUpdateExportDefinition(exportType, {
+                                            'statusConfig': {
+                                                statusStreamName: updateExportDefinition[activeTab].statusConfig.statusStreamName,
+                                                statusLevel: parseInt(detail.selectedOption.value || "0")
+                                            }
+                                        })}
+                                        disabled={false}
+                                    />
 
+                                </FormField>
+
+                            </>
+                        )}
+                        {/* Common form fields */}
+                        {
+                            !isS3TaskExecutor && (
+                                <>
+                                    <FormField
+                                        label="Batch size"
+                                    >
+                                        <Input
+                                            value={exportDefinition.batchSize.toString() || '500'}
+                                            onChange={(event) => setUpdateExportDefinition(exportType, {'batchSize': parseInt(event.detail.value)})}
+                                            disabled={false}
+                                            step={1}
+                                            inputMode="decimal"
+                                            type="number"
+                                        />
+                                    </FormField>
+
+                                    <FormField
+                                        constraintText="The time in milliseconds between the earliest un-uploaded message and the current time."
+                                        label="Batch interval in ms"
+                                    >
+                                        <Input
+                                            value={exportDefinition.batchIntervalMillis.toString() || '0'}
+                                            onChange={(event) => setUpdateExportDefinition(exportType, {'batchIntervalMillis': parseInt(event.detail.value)})}
+                                            disabled={false}
+                                            step={1}
+                                            inputMode="decimal"
+                                            type="number"
+                                        />
+                                    </FormField>
+                                    <FormField
+                                        constraintText="The sequence number of the message to use as the starting message in the export. Default is 0."
+                                        label="Start sequence number"
+                                    >
+                                        <Input
+                                            value={exportDefinition.startSequenceNumber.toString() || '0'}
+                                            onChange={(event) => setUpdateExportDefinition(exportType, {'startSequenceNumber': parseInt(event.detail.value)})}
+                                            disabled={false}
+                                            step={1}
+                                            inputMode="decimal"
+                                            type="number"
+                                        />
+                                    </FormField>
+                                </>
+                            )
+                        }
+
+                        <FormField
+                            constraintText="Priority for this upload stream. Lower values are higher priority."
+                            label="Priority"
+                        >
+                            <Input
+                                value={exportDefinition.priority.toString() || '10'}
+                                onChange={(event) => setUpdateExportDefinition(exportType, {'priority': parseInt(event.detail.value)})}
+                                disabled={false}
+                                step={1}
+                                inputMode="decimal"
+                                type="number"
+                            />
+                        </FormField>
+                        <FormField
+                            label="Disabled"
+                        >
+                            <Select
+                                options={[
+                                    {label: "True", value: "0"},
+                                    {label: "False", value: "1"}
+                                ]}
+                                selectedOption={exportDefinition.disabled === true ? {
+                                    label: "True",
+                                    value: "0"
+                                } : {label: "False", value: "1"}}
+                                onChange={({detail}) => setUpdateExportDefinition(exportType, {'disabled': detail.selectedOption.label === 'True'})}
+                                disabled={false}
+                            />
+                        </FormField>
+                    </SpaceBetween>
+                </Form>
+            </Modal>
+        );
     };
 
     function generateModalContentKinesis() {
-        const isVisble = selectedItems['kinesis'].length > 0 && viewModalExportDefinitionKinesis;
+        const exportType = 'kinesis';
+        const isVisible = selectedItems[exportType].length > 0 && viewModalExportDefinitionKinesis;
 
-        const exportType: string = 'kinesis';
         const headerText: string = 'Update Kinesis export definition';
 
         return (
-            generateExportDefinitionModal(exportType, isVisble, headerText, false, updateExportDefinition[exportType], "", onClickConfirmUpdateExportDefinition, onDismiss)
+            generateExportDefinitionModal(exportType, isVisible, headerText, false, updateExportDefinition[exportType], "", onClickConfirmUpdateExportDefinition, onDismiss)
         );
     }
 
     function generateModalContentIotSitewise() {
-        const isVisble = selectedItems['IotSitewise'].length > 0 && viewModalExportDefinitionIotSiteWise;
+        const exportType = 'IotSitewise';
+        const isVisible = selectedItems[exportType].length > 0 && viewModalExportDefinitionIotSiteWise;
 
-        const exportType: string = 'IotSitewise';
-        const headerText: string = 'Update IoT Sitewise export definition';
+        const headerText: string = 'Update IoT SiteWise export definition';
         return (
-            generateExportDefinitionModal(exportType, isVisble, headerText, false, updateExportDefinition[exportType], "", onClickConfirmUpdateExportDefinition, onDismiss)
+            generateExportDefinitionModal(exportType, isVisible, headerText, false, updateExportDefinition[exportType], "", onClickConfirmUpdateExportDefinition, onDismiss)
         );
     }
 
     function generateModalContentIotAnalytics() {
-        const isVisble = selectedItems['iotAnalytics'].length > 0 && viewModalExportDefinitioniotAnalytics;
+        const exportType = 'iotAnalytics';
+        const isVisible = selectedItems[exportType].length > 0 && viewModalExportDefinitioniotAnalytics;
 
-        const exportType: string = 'iotAnalytics';
         const headerText: string = 'Update IoT Analytics export definition';
         return (
-            generateExportDefinitionModal(exportType, isVisble, headerText, false, updateExportDefinition[exportType], "", onClickConfirmUpdateExportDefinition, onDismiss)
+            generateExportDefinitionModal(exportType, isVisible, headerText, false, updateExportDefinition[exportType], "", onClickConfirmUpdateExportDefinition, onDismiss)
         );
     }
 
     function generateModalContentHttp() {
-        const isVisble = selectedItems['http'].length > 0 && viewModalExportDefinitionhttp;
+        const exportType = 'http';
+        const isVisible = selectedItems[exportType].length > 0 && viewModalExportDefinitionhttp;
 
-        const exportType: string = 'http';
         const headerText: string = 'Update HTTP export definition';
         return (
-            generateExportDefinitionModal(exportType, isVisble, headerText, false, updateExportDefinition[exportType], "", onClickConfirmUpdateExportDefinition, onDismiss)
+            generateExportDefinitionModal(exportType, isVisible, headerText, false, updateExportDefinition[exportType], "", onClickConfirmUpdateExportDefinition, onDismiss)
         );
     }
 
     function generateModalContents3TaskExecutor() {
-        const isVisble = selectedItems['s3TaskExecutor'].length > 0 && viewModalExportDefinitions3TaskExecutor;
-        const exportType: string = 's3TaskExecutor';
-        const headerText: string = 'Update S3 export definition';
+        const exportType = 's3TaskExecutor';
+        const isVisible = selectedItems[exportType].length > 0 && viewModalExportDefinitions3TaskExecutor;
 
+        const headerText: string = 'Update S3 export definition';
         return (
-            generateExportDefinitionModal(exportType, isVisble, headerText, false, updateExportDefinition[exportType], "", onClickConfirmUpdateExportDefinition, onDismiss)
+            generateExportDefinitionModal(exportType, isVisible, headerText, false, updateExportDefinition[exportType], "", onClickConfirmUpdateExportDefinition, onDismiss)
         );
     }
 
     function generateModalContentNewExport() {
         const isVisible = viewModalAddExportDefinition;
-        const exportType: string = activeTab;
+        const exportType = activeTab;
         const headerText = 'Add export definition'
 
         return (
@@ -1183,7 +1152,6 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
         );
     }
 
-
     // Render export tabs
     return (
         <>
@@ -1191,34 +1159,29 @@ const StreamExportDefinition: React.FC<StreamDefinitionProps> = (props) => {
                 actions={
                     <SpaceBetween direction="horizontal" size="xs">
                         <Button
-                            onClick={() => {
-                                onClickAddExportDefinition();
-                            }}
+                            onClick={onClickAddExportDefinition}
                             iconName="add-plus"
                             wrapText={false}
                             disabled={loadingFlagProps}
                         >{`Add ${exportTypes[activeTab]} export`}</Button>
 
                         <Button
-                            onClick={() => {
-                                onClickUpdateExportDefinition();
-                            }}
+                            onClick={onClickUpdateExportDefinition}
                             iconName="edit"
                             wrapText={false}
-                            disabled={loadingFlagProps || (selectedItems[activeTab].length === 0)}
+                            disabled={loadingFlagProps || selectedItems[activeTab].length === 0}
                         >
                             Update export
                         </Button>
                         {
                             ((streamProps.messageStreamInfo.definition.exportDefinition.IotSitewise.length + streamProps.messageStreamInfo.definition.exportDefinition.kinesis.length +
-                                streamProps.messageStreamInfo.definition.exportDefinition.http.length + streamProps.messageStreamInfo.definition.exportDefinition.iotAnalytics.length + streamProps.messageStreamInfo.definition.exportDefinition.s3TaskExecutor.length) > 0)
+                                streamProps.messageStreamInfo.definition.exportDefinition.http.length + streamProps.messageStreamInfo.definition.exportDefinition.iotAnalytics.length +
+                                streamProps.messageStreamInfo.definition.exportDefinition.s3TaskExecutor.length) > 0)
                             && <Button
-                                onClick={() => {
-                                    onClickDeleteExportDefinition();
-                                }}
+                                onClick={onClickDeleteExportDefinition}
                                 iconName="remove"
                                 wrapText={false}
-                                disabled={loadingFlagProps}
+                                disabled={loadingFlagProps || selectedItems[activeTab].length === 0}
                             >
                                 Delete export
                             </Button>}
