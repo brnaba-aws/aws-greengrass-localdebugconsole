@@ -53,7 +53,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
     const [messageCount, setMessageCount] = useState(0);
     const [currentPageIndex, setCurrentPageIndex] = useState(1)
     const previousPageIndex = useRef(currentPageIndex);
-    const [describeStreamRequestInProgress, setDescribeStreamRequestInProgres] = useState(false);
     const [readMessagesStreamRequestInProgress, setReadMessageStreamRequestInProgress] = useState(false);
     const [appendMessageRequest, setAppendMessageRequest] = useState(false);
     const [filteringText, setFilteringText] = useState("");
@@ -247,9 +246,9 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     }, callbackError: setUpdateStreamErrorText
                 });
                 break;
-            case 'ds': 
+            case 'ds':
                 setViewDeleteStream(true);
-            break;
+                break;
         }
     }
 
@@ -258,23 +257,18 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
     }
 
     async function describeStream(streamName: string, index: number) {
-        setDescribeStreamRequestInProgres(true);
-        try {
-            const response: StreamManagerResponseMessage = await SERVER.sendRequest({
-                call: APICall.streamManagerDescribeStream,
-                args: [streamName]
-            });
-            if (response && response.successful && response.messageStreamInfo) {
-                const item: Stream = {
-                    key: index,
-                    messageStreamInfo: response.messageStreamInfo
-                };
-                setStreamDetails(item);
-                setMessageCount(item.messageStreamInfo.storageStatus.newestSequenceNumber - item.messageStreamInfo.storageStatus.oldestSequenceNumber + 1);
-                readMessages(streamName, item.messageStreamInfo.storageStatus.newestSequenceNumber);
-            }
-        } finally {
-            setDescribeStreamRequestInProgres(false);
+        const response: StreamManagerResponseMessage = await SERVER.sendRequest({
+            call: APICall.streamManagerDescribeStream,
+            args: [streamName]
+        });
+        if (response && response.successful && response.messageStreamInfo) {
+            const item: Stream = {
+                key: index,
+                messageStreamInfo: response.messageStreamInfo
+            };
+            setStreamDetails(item);
+            setMessageCount(item.messageStreamInfo.storageStatus.newestSequenceNumber - item.messageStreamInfo.storageStatus.oldestSequenceNumber + 1);
+            readMessages(streamName, item.messageStreamInfo.storageStatus.newestSequenceNumber);
         }
     }
 
@@ -326,10 +320,10 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
         if (response) {
             defaultContext.addFlashItem!({
                 type: response.successful ? 'success' : 'error',
-                header: response.successful ? `${streamName} has been deleted`: `Failed to delete ${streamName}`,
+                header: response.successful ? `${streamName} has been deleted` : `Failed to delete ${streamName}`,
                 content: response.errorMsg
             });
-            if (response.successful){
+            if (response.successful) {
                 history.push(`${STREAM_MANAGER_ROUTE_HREF_PREFIX.substring(1)}`);
             }
         }
@@ -356,7 +350,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
 
     const onClickUpdate = async () => {
         if (streamDetails) {
-            setDescribeStreamRequestInProgres(true);
             const response: StreamManagerResponseMessage = await SERVER.sendRequest({
                 call: APICall.streamManagerUpdateMessageStream,
                 args: [JSON.stringify(updateStream)]
@@ -395,11 +388,11 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                 onClick={onClickRefresh}
                                 iconName="refresh"
                                 wrapText={false}
-                                disabled={describeStreamRequestInProgress || readMessagesStreamRequestInProgress}
+                                disabled={readMessagesStreamRequestInProgress}
                             >
                             </Button>
                             <ButtonDropdown
-                                disabled={describeStreamRequestInProgress || readMessagesStreamRequestInProgress}
+                                disabled={readMessagesStreamRequestInProgress}
                                 items={[
                                     {text: "Update definition", id: "ud", disabled: false},
                                     {text: "Add message", id: "am", disabled: false},
@@ -447,25 +440,19 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     <Container>
                         <SpaceBetween direction="vertical" size="l">
                             <Header>Stream definition</Header>
-                            {/* <Tabs
-                                tabs={tabsStreamDefinition}
-                            /> */}
-                            {describeStreamRequestInProgress ?
-                            <StatusIndicator type="loading"> Loading </StatusIndicator> :
                             <ColumnLayout columns={items.length} variant="text-grid">
                                 {items.map((group, index) => (
                                     <SpaceBetween size="xs" key={index}>
                                         {group.map((item) => (
                                             <div key={item.field}>
                                                 <Box margin={{bottom: "xxxs"}} variant="awsui-key-label"
-                                                    color="text-label">{item.field}</Box>
+                                                     color="text-label">{item.field}</Box>
                                                 <div>{item.value}</div>
                                             </div>
                                         ))}
                                     </SpaceBetween>
                                 ))}
                             </ColumnLayout>
-                            }   
                         </SpaceBetween>
                     </Container>
                 }
@@ -474,7 +461,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     <Container variant="default">
                         {streamDetails &&
                             <StreamExportDefinition streamProps={streamDetails}
-                                                    loadingFlagProps={describeStreamRequestInProgress}
+                                                    loadingFlagProps={false}
                                                     describeStreamCallbackPros={describeStreamCallback}
                             >
                             </StreamExportDefinition>
@@ -487,7 +474,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     <Table
                         columnDefinitions={columnDefinitionsExportStatuses}
                         sortingDisabled
-                        loading={describeStreamRequestInProgress}
                         loadingText="Loading export statuses."
                         wrapLines={true}
                         items={streamDetails?.messageStreamInfo.exportStatuses || []}
@@ -581,18 +567,14 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         }
                         header={
                             <Header
-                                counter=
-                                    {
-                                        `(${messageCount})`
-                                    }
-
+                                counter={`(${messageCount})`}
                                 actions={
                                     <SpaceBetween direction="horizontal" size="xs">
                                         {messageCount > 0 && <Button
                                             onClick={onClickAppend}
                                             iconName="add-plus"
                                             wrapText={false}
-                                            disabled={appendMessageRequest || describeStreamRequestInProgress || readMessagesStreamRequestInProgress}
+                                            disabled={appendMessageRequest || readMessagesStreamRequestInProgress}
                                         >
                                             Add Message
                                         </Button>}
@@ -726,7 +708,8 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                 type="number"
                             />
                         </FormField>
-                        <FormField label="Strategy on full" constraintText={model.MessageStreamDefinition.properties.strategyOnFull.description}>
+                        <FormField label="Strategy on full"
+                                   constraintText={model.MessageStreamDefinition.properties.strategyOnFull.description}>
                             <Select
                                 options={[
                                     {label: "OverwriteOldestData", value: "1"},
@@ -789,7 +772,8 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                     </SpaceBetween>
                 </Form>
             </Modal>
-            <DeleteModal isVisible={viewDelete} header={`Delete ${streamName}`} onDismiss={onDismiss} confirmDelete={confirmDeleteStream}/>
+            <DeleteModal isVisible={viewDelete} header={`Delete ${streamName}`} onDismiss={onDismiss}
+                         confirmDelete={confirmDeleteStream}/>
         </ContentLayout>
     );
 }
