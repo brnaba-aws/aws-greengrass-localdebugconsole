@@ -30,7 +30,7 @@ const footerItems: SideNavigationProps.Item[] = [
 
 const items = routes
   .filter((route) => route.show)
-  .map((route) => ({ type: "link", text: route.title, href: route.routePath } as SideNavigationProps.Item))
+  .map((route) => ({ type: "link", text: route.title, href: "#" + route.routePath } as SideNavigationProps.Item))
   .concat(footerItems);
 
 function NavSideBar() {
@@ -39,15 +39,17 @@ function NavSideBar() {
     if (!ev.detail.external) {
       ev.preventDefault();
       if (ev.detail.href) {
-        history.push(ev.detail.href);
+        // Strip leading # that we put on the link
+        history.push(ev.detail.href.substring(1));
       }
     }
   }
+
   return (
     <SideNavigation
       items={items}
       header={header}
-      activeHref={history.location.pathname}
+      activeHref={"#" + history.location.pathname}
       onFollow={onFollowHandler}
     />
   );
