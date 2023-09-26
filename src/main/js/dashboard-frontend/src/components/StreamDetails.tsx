@@ -40,11 +40,15 @@ import PaginationRendering from "../util/PaginationRendering";
 import StreamExportDefinition from "./details/StreamExportDefinition"
 import StreamManagerResponseMessage from "../util/StreamManagerResponseMessage";
 import DeleteModal from "./StreamManagerDeleteModal";
+import createPersistedState from "use-persisted-state";
 
 const model = model1.definitions;
 
 interface StreamManagerProps extends RouteComponentProps {
 }
+
+const useMessagesTablePreferences = createPersistedState<CollectionPreferencesProps.Preferences>("gg.streamManager.streamDetailsPreferencesMessages");
+const useDetailsPreferences = createPersistedState<CollectionPreferencesProps.Preferences>("gg.streamManager.streamDetailsPreferences");
 
 const StreamDetail: React.FC<StreamManagerProps> = () => {
 
@@ -142,22 +146,13 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
         }
     ];
 
-    let storedPreferencesMessagesTable = localStorage.getItem('streamDetailsPreferencesMessages');
-    if (!storedPreferencesMessagesTable) {
-        storedPreferencesMessagesTable = JSON.stringify({
-            pageSize: 100,
-            visibleContent: ["sequenceNumber", "message", "ingestTime"]
-        })
-    }
-    const [preferencesMessages, setPreferencesMessages] = useState<CollectionPreferencesProps.Preferences>(JSON.parse(storedPreferencesMessagesTable));
-
-    let storedPreferenceStreamDetailsPage = localStorage.getItem('streamDetailsPreferencesView');
-    if (!storedPreferenceStreamDetailsPage) {
-        storedPreferenceStreamDetailsPage = JSON.stringify({
-            visibleContent: ["details", "messages", "exportDefinitions", "exportStatuses"]
-        })
-    }
-    const [preferenceStreamDetailsPage, setPreferenceStreamDetailsPage] = useState<CollectionPreferencesProps.Preferences>(JSON.parse(storedPreferenceStreamDetailsPage));
+    const [preferencesMessages, setPreferencesMessages] = useMessagesTablePreferences({
+        pageSize: 100,
+        visibleContent: ["sequenceNumber", "message", "ingestTime"]
+    });
+    const [preferenceStreamDetailsPage, setPreferenceStreamDetailsPage] = useDetailsPreferences({
+        visibleContent: ["details", "messages", "exportDefinitions", "exportStatuses"]
+    });
 
     const items = [
         [
@@ -426,7 +421,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                 preferences={preferenceStreamDetailsPage}
                                 onConfirm={({detail}) => {
                                     setPreferenceStreamDetailsPage(detail);
-                                    localStorage.setItem("streamDetailsPreferencesView", JSON.stringify(detail))
                                 }}
                             />
                         </SpaceBetween>
@@ -563,7 +557,6 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                 preferences={preferencesMessages}
                                 onConfirm={({detail}) => {
                                     setPreferencesMessages(detail);
-                                    localStorage.setItem("streamDetailsPreferencesMessages", JSON.stringify(detail))
                                 }}
                             />
                         }
@@ -677,7 +670,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                             />
                         </FormField>
                         <FormField
-                            label="Stream Max Size (in bytes)"
+                            label="Stream max size (in bytes)"
                             constraintText={model.MessageStreamDefinition.properties.maxSize.description}
                         >
                             <Input
@@ -695,7 +688,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         </FormField>
                         <FormField
                             constraintText={model.MessageStreamDefinition.properties.streamSegmentSize.description}
-                            label="Stream Segment Size (in bytes)"
+                            label="Stream segment size (in bytes)"
                         >
                             <Input
                                 value={updateStream.streamSegmentSize.toString() || ''}
