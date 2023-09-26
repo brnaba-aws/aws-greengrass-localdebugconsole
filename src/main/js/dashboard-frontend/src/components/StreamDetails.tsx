@@ -162,11 +162,11 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
     const items = [
         [
             {
-                field: "Stream Segment Size",
+                field: "Stream segment size",
                 value: formatBytes(streamDetails?.messageStreamInfo.definition.streamSegmentSize),
             },
             {
-                field: "Max Size",
+                field: "Max size",
                 value: formatBytes(streamDetails?.messageStreamInfo.definition.maxSize),
             },
             {
