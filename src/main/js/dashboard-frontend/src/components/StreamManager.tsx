@@ -93,7 +93,7 @@ function StreamManager() {
                 value: streamManagerComponentConfiguration?.STREAM_MANAGER_SERVER_PORT.toString(),
             },
             {
-                field: "Authentication Client",
+                field: "Authenticate Clients",
                 value: streamManagerComponentConfiguration.STREAM_MANAGER_AUTHENTICATE_CLIENT
             },
         ],
