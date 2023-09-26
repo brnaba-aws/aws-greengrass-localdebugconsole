@@ -59,6 +59,7 @@ function StreamManager() {
         name: "new-stream",
         maxSize: model.MessageStreamDefinition.properties.maxSize.default,
         streamSegmentSize: model.MessageStreamDefinition.properties.streamSegmentSize.default,
+        timeToLiveMillis: undefined,
         strategyOnFull: StrategyOnFull.OverwriteOldestData,
         persistence: Persistence.File,
         flushOnWrite: false,
@@ -550,6 +551,22 @@ function StreamManager() {
                                                         })}
                                                         disabled={false}
                                                         step={1024}
+                                                        inputMode="decimal"
+                                                        type="number"
+                                                    />
+                                                </FormField>
+                                                <FormField
+                                                    constraintText={model.MessageStreamDefinition.properties.timeToLiveMillis.description}
+                                                    label="Time to live (in milliseconds)"
+                                                >
+                                                    <Input
+                                                        value={newStream.timeToLiveMillis}
+                                                        onChange={(event) => dispatch({
+                                                            type: 'set_streamTtl',
+                                                            payload: event.detail.value,
+                                                            callbackError: setCreateStreamErrorText
+                                                        })}
+                                                        disabled={false}
                                                         inputMode="decimal"
                                                         type="number"
                                                     />
