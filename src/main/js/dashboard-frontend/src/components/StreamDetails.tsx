@@ -225,6 +225,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         name: streamDetails?.messageStreamInfo.definition.name,
                         maxSize: streamDetails?.messageStreamInfo.definition.maxSize,
                         streamSegmentSize: streamDetails?.messageStreamInfo.definition.streamSegmentSize,
+                        timeToLiveMillis: streamDetails?.messageStreamInfo.definition.timeToLiveMillis,
                         strategyOnFull: streamDetails?.messageStreamInfo.definition.strategyOnFull,
                         persistence: streamDetails?.messageStreamInfo.definition.persistence,
                         flushOnWrite: streamDetails?.messageStreamInfo.definition.flushOnWrite,
@@ -239,6 +240,7 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                         name: streamDetails?.messageStreamInfo.definition.name,
                         maxSize: streamDetails?.messageStreamInfo.definition.maxSize,
                         streamSegmentSize: streamDetails?.messageStreamInfo.definition.streamSegmentSize,
+                        timeToLiveMillis: streamDetails?.messageStreamInfo.definition.timeToLiveMillis,
                         strategyOnFull: streamDetails?.messageStreamInfo.definition.strategyOnFull,
                         persistence: streamDetails?.messageStreamInfo.definition.persistence,
                         flushOnWrite: streamDetails?.messageStreamInfo.definition.flushOnWrite,
@@ -704,6 +706,22 @@ const StreamDetail: React.FC<StreamManagerProps> = () => {
                                 })}
                                 disabled={false}
                                 step={1024}
+                                inputMode="decimal"
+                                type="number"
+                            />
+                        </FormField>
+                        <FormField
+                            constraintText={model.MessageStreamDefinition.properties.timeToLiveMillis.description}
+                            label="Time to live (in milliseconds)"
+                        >
+                            <Input
+                                value={updateStream.timeToLiveMillis}
+                                onChange={(event) => dispatch({
+                                    type: 'set_streamTtl',
+                                    payload: event.detail.value,
+                                    callbackError: setUpdateStreamErrorText
+                                })}
+                                disabled={false}
                                 inputMode="decimal"
                                 type="number"
                             />

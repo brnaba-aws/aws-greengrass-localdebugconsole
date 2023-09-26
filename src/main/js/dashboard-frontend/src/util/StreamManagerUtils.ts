@@ -276,6 +276,23 @@ export function StreamManagerReducer(state: any, action: any) {
                 ...state,
                 streamSegmentSize: parseInt(action.payload, 10)
             };
+        case "set_streamTtl":
+            if (action.payload == null || action.payload.length == 0) {
+                action.callbackError('');
+                return {
+                    ...state,
+                    timeToLiveMillis: undefined
+                };
+            }
+            if (parseInt(action.payload, 10) < model.MessageStreamDefinition.properties.timeToLiveMillis.minimum) {
+                action.callbackError(`stream ttl cannot be lower than ${model.MessageStreamDefinition.properties.timeToLiveMillis.minimum} ms.`);
+            } else {
+                action.callbackError('');
+            }
+            return {
+                ...state,
+                timeToLiveMillis: parseInt(action.payload, 10)
+            };
         case "set_strategyOnFull":
             return {
                 ...state,
@@ -311,6 +328,7 @@ export function StreamManagerReducer(state: any, action: any) {
                 name: action.payload.name,
                 maxSize: action.payload.maxSize,
                 streamSegmentSize: action.payload.streamSegmentSize,
+                timeToLiveMillis: action.payload.timeToLiveMillis,
                 strategyOnFull: action.payload.strategyOnFull,
                 persistence: action.payload.persistence,
                 flushOnWrite: action.payload.flushOnWrite,
