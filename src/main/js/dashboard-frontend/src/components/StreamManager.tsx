@@ -46,8 +46,11 @@ import {STREAM_MANAGER_ROUTE_HREF_PREFIX} from "../util/constNames";
 import PaginationRendering from "../util/PaginationRendering";
 import StreamManagerResponseMessage from "../util/StreamManagerResponseMessage";
 import DeleteModal from "./StreamManagerDeleteModal";
+import createPersistedState from "use-persisted-state";
 
 const model = model1.definitions;
+
+const useTablePreferences = createPersistedState<CollectionPreferencesProps.Preferences>("gg.streamManager.tablePreferences");
 
 function StreamManager() {
     const [filteringText, setFilteringText] = useState("")
@@ -94,35 +97,35 @@ function StreamManager() {
                 value: streamManagerComponentConfiguration?.STREAM_MANAGER_SERVER_PORT.toString(),
             },
             {
-                field: "Authenticate Clients",
+                field: "Authenticate clients",
                 value: streamManagerComponentConfiguration.STREAM_MANAGER_AUTHENTICATE_CLIENT
             },
         ],
         [
             {
-                field: "Export Max Bandwidth",
+                field: "Export max bandwidth",
                 value: streamManagerComponentConfiguration.STREAM_MANAGER_EXPORTER_MAX_BANDWIDTH,
             },
             {
-                field: "Export Thread Pool Size",
+                field: "Export thread pool size",
                 value: streamManagerComponentConfiguration.STREAM_MANAGER_EXPORTER_THREAD_POOL_SIZE
             },
             {
-                field: "Export S3 Upload Min Part Size",
+                field: "Export S3 upload min part size",
                 value: streamManagerComponentConfiguration.STREAM_MANAGER_EXPORTER_S3_DESTINATION_MULTIPART_UPLOAD_MIN_PART_SIZE_BYTES,
             },
         ],
         [
             {
-                field: "Root Path",
+                field: "Root path",
                 value: streamManagerComponentConfiguration.STREAM_MANAGER_STORE_ROOT_DIR,
             },
             {
-                field: "Log Level",
+                field: "Log level",
                 value: streamManagerComponentConfiguration.LOG_LEVEL,
             },
             {
-                field: "JVM Args",
+                field: "JVM args",
                 value: streamManagerComponentConfiguration.JVM_ARGS
             }
         ],
@@ -141,17 +144,17 @@ function StreamManager() {
         },
         {
             id: "maxSize",
-            header: "Max Size",
+            header: "Max size",
             cell: (e: Stream) => formatBytes(e.messageStreamInfo.definition.maxSize)
         },
         {
             id: "streamSegmentSize",
-            header: "Segment Size",
+            header: "Segment size",
             cell: (e: Stream) => formatBytes(e.messageStreamInfo.definition.streamSegmentSize)
         },
         {
             id: "totalBytes",
-            header: "Total Size",
+            header: "Total size",
             cell: (e: Stream) => formatBytes(e.messageStreamInfo.storageStatus.totalBytes)
         },
         {
@@ -195,14 +198,10 @@ function StreamManager() {
         }
     ];
 
-    let storedPreference = localStorage.getItem('streamPreferences');
-    if (!storedPreference) {
-        storedPreference = JSON.stringify({
-            pageSize: 10,
-            visibleContent: ["name", "persistence", "strategyOnFull", "maxSize", "exportDefinition"]
-        })
-    }
-    const [preferences, setPreferences] = useState<CollectionPreferencesProps.Preferences>(JSON.parse(storedPreference));
+    const [preferences, setPreferences] = useTablePreferences({
+        pageSize: 10,
+        visibleContent: ["name", "persistence", "strategyOnFull", "maxSize", "exportDefinition"]
+    });
 
     useEffect(() => {
         getStreamManagerComponentConfiguration();
@@ -417,12 +416,12 @@ function StreamManager() {
                                         {editable: true, label: "Persistence", id: "persistence"},
                                         {editable: true, label: "Strategy", id: "strategyOnFull"},
                                         {editable: true, label: "Max size", id: "maxSize"},
-                                        {editable: true, label: "Segment Size", id: "streamSegmentSize"},
+                                        {editable: true, label: "Segment size", id: "streamSegmentSize"},
                                         {editable: true, label: "Flush on write", id: "flushOnWrite"},
                                         {editable: true, label: "Time to live", id: "timeToLiveMillis"},
-                                        {editable: true, label: "Total Size", id: "totalBytes"},
-                                        {editable: true, label: "Newest sequence Number", id: "newestSequenceNumber"},
-                                        {editable: true, label: "Oldest sequence Number", id: "oldestSequenceNumber"},
+                                        {editable: true, label: "Total size", id: "totalBytes"},
+                                        {editable: true, label: "Newest sequence number", id: "newestSequenceNumber"},
+                                        {editable: true, label: "Oldest sequence number", id: "oldestSequenceNumber"},
                                         {editable: true, label: "Exports", id: "exportDefinition"}
                                     ]
                                 }]
@@ -440,7 +439,6 @@ function StreamManager() {
                             preferences={preferences}
                             onConfirm={({detail}) => {
                                 setPreferences(detail);
-                                localStorage.setItem("streamPreferences", JSON.stringify(detail))
                             }}
                         />
                     }
@@ -508,7 +506,7 @@ function StreamManager() {
                                         >
                                             <SpaceBetween direction="vertical" size="l">
                                                 <FormField
-                                                    label="Stream Name"
+                                                    label="Stream name"
                                                     constraintText={model.MessageStreamDefinition.properties.name.description}
                                                 >
                                                     <Input
@@ -522,7 +520,7 @@ function StreamManager() {
                                                     />
                                                 </FormField>
                                                 <FormField
-                                                    label="Stream Max Size (in bytes)"
+                                                    label="Stream max size (in bytes)"
                                                     constraintText={model.MessageStreamDefinition.properties.maxSize.description}
                                                 >
                                                     <Input
@@ -540,7 +538,7 @@ function StreamManager() {
                                                 </FormField>
                                                 <FormField
                                                     constraintText={model.MessageStreamDefinition.properties.streamSegmentSize.description}
-                                                    label="Stream Segment Size (in bytes)"
+                                                    label="Stream segment size (in bytes)"
                                                 >
                                                     <Input
                                                         value={newStream.streamSegmentSize}
