@@ -277,7 +277,7 @@ export function StreamManagerReducer(state: any, action: any) {
                 streamSegmentSize: parseInt(action.payload, 10)
             };
         case "set_streamTtl":
-            if (action.payload == null || action.payload.length == 0) {
+            if (action.payload === null || action.payload.length === 0) {
                 action.callbackError('');
                 return {
                     ...state,
